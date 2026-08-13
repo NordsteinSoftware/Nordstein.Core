@@ -1,11 +1,12 @@
 <Project>
-  <!-- Inherit the repository-wide settings while Core is staged inside Proxytrace. The explicit
-       import is required there: MSBuild stops at the nearest Directory.Build.props, so without it
-       the root file would not apply.
+  <!-- Inherit the repository-wide settings when Core is built inside a consuming product
+       (Proxytrace mounts it as a submodule at core/). The explicit import is required there:
+       MSBuild stops at the nearest Directory.Build.props, so without it the product's root file
+       would not apply.
 
-       Conditional, because Core is meant to leave. In its own repository there is no file above,
-       GetPathOfFileAbove returns empty, and an unconditional Import of "" fails the build with
-       MSB4020 before a single project compiles — the extracted repository would not build at all.
+       Conditional, because Core also builds on its own. In this repository standalone there is no
+       file above, GetPathOfFileAbove returns empty, and an unconditional Import of "" fails the
+       build with MSB4020 before a single project compiles — the repository would not build at all.
        Everything the parent supplies that Core actually needs is defaulted below, so the two
        layouts behave identically. -->
   <PropertyGroup>

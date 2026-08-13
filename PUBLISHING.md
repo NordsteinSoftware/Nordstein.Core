@@ -8,18 +8,20 @@ consumers' caches.
 
 ### 1. Where the packages live
 
-Source stays private either way; the question is only who may restore the binaries.
+The source is public — this repository mirrors Proxytrace's visibility and is consumed as a
+submodule — so a product that builds against the submodule needs no feed at all. This decision
+only governs a product that consumes Core as a **package** instead:
 
-| Option | Restore auth | Consequence for Proxytrace |
-|--------|--------------|----------------------------|
-| **nuget.org**, public packages | none | Proxytrace stays publicly buildable |
-| **GitHub Packages**, private | PAT required, no anonymous read | Only authenticated builds work — anyone cloning Proxytrace hits a 401 on restore |
-| **Azure Artifacts**, private | PAT / credential provider | Same as above, nicer feed tooling |
+| Option | Restore auth | Consequence |
+|--------|--------------|-------------|
+| **nuget.org**, public packages | none | anyone can restore; simplest |
+| **GitHub Packages**, private | PAT required, no anonymous read | only authenticated builds restore |
+| **Azure Artifacts**, private | PAT / credential provider | same, nicer feed tooling |
 
-Proxytrace is currently public and Elastic-licensed, so a private feed would make it
-unbuildable outside the organisation. Private source with public packages is the combination
-that keeps both properties. If Proxytrace is going closed anyway, that constraint disappears
-and GitHub Packages is the least setup.
+Because Proxytrace already consumes Core by submodule and stays publicly buildable regardless of
+this choice, the feed is a convenience decision for future package consumers, not a buildability
+constraint. If Core's source is ever taken private, revisit this: a private feed would then be the
+only way a package consumer outside the organisation could restore.
 
 ### 2. The licence
 
