@@ -23,7 +23,7 @@ and GitHub Packages is the least setup.
 
 ### 2. The licence
 
-`Directory.Build.props` packs `core/LICENSE`, currently a copy of Proxytrace's Elastic License
+`Directory.Build.props` packs `LICENSE`, currently a copy of Proxytrace's Elastic License
 2.0, as a **placeholder**. A shared library distributed separately and consumed by products
 that may not all be Elastic-licensed probably wants different terms. Settle this first: a
 licence cannot be recalled from consumers who already restored the package.
@@ -38,8 +38,8 @@ else can take the next ID in the family.
 Versioning is SemVer, one shared version across all Core packages, supplied by the pipeline:
 
 ```bash
-dotnet pack core/Nordstein.Core.sln -c Release -p:NordsteinCoreVersion=1.2.3 -o core/artifacts
-dotnet nuget push "core/artifacts/*.nupkg" --source <feed> --api-key <key> --skip-duplicate
+dotnet pack Nordstein.Core.sln -c Release -p:NordsteinCoreVersion=1.2.3 -o artifacts
+dotnet nuget push "artifacts/*.nupkg" --source <feed> --api-key <key> --skip-duplicate
 ```
 
 The `.snupkg` symbol packages are pushed the same way and are worth pushing: without symbols and
@@ -61,9 +61,13 @@ Set the version once, in the repository root `Directory.Build.props`:
 Pin exact versions and let Dependabot raise the bumps. Floating ranges across several packages
 turn one bad publish into a failure in every product at once, with no diff to point at.
 
-## Completing the split
+## How this repository was extracted
 
-### Do not use `git subtree split`
+This repository was split out of Proxytrace once the reference mechanism had been validated
+in-place. The record is kept here because the same steps apply to any future product that seeds
+its own foundation from an existing codebase.
+
+### Not `git subtree split`
 
 The obvious command is the wrong one:
 
@@ -71,23 +75,22 @@ The obvious command is the wrong one:
 git subtree split --prefix=core -b core-extraction   # DON'T
 ```
 
-It filters strictly by path and **does not follow renames**. Everything now under `core/` was
+It filters strictly by path and **does not follow renames**. Everything under `core/` had been
 `git mv`'d there from `Proxytrace.Common/`, `Proxytrace.Common.Tests/` and `Proxytrace.Testing/`,
-so a subtree split sees only the move commit onward. Measured on this repository: **1 commit**.
-That is a copy with extra steps — every `git blame` and `git log` on the extracted code would
-dead-end at the extraction.
+so a subtree split sees only the move commit onward — measured at the time: **1 commit**. That is
+a copy with extra steps; every `git blame` and `git log` would dead-end at the extraction.
 
-### Use `git filter-repo`
+### `git filter-repo`, with the pre-move paths mapped on
 
-It can map the old paths onto the new ones, so the pre-move history comes along. On the same
-repository this yields **7 commits**, back through the changes that actually shaped this code
-(#371, #465, #484, #508 and the background-service hosting fix).
+filter-repo maps the old paths onto the new ones, so the pre-move history comes along. Run against
+the merged Proxytrace `master`, it preserved **28 commits**, back through the licensing subsystem,
+the secrets-at-rest retrofit and the original `rename to proxytrace`.
 
 ```bash
-pip install git-filter-repo
+# git-filter-repo: `pip install git-filter-repo`, or a distro package (e.g. pacman -S git-filter-repo)
 
 # filter-repo rewrites history in place — always run it on a throwaway clone
-git clone --no-local <this-repo> ../core-extraction
+git clone --no-local <proxytrace-repo> ../core-extraction
 cd ../core-extraction
 
 git filter-repo \
@@ -101,8 +104,8 @@ git filter-repo \
 Keep the `.Tests` rename **before** the `Proxytrace.Common/` one: renames apply in order and
 first match wins.
 
-Then verify before pushing anywhere — the extracted repository has no parent directory to inherit
-from, which is exactly the kind of thing that only shows up here:
+Then verify before pushing — the extracted repository has no parent directory to inherit from,
+which is exactly the kind of thing that only shows up here:
 
 ```bash
 dotnet build Nordstein.Core.sln
@@ -110,14 +113,11 @@ dotnet test  Nordstein.Core.sln
 dotnet pack  Nordstein.Core.sln -c Release -p:NordsteinCoreVersion=1.0.0 -o ./out
 ```
 
-Finally push it as the Core repository's initial history.
+### How Proxytrace consumes it now
 
-### Then, in this repository
-
-Delete `core/` and point `NordsteinCorePath` at a sibling checkout (`../Core/`) so source mode
-keeps working for anyone with both repositories cloned. Everything else — the
-`NordsteinCoreReference` items, the Dockerfile restore layers, CI — is already written against
-the switch and does not change.
-
-Also drop the `core/` entries from the Dockerfile restore layers and from `detect-changes`'s
-`backend` path regex at that point; they exist only while Core is staged here.
+Proxytrace embeds this repository as a **git submodule at `core/`**, so the paths the build
+already expects are unchanged: source mode, the Dockerfile restore layers and the `detect-changes`
+`^core/` regex all keep working exactly as they did while Core was staged in-tree. A sibling
+checkout (`../Core/`) and published packages were the alternatives; the submodule was chosen
+because it needs no feed and keeps a Core edit a one-build change. Bumping Core in the product is a
+submodule-pointer update, raised by Dependabot once it tracks submodules.
