@@ -37,8 +37,8 @@
     <Company>Nordstein Software</Company>
     <Product>Nordstein.Core</Product>
     <Copyright>Copyright © Nordstein Software</Copyright>
-    <PackageProjectUrl>https://github.com/NordsteinSoftware/Core</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/NordsteinSoftware/Core</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/NordsteinSoftware/Nordstein.Core</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/NordsteinSoftware/Nordstein.Core</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <!-- Placeholder: Core inherits Proxytrace's licence until the terms for a shared,
          separately distributed library are settled. See PUBLISHING.md — this must be

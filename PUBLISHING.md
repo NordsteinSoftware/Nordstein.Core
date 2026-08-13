@@ -106,6 +106,9 @@ git filter-repo \
 Keep the `.Tests` rename **before** the `Proxytrace.Common/` one: renames apply in order and
 first match wins.
 
+This recipe documents the original Common/Testing extraction. `Nordstein.Core.Domain` was moved in
+a later tranche after Core became a submodule; it is not part of the historical path mapping above.
+
 Then verify before pushing — the extracted repository has no parent directory to inherit from,
 which is exactly the kind of thing that only shows up here:
 

@@ -8,7 +8,7 @@ namespace Nordstein.Core.Common.DependencyInjection;
 
 public static class AutofacExtensions
 {
-    private const string PopulatedDescriptorsKey = "Proxytrace.ServiceCollection.PopulatedDescriptors";
+    private const string PopulatedDescriptorsKey = "Nordstein.Core.Common.ServiceCollection.PopulatedDescriptors";
 
     public static void RegisterServiceCollection(this ContainerBuilder builder, Action<IServiceCollection> config)
     {

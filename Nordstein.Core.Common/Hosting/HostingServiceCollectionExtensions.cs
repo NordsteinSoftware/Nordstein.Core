@@ -4,8 +4,7 @@ using Microsoft.Extensions.Hosting;
 namespace Nordstein.Core.Common.Hosting;
 
 /// <summary>
-/// Host-level wiring shared by every Proxytrace process host (the app API and the standalone
-/// ingestion proxy).
+/// Host-level wiring shared by process hosts that run resilient background services.
 /// </summary>
 public static class HostingServiceCollectionExtensions
 {

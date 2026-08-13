@@ -13,7 +13,7 @@ Product-agnostic building blocks shared across Nordstein applications.
 | `Hosting` | `AddResilientBackgroundServices`, `IAppVersion`, `NullHostedService` |
 | `Lifecycle` | `Disposable`, `ITempDirectory` |
 | `Net` | Endpoint URL parsing and validation |
-| `Security` | `Sha256` |
+| `Security` | `ISecretProtector`, `ISecretHasher`, and `Sha256` |
 | `Serialization` | `ISerializer` and a `System.Text.Json` implementation |
 | `Text` | `LogSafeExtensions`, `SlugExtensions` |
 

@@ -5,7 +5,8 @@ what any one product is; nothing in here may ever learn.
 
 | Package | Contents |
 |---------|----------|
-| [`Nordstein.Core.Common`](Nordstein.Core.Common) | Clock/randomness seams, async primitives, validation, type conversion, Autofac helpers, hosting defaults |
+| [`Nordstein.Core.Common`](Nordstein.Core.Common) | Clock/randomness seams, async primitives, validation, type conversion, secret-protection contracts, Autofac helpers, hosting defaults |
+| [`Nordstein.Core.Domain`](Nordstein.Core.Domain) | Domain objects/entities, repository and transaction contracts, generators, paging, persistence exceptions, entity events, Autofac discovery |
 | [`Nordstein.Core.Testing`](Nordstein.Core.Testing) | `BaseTest<TModule>` and the shared MSTest + AwesomeAssertions + NSubstitute harness |
 
 ## The one rule
@@ -43,8 +44,8 @@ feed, licence, and prefix decisions that must be settled before the first publis
 
 ## History
 
-This repository was extracted from the Proxytrace repository with `git filter-repo`, mapping the
-pre-move paths (`Proxytrace.Common/`, `Proxytrace.Common.Tests/`, `Proxytrace.Testing/`) onto the
-current ones so the full commit history of every file came across — **not** a `git subtree split`,
-which follows paths without renames and would have collapsed the past to a single commit. The
-recipe is in [`PUBLISHING.md`](PUBLISHING.md#how-this-repository-was-extracted).
+The original Common and Testing packages were extracted from Proxytrace with `git filter-repo`,
+mapping their pre-move paths so their full history came across — **not** a `git subtree split`,
+which follows paths without renames and would have collapsed the past to a single commit. Domain was
+added to this repository in a later extraction tranche. The original repository-extraction recipe is
+in [`PUBLISHING.md`](PUBLISHING.md#how-this-repository-was-extracted).

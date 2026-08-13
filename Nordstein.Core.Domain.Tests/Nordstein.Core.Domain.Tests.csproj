@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <NoWarn>$(NoWarn);MSTEST0001</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="10.0.1">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="MSTest" Version="4.3.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Nordstein.Core.Domain\Nordstein.Core.Domain.csproj" />
+        <ProjectReference Include="..\Nordstein.Core.Testing\Nordstein.Core.Testing.csproj" />
+    </ItemGroup>
+
+</Project>

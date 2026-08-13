@@ -4,10 +4,9 @@ using System.Text;
 namespace Nordstein.Core.Common.Security;
 
 /// <summary>
-/// Hex-encoded SHA-256 — the canonical deterministic blind-index hash for verify-only secrets
-/// (inbound API keys, invite tokens). One-way and key-ring-independent, so equality lookups over the
-/// hash survive a lost <c>PROXYTRACE_DATA_DIR</c>. Suitable because those secrets are high-entropy
-/// (256-bit CSPRNG): a database dump cannot reverse or forge them. Not for passwords.
+/// Hex-encoded SHA-256 for stable deterministic hashes. Suitable for high-entropy, verify-only
+/// secrets and content fingerprints. Not suitable for passwords or other human-chosen secrets,
+/// which require a salted, deliberately slow password-hashing algorithm.
 /// </summary>
 public static class Sha256
 {
