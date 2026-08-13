@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Proxytrace.Common.Hosting;
+namespace Nordstein.Core.Common.Hosting;
 
 /// <summary>
 /// Host-level wiring shared by every Proxytrace process host (the app API and the standalone

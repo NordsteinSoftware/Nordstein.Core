@@ -1,11 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <LangVersion>latest</LangVersion>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <NoWarn>MSTEST0001</NoWarn>
+        <IsPackable>false</IsPackable>
+        <NoWarn>$(NoWarn);MSTEST0001</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -25,8 +22,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Proxytrace.Common\Proxytrace.Common.csproj" />
-      <ProjectReference Include="..\Proxytrace.Testing\Proxytrace.Testing.csproj" />
+      <ProjectReference Include="..\Nordstein.Core.Common\Nordstein.Core.Common.csproj" />
+      <ProjectReference Include="..\Nordstein.Core.Testing\Nordstein.Core.Testing.csproj" />
     </ItemGroup>
 
 </Project>

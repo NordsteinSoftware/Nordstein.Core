@@ -1,7 +1,7 @@
 using AwesomeAssertions;
-using Proxytrace.Common.Text;
+using Nordstein.Core.Common.Text;
 
-namespace Proxytrace.Common.Tests;
+namespace Nordstein.Core.Common.Tests;
 
 [TestClass]
 public sealed class SlugExtensionsTests

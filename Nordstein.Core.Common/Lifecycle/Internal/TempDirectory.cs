@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Lifecycle.Internal;
+namespace Nordstein.Core.Common.Lifecycle.Internal;
 
 internal class TempDirectory : ITempDirectory
 {

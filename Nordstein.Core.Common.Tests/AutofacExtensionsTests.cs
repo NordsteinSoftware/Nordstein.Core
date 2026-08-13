@@ -1,9 +1,9 @@
 using Autofac;
 using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Proxytrace.Common.DependencyInjection;
+using Nordstein.Core.Common.DependencyInjection;
 
-namespace Proxytrace.Common.Tests;
+namespace Nordstein.Core.Common.Tests;
 
 [TestClass]
 public sealed class AutofacExtensionsTests

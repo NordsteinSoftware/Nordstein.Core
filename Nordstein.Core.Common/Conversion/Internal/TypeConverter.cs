@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Text.Json;
 
-namespace Proxytrace.Common.Conversion.Internal;
+namespace Nordstein.Core.Common.Conversion.Internal;
 
 /// <inheritdoc />
 internal class TypeConverter : ITypeConverter

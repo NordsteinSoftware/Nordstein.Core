@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Net;
+namespace Nordstein.Core.Common.Net;
 
 /// <summary>
 /// Parsing for user-entered endpoint URLs (e.g. an upstream model provider's API base URL).

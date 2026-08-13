@@ -1,7 +1,7 @@
 using System.Text;
-using Proxytrace.Common.Async;
+using Nordstein.Core.Common.Async;
 
-namespace Proxytrace.Common.Serialization;
+namespace Nordstein.Core.Common.Serialization;
 
 public static class SerializerExtensions
 {

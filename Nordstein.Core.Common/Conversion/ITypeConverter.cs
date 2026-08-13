@@ -1,4 +1,4 @@
-﻿namespace Proxytrace.Common.Conversion;
+﻿namespace Nordstein.Core.Common.Conversion;
 
 /// <summary>
 /// Service responsible for converting values to the types expected by tool parameters

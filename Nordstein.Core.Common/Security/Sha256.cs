@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Proxytrace.Common.Security;
+namespace Nordstein.Core.Common.Security;
 
 /// <summary>
 /// Hex-encoded SHA-256 — the canonical deterministic blind-index hash for verify-only secrets

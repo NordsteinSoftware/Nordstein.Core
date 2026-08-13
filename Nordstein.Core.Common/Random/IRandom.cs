@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Random;
+namespace Nordstein.Core.Common.Random;
 
 /// <summary>
 /// Deterministic pseudo-random values for <b>generating test and demo data</b>.

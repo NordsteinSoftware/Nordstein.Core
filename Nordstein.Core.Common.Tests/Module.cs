@@ -1,6 +1,6 @@
 using Autofac;
 
-namespace Proxytrace.Common.Tests;
+namespace Nordstein.Core.Common.Tests;
 
 public class Module : Autofac.Module
 {

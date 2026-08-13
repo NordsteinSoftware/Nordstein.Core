@@ -1,13 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
+        <Description>
+            Product-agnostic building blocks shared across Nordstein applications: clock and
+            randomness seams, async primitives, validation helpers, type conversion, Autofac
+            registration helpers, and background-service hosting defaults.
+        </Description>
+        <PackageTags>nordstein;autofac;dependency-injection;utilities</PackageTags>
     </PropertyGroup>
-    
+
     <ItemGroup>
-        <InternalsVisibleTo Include="Proxytrace.Common.Tests" />
+        <InternalsVisibleTo Include="Nordstein.Core.Common.Tests" />
     </ItemGroup>
 
     <ItemGroup>
@@ -20,6 +23,5 @@
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
       <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.10" />
     </ItemGroup>
-
 
 </Project>

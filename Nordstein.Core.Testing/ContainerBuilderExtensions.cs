@@ -1,7 +1,7 @@
 using Autofac;
 using NSubstitute;
 
-namespace Proxytrace.Testing;
+namespace Nordstein.Core.Testing;
 
 public static class ContainerBuilderExtensions
 {

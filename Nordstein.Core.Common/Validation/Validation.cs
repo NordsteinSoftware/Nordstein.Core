@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace Proxytrace.Common.Validation;
+namespace Nordstein.Core.Common.Validation;
 
 public static class Validation
 {

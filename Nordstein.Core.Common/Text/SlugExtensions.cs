@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Proxytrace.Common.Text;
+namespace Nordstein.Core.Common.Text;
 
 /// <summary>
 /// Derives URL-safe slugs from human-readable names.

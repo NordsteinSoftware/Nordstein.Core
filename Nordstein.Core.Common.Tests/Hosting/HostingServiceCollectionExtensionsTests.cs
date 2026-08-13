@@ -2,9 +2,9 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Proxytrace.Common.Hosting;
+using Nordstein.Core.Common.Hosting;
 
-namespace Proxytrace.Common.Tests.Hosting;
+namespace Nordstein.Core.Common.Tests.Hosting;
 
 /// <summary>
 /// Covers the host-level guard from #522: an unhandled exception in a background loop must not

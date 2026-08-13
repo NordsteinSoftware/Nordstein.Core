@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Hosting;
+namespace Nordstein.Core.Common.Hosting;
 
 /// <summary>
 /// The application's release version (SemVer, e.g. "1.2.3"), injected at build time via

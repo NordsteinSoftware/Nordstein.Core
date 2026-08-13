@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Async;
+namespace Nordstein.Core.Common.Async;
 
 public interface IAsyncLock
 {

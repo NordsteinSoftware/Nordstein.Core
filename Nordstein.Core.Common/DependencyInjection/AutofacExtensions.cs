@@ -2,9 +2,9 @@ using System.Reflection;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
-using Proxytrace.Common.Lifecycle;
+using Nordstein.Core.Common.Lifecycle;
 
-namespace Proxytrace.Common.DependencyInjection;
+namespace Nordstein.Core.Common.DependencyInjection;
 
 public static class AutofacExtensions
 {

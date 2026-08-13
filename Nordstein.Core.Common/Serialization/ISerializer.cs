@@ -1,6 +1,6 @@
 using JetBrains.Annotations;
 
-namespace Proxytrace.Common.Serialization;
+namespace Nordstein.Core.Common.Serialization;
 
 public interface ISerializer
 {

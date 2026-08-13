@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Hosting;
 
-namespace Proxytrace.Common.Hosting;
+namespace Nordstein.Core.Common.Hosting;
 
 public class NullHostedService : IHostedService
 {

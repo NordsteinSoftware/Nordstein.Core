@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Proxytrace.Common.Validation;
+namespace Nordstein.Core.Common.Validation;
 
 public static class ValidatorExtensions
 {

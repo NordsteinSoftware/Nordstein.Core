@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using AwesomeAssertions;
 using JetBrains.Annotations;
-using Proxytrace.Common.Validation;
+using Nordstein.Core.Common.Validation;
 // ReSharper disable PropertyCanBeMadeInitOnly.Local
 
-namespace Proxytrace.Common.Tests;
+namespace Nordstein.Core.Common.Tests;
 
 [TestClass]
 public sealed class ValidationTests
@@ -16,7 +16,7 @@ public sealed class ValidationTests
         var validString = "Valid Input";
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrWhiteSpace(validString);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrWhiteSpace(validString);
 
         // Assert
         result.Should().Be(ValidationResult.Success);
@@ -29,7 +29,7 @@ public sealed class ValidationTests
         string? nullString = null;
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrWhiteSpace(nullString);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrWhiteSpace(nullString);
 
         // Assert
         result.Should().NotBeNull();
@@ -44,7 +44,7 @@ public sealed class ValidationTests
         var emptyString = string.Empty;
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrWhiteSpace(emptyString);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrWhiteSpace(emptyString);
 
         // Assert
         result.Should().NotBeNull();
@@ -59,7 +59,7 @@ public sealed class ValidationTests
         var whitespaceString = "   ";
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrWhiteSpace(whitespaceString);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrWhiteSpace(whitespaceString);
 
         // Assert
         result.Should().NotBeNull();
@@ -74,7 +74,7 @@ public sealed class ValidationTests
         var tabString = "\t\t\t";
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrWhiteSpace(tabString);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrWhiteSpace(tabString);
 
         // Assert
         result.Should().NotBeNull();
@@ -88,7 +88,7 @@ public sealed class ValidationTests
         var newlineString = "\n\r\n";
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrWhiteSpace(newlineString);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrWhiteSpace(newlineString);
 
         // Assert
         result.Should().NotBeNull();
@@ -98,7 +98,7 @@ public sealed class ValidationTests
     [TestMethod]
     public void NotNullOrEmpty_WithValidString_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrEmpty("hello");
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrEmpty("hello");
         result.Should().Be(ValidationResult.Success);
     }
 
@@ -106,14 +106,14 @@ public sealed class ValidationTests
     public void NotNullOrEmpty_WithWhitespace_ReturnsSuccess()
     {
         // Whitespace is NOT empty — distinct from NotNullOrWhiteSpace
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrEmpty("   ");
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrEmpty("   ");
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void NotNullOrEmpty_WithNull_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrEmpty(null);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrEmpty(null);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("cannot be null or empty");
     }
@@ -121,7 +121,7 @@ public sealed class ValidationTests
     [TestMethod]
     public void NotNullOrEmpty_WithEmptyString_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrEmpty(string.Empty);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrEmpty(string.Empty);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("cannot be null or empty");
     }
@@ -133,7 +133,7 @@ public sealed class ValidationTests
         var nonDefaultInt = 42;
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotDefault(nonDefaultInt);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotDefault(nonDefaultInt);
 
         // Assert
         result.Should().Be(ValidationResult.Success);
@@ -146,7 +146,7 @@ public sealed class ValidationTests
         var defaultInt = 0;
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotDefault(defaultInt);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotDefault(defaultInt);
 
         // Assert
         result.Should().NotBeNull();
@@ -161,7 +161,7 @@ public sealed class ValidationTests
         var nonDefaultGuid = Guid.NewGuid();
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotDefault(nonDefaultGuid);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotDefault(nonDefaultGuid);
 
         // Assert
         result.Should().Be(ValidationResult.Success);
@@ -174,7 +174,7 @@ public sealed class ValidationTests
         var defaultGuid = Guid.Empty;
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotDefault(defaultGuid);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotDefault(defaultGuid);
 
         // Assert
         result.Should().NotBeNull();
@@ -189,7 +189,7 @@ public sealed class ValidationTests
         var nonDefaultDate = DateTimeOffset.Now;
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotDefault(nonDefaultDate);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotDefault(nonDefaultDate);
 
         // Assert
         result.Should().Be(ValidationResult.Success);
@@ -202,7 +202,7 @@ public sealed class ValidationTests
         var defaultDate = default(DateTimeOffset);
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotDefault(defaultDate);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotDefault(defaultDate);
 
         // Assert
         result.Should().NotBeNull();
@@ -216,7 +216,7 @@ public sealed class ValidationTests
         var pastDate = DateTimeOffset.UtcNow.AddDays(-1);
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.InPast(pastDate);
+        var result = global::Nordstein.Core.Common.Validation.Validation.InPast(pastDate);
 
         // Assert
         result.Should().Be(ValidationResult.Success);
@@ -229,7 +229,7 @@ public sealed class ValidationTests
         var futureDate = DateTimeOffset.UtcNow.AddDays(1);
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.InPast(futureDate);
+        var result = global::Nordstein.Core.Common.Validation.Validation.InPast(futureDate);
 
         // Assert
         result.Should().NotBeNull();
@@ -245,7 +245,7 @@ public sealed class ValidationTests
         var now = DateTimeOffset.UtcNow;
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.InPast(now);
+        var result = global::Nordstein.Core.Common.Validation.Validation.InPast(now);
 
         // Assert
         // This might pass or fail depending on microsecond precision,
@@ -256,14 +256,14 @@ public sealed class ValidationTests
     [TestMethod]
     public void InFuture_WithFutureDate_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.InFuture(DateTimeOffset.UtcNow.AddDays(1));
+        var result = global::Nordstein.Core.Common.Validation.Validation.InFuture(DateTimeOffset.UtcNow.AddDays(1));
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void InFuture_WithPastDate_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.InFuture(DateTimeOffset.UtcNow.AddDays(-1));
+        var result = global::Nordstein.Core.Common.Validation.Validation.InFuture(DateTimeOffset.UtcNow.AddDays(-1));
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("must be in the future");
     }
@@ -271,7 +271,7 @@ public sealed class ValidationTests
     [TestMethod]
     public void InFuture_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.InFuture(DateTimeOffset.UtcNow.AddDays(-1));
+        var result = global::Nordstein.Core.Common.Validation.Validation.InFuture(DateTimeOffset.UtcNow.AddDays(-1));
         result.MemberNames.Should().NotBeEmpty();
     }
 
@@ -283,7 +283,7 @@ public sealed class ValidationTests
         var testDate = DateTimeOffset.UtcNow.AddDays(-5);
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotBefore(testDate, minValue);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotBefore(testDate, minValue);
 
         // Assert
         result.Should().Be(ValidationResult.Success);
@@ -297,7 +297,7 @@ public sealed class ValidationTests
         var testDate = DateTimeOffset.UtcNow.AddDays(-10);
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotBefore(testDate, minValue);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotBefore(testDate, minValue);
 
         // Assert
         result.Should().NotBeNull();
@@ -313,7 +313,7 @@ public sealed class ValidationTests
         var testDate = minValue;
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotBefore(testDate, minValue);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotBefore(testDate, minValue);
 
         // Assert
         result.Should().Be(ValidationResult.Success);
@@ -324,7 +324,7 @@ public sealed class ValidationTests
     {
         var maxValue = DateTimeOffset.UtcNow.AddDays(5);
         var testDate = DateTimeOffset.UtcNow.AddDays(1);
-        var result = global::Proxytrace.Common.Validation.Validation.NotAfter(testDate, maxValue);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotAfter(testDate, maxValue);
         result.Should().Be(ValidationResult.Success);
     }
 
@@ -332,7 +332,7 @@ public sealed class ValidationTests
     public void NotAfter_WithDateEqualToMaxValue_ReturnsSuccess()
     {
         var maxValue = DateTimeOffset.UtcNow.AddDays(1);
-        var result = global::Proxytrace.Common.Validation.Validation.NotAfter(maxValue, maxValue);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotAfter(maxValue, maxValue);
         result.Should().Be(ValidationResult.Success);
     }
 
@@ -341,7 +341,7 @@ public sealed class ValidationTests
     {
         var maxValue = DateTimeOffset.UtcNow.AddDays(1);
         var testDate = DateTimeOffset.UtcNow.AddDays(5);
-        var result = global::Proxytrace.Common.Validation.Validation.NotAfter(testDate, maxValue);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotAfter(testDate, maxValue);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("cannot be after");
     }
@@ -350,21 +350,21 @@ public sealed class ValidationTests
     public void NotAfter_IncludesMemberName()
     {
         var maxValue = DateTimeOffset.UtcNow.AddDays(1);
-        var result = global::Proxytrace.Common.Validation.Validation.NotAfter(DateTimeOffset.UtcNow.AddDays(5), maxValue);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotAfter(DateTimeOffset.UtcNow.AddDays(5), maxValue);
         result.MemberNames.Should().NotBeEmpty();
     }
 
     [TestMethod]
     public void Positive_WithPositiveValue_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Positive(1m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.Positive(1m);
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void Positive_WithZero_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Positive(0m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.Positive(0m);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("must be positive");
     }
@@ -372,35 +372,35 @@ public sealed class ValidationTests
     [TestMethod]
     public void Positive_WithNegativeValue_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Positive(-1m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.Positive(-1m);
         result.Should().NotBe(ValidationResult.Success);
     }
 
     [TestMethod]
     public void Positive_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Positive(0m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.Positive(0m);
         result.MemberNames.Should().NotBeEmpty();
     }
 
     [TestMethod]
     public void LessThan_WithSmallerValue_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.LessThan(5m, 10m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.LessThan(5m, 10m);
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void LessThan_WithEqualValue_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.LessThan(10m, 10m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.LessThan(10m, 10m);
         result.Should().NotBe(ValidationResult.Success);
     }
 
     [TestMethod]
     public void LessThan_WithLargerValue_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.LessThan(15m, 10m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.LessThan(15m, 10m);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("must be less than");
     }
@@ -408,28 +408,28 @@ public sealed class ValidationTests
     [TestMethod]
     public void LessThan_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.LessThan(15m, 10m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.LessThan(15m, 10m);
         result.MemberNames.Should().NotBeEmpty();
     }
 
     [TestMethod]
     public void LessThanOrEqual_WithSmallerValue_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.LessThanOrEqual(5m, 10m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.LessThanOrEqual(5m, 10m);
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void LessThanOrEqual_WithEqualValue_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.LessThanOrEqual(10m, 10m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.LessThanOrEqual(10m, 10m);
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void LessThanOrEqual_WithLargerValue_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.LessThanOrEqual(15m, 10m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.LessThanOrEqual(15m, 10m);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("must be less than or equal to");
     }
@@ -437,28 +437,28 @@ public sealed class ValidationTests
     [TestMethod]
     public void LessThanOrEqual_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.LessThanOrEqual(15m, 10m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.LessThanOrEqual(15m, 10m);
         result.MemberNames.Should().NotBeEmpty();
     }
 
     [TestMethod]
     public void GreaterThan_WithLargerValue_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.GreaterThan(10m, 5m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.GreaterThan(10m, 5m);
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void GreaterThan_WithEqualValue_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.GreaterThan(5m, 5m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.GreaterThan(5m, 5m);
         result.Should().NotBe(ValidationResult.Success);
     }
 
     [TestMethod]
     public void GreaterThan_WithSmallerValue_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.GreaterThan(3m, 5m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.GreaterThan(3m, 5m);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("must be greater than");
     }
@@ -466,28 +466,28 @@ public sealed class ValidationTests
     [TestMethod]
     public void GreaterThan_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.GreaterThan(3m, 5m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.GreaterThan(3m, 5m);
         result.MemberNames.Should().NotBeEmpty();
     }
 
     [TestMethod]
     public void GreaterThanOrEqual_WithLargerValue_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.GreaterThanOrEqual(10m, 5m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.GreaterThanOrEqual(10m, 5m);
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void GreaterThanOrEqual_WithEqualValue_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.GreaterThanOrEqual(5m, 5m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.GreaterThanOrEqual(5m, 5m);
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void GreaterThanOrEqual_WithSmallerValue_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.GreaterThanOrEqual(3m, 5m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.GreaterThanOrEqual(3m, 5m);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("must be greater than or equal to");
     }
@@ -495,21 +495,21 @@ public sealed class ValidationTests
     [TestMethod]
     public void GreaterThanOrEqual_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.GreaterThanOrEqual(3m, 5m);
+        var result = global::Nordstein.Core.Common.Validation.Validation.GreaterThanOrEqual(3m, 5m);
         result.MemberNames.Should().NotBeEmpty();
     }
 
     [TestMethod]
     public void ExactLength_WithMatchingLength_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ExactLength("abc", 3);
+        var result = global::Nordstein.Core.Common.Validation.Validation.ExactLength("abc", 3);
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void ExactLength_WithShorterString_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ExactLength("ab", 3);
+        var result = global::Nordstein.Core.Common.Validation.Validation.ExactLength("ab", 3);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("must be exactly 3 characters");
     }
@@ -517,35 +517,35 @@ public sealed class ValidationTests
     [TestMethod]
     public void ExactLength_WithLongerString_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ExactLength("abcd", 3);
+        var result = global::Nordstein.Core.Common.Validation.Validation.ExactLength("abcd", 3);
         result.Should().NotBe(ValidationResult.Success);
     }
 
     [TestMethod]
     public void ExactLength_WithNull_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ExactLength(null, 3);
+        var result = global::Nordstein.Core.Common.Validation.Validation.ExactLength(null, 3);
         result.Should().NotBe(ValidationResult.Success);
     }
 
     [TestMethod]
     public void ExactLength_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ExactLength("ab", 3);
+        var result = global::Nordstein.Core.Common.Validation.Validation.ExactLength("ab", 3);
         result.MemberNames.Should().NotBeEmpty();
     }
 
     [TestMethod]
     public void Matches_WithMatchingPattern_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Matches("hello123", @"^[a-z0-9]+$");
+        var result = global::Nordstein.Core.Common.Validation.Validation.Matches("hello123", @"^[a-z0-9]+$");
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void Matches_WithNonMatchingPattern_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Matches("hello!", @"^[a-z0-9]+$");
+        var result = global::Nordstein.Core.Common.Validation.Validation.Matches("hello!", @"^[a-z0-9]+$");
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("does not match the required pattern");
     }
@@ -553,35 +553,35 @@ public sealed class ValidationTests
     [TestMethod]
     public void Matches_WithNull_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Matches(null, @"^[a-z]+$");
+        var result = global::Nordstein.Core.Common.Validation.Validation.Matches(null, @"^[a-z]+$");
         result.Should().NotBe(ValidationResult.Success);
     }
 
     [TestMethod]
     public void Matches_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Matches("hello!", @"^[a-z0-9]+$");
+        var result = global::Nordstein.Core.Common.Validation.Validation.Matches("hello!", @"^[a-z0-9]+$");
         result.MemberNames.Should().NotBeEmpty();
     }
 
     [TestMethod]
     public void ValidUri_WithValidAbsoluteUri_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ValidUri("https://example.com/api");
+        var result = global::Nordstein.Core.Common.Validation.Validation.ValidUri("https://example.com/api");
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void ValidUri_WithHttpUri_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ValidUri("http://localhost:5001");
+        var result = global::Nordstein.Core.Common.Validation.Validation.ValidUri("http://localhost:5001");
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void ValidUri_WithRelativeUri_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ValidUri("/relative/path");
+        var result = global::Nordstein.Core.Common.Validation.Validation.ValidUri("/relative/path");
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("must be a valid absolute URI");
     }
@@ -589,35 +589,35 @@ public sealed class ValidationTests
     [TestMethod]
     public void ValidUri_WithNull_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ValidUri(null);
+        var result = global::Nordstein.Core.Common.Validation.Validation.ValidUri(null);
         result.Should().NotBe(ValidationResult.Success);
     }
 
     [TestMethod]
     public void ValidUri_WithGarbageString_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ValidUri("not a uri at all!!!");
+        var result = global::Nordstein.Core.Common.Validation.Validation.ValidUri("not a uri at all!!!");
         result.Should().NotBe(ValidationResult.Success);
     }
 
     [TestMethod]
     public void ValidUri_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.ValidUri(null);
+        var result = global::Nordstein.Core.Common.Validation.Validation.ValidUri(null);
         result.MemberNames.Should().NotBeEmpty();
     }
 
     [TestMethod]
     public void Defined_WithDefinedEnumValue_ReturnsSuccess()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Defined(DayOfWeek.Monday);
+        var result = global::Nordstein.Core.Common.Validation.Validation.Defined(DayOfWeek.Monday);
         result.Should().Be(ValidationResult.Success);
     }
 
     [TestMethod]
     public void Defined_WithUndefinedEnumValue_ReturnsError()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Defined((DayOfWeek)999);
+        var result = global::Nordstein.Core.Common.Validation.Validation.Defined((DayOfWeek)999);
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("has an undefined value");
     }
@@ -625,7 +625,7 @@ public sealed class ValidationTests
     [TestMethod]
     public void Defined_IncludesMemberName()
     {
-        var result = global::Proxytrace.Common.Validation.Validation.Defined((DayOfWeek)999);
+        var result = global::Nordstein.Core.Common.Validation.Validation.Defined((DayOfWeek)999);
         result.MemberNames.Should().NotBeEmpty();
     }
 
@@ -633,7 +633,7 @@ public sealed class ValidationTests
     public void ValidationResults_IncludeMemberName()
     {
         // Arrange
-        var result = global::Proxytrace.Common.Validation.Validation.NotNullOrWhiteSpace(string.Empty);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotNullOrWhiteSpace(string.Empty);
 
         // Assert
         result.MemberNames.Should().NotBeEmpty();
@@ -648,7 +648,7 @@ public sealed class ValidationTests
         var defaultValue = default(TestStruct);
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotDefault(defaultValue);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotDefault(defaultValue);
 
         // Assert
         result.Should().NotBeNull();
@@ -662,7 +662,7 @@ public sealed class ValidationTests
         var nonDefaultValue = new TestStruct { Value = 42 };
 
         // Act
-        var result = global::Proxytrace.Common.Validation.Validation.NotDefault(nonDefaultValue);
+        var result = global::Nordstein.Core.Common.Validation.Validation.NotDefault(nonDefaultValue);
 
         // Assert
         result.Should().Be(ValidationResult.Success);

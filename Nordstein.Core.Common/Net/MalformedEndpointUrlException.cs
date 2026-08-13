@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Net;
+namespace Nordstein.Core.Common.Net;
 
 /// <summary>
 /// Thrown when a user-entered endpoint URL cannot be parsed into an absolute http(s) URL.

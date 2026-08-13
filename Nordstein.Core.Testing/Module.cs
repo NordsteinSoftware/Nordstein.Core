@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NSubstitute;
-using Proxytrace.Common.DependencyInjection;
-using Proxytrace.Common.Lifecycle;
+using Nordstein.Core.Common.DependencyInjection;
+using Nordstein.Core.Common.Lifecycle;
 
-namespace Proxytrace.Testing;
+namespace Nordstein.Core.Testing;
 
 internal class Module : Autofac.Module
 {

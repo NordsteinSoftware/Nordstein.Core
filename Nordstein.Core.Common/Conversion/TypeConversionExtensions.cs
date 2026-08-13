@@ -1,4 +1,4 @@
-﻿namespace Proxytrace.Common.Conversion;
+﻿namespace Nordstein.Core.Common.Conversion;
 
 /// <summary>
 /// Extensions for type conversion, providing a method to convert an object to a specified type with error handling. This class is designed

@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Proxytrace.Common.Validation;
+namespace Nordstein.Core.Common.Validation;
 
 public static class StringExtensions
 {

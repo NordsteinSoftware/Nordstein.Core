@@ -2,10 +2,10 @@ using System.Text.Json;
 using AwesomeAssertions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
-using Proxytrace.Common.Conversion;
-using Proxytrace.Testing;
+using Nordstein.Core.Common.Conversion;
+using Nordstein.Core.Testing;
 
-namespace Proxytrace.Common.Tests;
+namespace Nordstein.Core.Common.Tests;
 
 [TestClass]
 public sealed class TypeConverterTests : BaseTest<Module>

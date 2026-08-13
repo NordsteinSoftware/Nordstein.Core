@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Lifecycle;
+namespace Nordstein.Core.Common.Lifecycle;
 
 public class Disposable : IDisposable, IAsyncDisposable
 {

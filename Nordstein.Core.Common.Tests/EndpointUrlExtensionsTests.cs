@@ -1,7 +1,7 @@
 using AwesomeAssertions;
-using Proxytrace.Common.Net;
+using Nordstein.Core.Common.Net;
 
-namespace Proxytrace.Common.Tests;
+namespace Nordstein.Core.Common.Tests;
 
 [TestClass]
 public sealed class EndpointUrlExtensionsTests

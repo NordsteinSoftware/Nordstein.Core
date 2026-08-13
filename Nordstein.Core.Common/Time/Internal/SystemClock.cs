@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Time.Internal;
+namespace Nordstein.Core.Common.Time.Internal;
 
 /// <summary>
 /// Default <see cref="IClock"/> backed by the real system clock.

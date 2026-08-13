@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Random.Internal;
+namespace Nordstein.Core.Common.Random.Internal;
 
 internal class SeededRandom : IRandom
 {

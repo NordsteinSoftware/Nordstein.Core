@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Async;
+namespace Nordstein.Core.Common.Async;
 
 /// <summary>
 /// Keyed async lock. Unlike <c>lock</c>/<see cref="Monitor"/>, safe to hold across <c>await</c> boundaries.

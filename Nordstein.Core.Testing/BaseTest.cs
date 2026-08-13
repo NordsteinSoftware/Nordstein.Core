@@ -1,7 +1,7 @@
 using Autofac;
 using JetBrains.Annotations;
 
-namespace Proxytrace.Testing;
+namespace Nordstein.Core.Testing;
 
 [TestClass]
 public abstract class BaseTest<TModule> where TModule : Autofac.Module, new()

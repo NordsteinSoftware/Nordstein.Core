@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Text;
+namespace Nordstein.Core.Common.Text;
 
 /// <summary>
 /// Neutralises untrusted values before they are written to a log.

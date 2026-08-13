@@ -1,7 +1,7 @@
 using AwesomeAssertions;
-using Proxytrace.Common.Async;
+using Nordstein.Core.Common.Async;
 
-namespace Proxytrace.Common.Tests;
+namespace Nordstein.Core.Common.Tests;
 
 [TestClass]
 public sealed class AsyncLockTests

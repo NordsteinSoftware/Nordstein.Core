@@ -1,9 +1,9 @@
 ﻿using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Proxytrace.Common.Random;
-using Proxytrace.Testing;
+using Nordstein.Core.Common.Random;
+using Nordstein.Core.Testing;
 
-namespace Proxytrace.Common.Tests;
+namespace Nordstein.Core.Common.Tests;
 
 [TestClass]
 public sealed class RandomTests : BaseTest<Module>

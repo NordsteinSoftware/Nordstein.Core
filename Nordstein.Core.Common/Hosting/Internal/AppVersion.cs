@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Proxytrace.Common.Hosting.Internal;
+namespace Nordstein.Core.Common.Hosting.Internal;
 
 /// <summary>
 /// Reads the version from this assembly's <see cref="AssemblyInformationalVersionAttribute"/>,

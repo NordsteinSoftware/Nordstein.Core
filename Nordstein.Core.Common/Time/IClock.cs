@@ -1,4 +1,4 @@
-namespace Proxytrace.Common.Time;
+namespace Nordstein.Core.Common.Time;
 
 /// <summary>
 /// Abstraction over the system clock so time-dependent logic can be tested deterministically.

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
-using Proxytrace.Common.Lifecycle;
+using Nordstein.Core.Common.Lifecycle;
 
-namespace Proxytrace.Testing;
+namespace Nordstein.Core.Testing;
 
 public static class ServiceProviderExtensions
 {

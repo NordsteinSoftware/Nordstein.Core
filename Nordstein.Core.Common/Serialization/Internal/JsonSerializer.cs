@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Proxytrace.Common.Serialization.Internal;
+namespace Nordstein.Core.Common.Serialization.Internal;
 
 internal class JsonSerializer : ISerializer
 {
