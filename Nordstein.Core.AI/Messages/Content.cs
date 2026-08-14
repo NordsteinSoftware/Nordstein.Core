@@ -3,13 +3,19 @@ using Nordstein.Core.Common.Validation;
 
 namespace Nordstein.Core.AI.Messages;
 
+/// <summary>
+/// One content part of a <see cref="Message"/>: either text or a binary payload (an image).
+/// </summary>
 public sealed record Content : IDomainObject
 {
-    public ContentKind Kind 
+    /// <summary>Whether this part is text or an image, derived from which payload is present.</summary>
+    public ContentKind Kind
         => Data != null ? ContentKind.Image : ContentKind.Text;
-    
+
+    /// <summary>The text payload; <see langword="null"/> for image parts.</summary>
     public string? Text { get; }
-    
+
+    /// <summary>The binary payload with its media type; <see langword="null"/> for text parts.</summary>
     public BinaryData? Data { get; }
 
     private Content(

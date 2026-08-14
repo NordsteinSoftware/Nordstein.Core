@@ -3,12 +3,14 @@ using System.ComponentModel.DataAnnotations;
 namespace Nordstein.Core.AI.Serialization;
 
 /// <summary>
-/// A format for the output of an agent
+/// A format for structured model output: parses and validates the model's text into a typed
+/// value, and tells the model how to shape that text in the first place.
 /// </summary>
 public interface IOutputFormat : IValidatableObject
 {
     /// <summary>
-    /// Creates a <see cref="IOutputFormat"/> from a json schema string
+    /// Creates the <see cref="IOutputFormat"/> for <paramref name="type"/> — the string format
+    /// for <see cref="string"/>, a JSON-schema-backed format for everything else.
     /// </summary>
     delegate IOutputFormat Create(Type type);
 

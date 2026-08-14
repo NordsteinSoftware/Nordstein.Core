@@ -6,6 +6,10 @@ namespace Nordstein.Core.AI.Completions;
 /// </summary>
 public interface IModelParameters : IDomainObject
 {
+    /// <summary>
+    /// Creates a parameter set; every argument is optional and <see langword="null"/> means
+    /// "not specified by the client".
+    /// </summary>
     public delegate IModelParameters Create(
         double? temperature = null,
         double? topP = null,

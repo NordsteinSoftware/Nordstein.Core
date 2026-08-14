@@ -46,8 +46,9 @@ public abstract record Message : IDomainObject
     
     /// <summary>
     /// Creates a new <see cref="Role.System"/> message with the <paramref name="systemPrompt"/>
+    /// as literal text. Prefer the <see cref="IPromptTemplate"/> overload when the prompt has
+    /// variables to render.
     /// </summary>
-    /// TODO: Remove this overload
     public static SystemMessage CreateSystemMessage(string systemPrompt)
         => new(systemPrompt);
     

@@ -14,9 +14,10 @@ public sealed record UserMessage : Message
     }
     
     /// <summary>
-    /// adds additional content to the message and returns a new instance.
+    /// Adds additional content to the message and returns a new instance.
     /// </summary>
-    public UserMessage Add(Content content) 
+    /// <param name="content">The content part to append.</param>
+    public UserMessage Add(Content content)
         => new ([..Contents,  content]);
     
     public override string ToString() 

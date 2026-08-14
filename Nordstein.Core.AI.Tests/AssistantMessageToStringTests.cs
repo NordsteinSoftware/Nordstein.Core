@@ -4,7 +4,7 @@ using Nordstein.Core.AI.Messages;
 namespace Nordstein.Core.AI.Tests;
 
 /// <summary>
-/// ToString feeds the agentic evaluator's prompt verbatim. A tool-call-only assistant message
+/// ToString feeds LLM-judge prompts verbatim. A tool-call-only assistant message
 /// must not stringify to an empty body, or the judge reports "the response is empty".
 /// </summary>
 [TestClass]

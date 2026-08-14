@@ -45,7 +45,7 @@ public sealed record AssistantMessage : Message
     /// — which only concatenates <see cref="Message.Contents"/> and therefore returns an empty
     /// string for a turn whose sole content is a tool call — this always yields a non-empty,
     /// human-readable representation of a tool-call-only assistant turn. Intended for display
-    /// (e.g. the evaluator playground reference / candidate panes), not for evaluation.
+    /// (e.g. a side-by-side comparison view), not for programmatic comparison.
     /// </summary>
     public string GetDisplayText()
     {
@@ -64,6 +64,12 @@ public sealed record AssistantMessage : Message
             : $"{text}{Environment.NewLine}{toolCalls}";
     }
 
+    /// <summary>
+    /// Returns the pure text of the response, concatenated from all text contents.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// The message contains tool requests or non-text content — there is no pure text response.
+    /// </exception>
     public string GetTextResponse()
     {
         if (ToolRequests.Any())

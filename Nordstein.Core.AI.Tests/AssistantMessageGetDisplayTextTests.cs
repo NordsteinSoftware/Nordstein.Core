@@ -4,9 +4,10 @@ using Nordstein.Core.AI.Messages;
 namespace Nordstein.Core.AI.Tests;
 
 /// <summary>
-/// GetDisplayText feeds the evaluator playground's reference / candidate panes. A tool-call-only
-/// assistant turn must render the tool call, not an empty string — otherwise the panes show
-/// "—" / blank (issue #234). Unlike <see cref="AssistantMessage.ToString"/> it omits the role prefix.
+/// GetDisplayText feeds display surfaces that show an assistant turn to a human. A
+/// tool-call-only assistant turn must render the tool call, not an empty string — otherwise
+/// such a surface shows blank. Unlike <see cref="AssistantMessage.ToString"/> it omits the
+/// role prefix.
 /// </summary>
 [TestClass]
 public sealed class AssistantMessageGetDisplayTextTests

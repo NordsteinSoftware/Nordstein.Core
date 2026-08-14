@@ -6,8 +6,8 @@ namespace Nordstein.Core.AI.Serialization.Internal;
 /// Repairs JSON that a model stopped writing part-way through. A model that runs out of output
 /// budget cuts off mid-token, so the document arrives with an unterminated string and unclosed
 /// braces — invalid as a whole, even though everything before the cut is intact and usually carries
-/// the fields that matter (an evaluator's <c>Score</c> ahead of its long <c>Reasoning</c> prose, for
-/// instance). Discarding the answer over its tail throws away a usable verdict.
+/// the fields that matter (a short <c>Score</c> field ahead of a long free-text <c>Reasoning</c>
+/// field, for instance). Discarding the answer over its tail throws away a usable result.
 /// </summary>
 internal static class TruncatedJsonRepair
 {

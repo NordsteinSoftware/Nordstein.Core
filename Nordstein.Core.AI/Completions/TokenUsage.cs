@@ -31,7 +31,7 @@ public sealed record TokenUsage : IDomainObject
     /// <summary>
     /// Initializes a new instance of the <see cref="TokenUsage"/> class with zero input and output tokens.
     /// </summary>
-    public TokenUsage() : this(inputTokenCount: 0,outputTokenCount: 0)
+    public TokenUsage() : this(inputTokenCount: 0, outputTokenCount: 0)
     {
     }
 
