@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# Supersede in-flight runs on PR force-push/amend only; pushes to main are never
+# cancelled — each merge's run is the post-merge safety net and must complete.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # A secret can be committed to any file, so this is never gated on a path filter. It is
+  # skipped on pushes to main only because the PR run already scanned the same history.
+  secrets:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Runs the gitleaks binary directly rather than gitleaks-action, which requires a
+      # paid licence key for organisation-owned repos. Pinned; Dependabot does not track
+      # this download, so bump the version here when a new gitleaks release lands.
+      - name: Scan history for secrets
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz | tar xz gitleaks
+          ./gitleaks git . --redact --verbose
+
+  # Builds and tests the solution. Core must keep standing on its own — the property the
+  # split exists to protect — so this build never has a product to fall back on.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+
+      - name: Restore
+        run: dotnet restore Nordstein.Core.sln --nologo
+
+      # Warnings are errors (Directory.Build.props sets TreatWarningsAsErrors), so a new
+      # warning fails here rather than accumulating unread.
+      - name: Build
+        run: dotnet build Nordstein.Core.sln --nologo --no-restore
+
+      - name: Test
+        run: dotnet test Nordstein.Core.sln --nologo --verbosity minimal --no-restore
+
+  # Packs the NuGet packages and uploads them. Everyday builds resolve project references,
+  # which hide two things a package consumer would hit: a type that is public in source but
+  # never made it onto the package's surface, and a missing pack input (LICENSE, README,
+  # symbols). Packing on every run keeps those from being discovered only at publish time.
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+
+      # A CI prerelease version, so a hand- or CI-built package can never be mistaken for a
+      # published one. Nothing is pushed anywhere — see PUBLISHING.md; publishing is gated on
+      # decisions (feed, licence, package-ID prefix) that are not settled yet.
+      - name: Pack
+        run: >-
+          dotnet pack Nordstein.Core.sln --nologo -c Release
+          -p:NordsteinCoreVersion=0.1.0-ci.${{ github.run_number }}
+          -o artifacts
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nordstein-core-packages
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+          if-no-files-found: error
+          retention-days: 7
