@@ -20,7 +20,7 @@
         <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
         <!-- Relational (not a specific provider) carries IsRelational()/ExecuteDelete and the base
              EF Core package. Provider packages (Npgsql, InMemory) stay in the consuming product. -->
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
     </ItemGroup>
 
     <ItemGroup>
