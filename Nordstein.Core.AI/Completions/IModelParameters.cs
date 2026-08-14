@@ -7,6 +7,11 @@ namespace Nordstein.Core.AI.Completions;
 public interface IModelParameters : IDomainObject
 {
     /// <summary>
+    /// The empty parameter set: every value unspecified, so the provider's defaults apply.
+    /// </summary>
+    public static IModelParameters Empty => Internal.ModelParameters.Empty;
+
+    /// <summary>
     /// Creates a parameter set; every argument is optional and <see langword="null"/> means
     /// "not specified by the client".
     /// </summary>
