@@ -49,9 +49,13 @@ Every change to this repository — however small — meets all of the following
 
 ## The One Rule
 
-**Core may not reference or know about any product. Ever.** No agents, traces, projects, tiers,
+**Core may not reference or know about any product. Ever.** No traces, projects, tiers,
 or any other product concept — not in code, not in names, not in doc examples that would only make
-sense for one product. The dependency arrow points one way: products depend on Core. When
+sense for one product. The *generic AI vocabulary* — the agent contract, messages, tools,
+prompts, completions, the model-client contract — is Core territory and lives exclusively in
+`Nordstein.Core.AI` (see [`docs/ai.md`](docs/ai.md)); what stays banned is anything that ties an
+agent to one product: tenancy, version history, endpoints/providers/pricing, traces, evaluators,
+ingestion, search. The dependency arrow points one way: products depend on Core. When
 something genuinely belongs on both sides, Core declares an **interface (a seam)** and the product
 implements it — never a reference, never a type that "temporarily" knows a product detail.
 
@@ -72,6 +76,7 @@ area — do not rely on this file alone:
 | [`docs/storage.md`](docs/storage.md) | Touching `Nordstein.Core.Storage` — `NordsteinDbContext`, generic repositories, the transaction seam, the cache |
 | [`docs/validation.md`](docs/validation.md) | Touching validation helpers, or adding validation to anything |
 | [`docs/licensing.md`](docs/licensing.md) | Touching `Nordstein.Core.Licensing` — the generic license engine and its product seams |
+| [`docs/ai.md`](docs/ai.md) | Touching `Nordstein.Core.AI` — the AI/agent foundation (messages, tools, prompts, completions, the agent/model-client contracts, output parsing) and its product seams |
 | [`docs/testing.md`](docs/testing.md) | Writing or modifying **any** test, or touching `Nordstein.Core.Testing` (the harness itself lives here) |
 | [`docs/product-playbook.md`](docs/product-playbook.md) | Advising on or building anything in a **consuming product** — e2e testing, user manual, i18n, CI, perf budgets: the practices proven in Proxytrace |
 | [`PUBLISHING.md`](PUBLISHING.md) | Touching packaging, versioning, or anything publish-related |
