@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>
+            Product-agnostic EF Core storage foundation for Nordstein applications: a reusable
+            DbContext base, the stored-entity base and optimistic-concurrency convention, generic
+            repositories (CRUD, paging, soft-delete), the ambient-transaction seam, an in-memory
+            reference-data cache, and assembly-parameterized Autofac discovery. Provider-neutral:
+            each product supplies its own provider, concrete context and migrations.
+        </Description>
+        <PackageTags>nordstein;entity-framework-core;repository;autofac;storage</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Nordstein.Core.Storage.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Autofac" Version="9.3.2" />
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
+        <!-- Relational (not a specific provider) carries IsRelational()/ExecuteDelete and the base
+             EF Core package. Provider packages (Npgsql, InMemory) stay in the consuming product. -->
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Nordstein.Core.Domain\Nordstein.Core.Domain.csproj" />
+    </ItemGroup>
+
+</Project>
