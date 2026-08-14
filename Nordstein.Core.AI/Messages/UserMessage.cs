@@ -1,0 +1,25 @@
+﻿namespace Nordstein.Core.AI.Messages;
+
+/// <summary>
+/// A message from the user to the agent.
+/// </summary>
+public sealed record UserMessage : Message
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UserMessage"/> class with the specified contents.
+    /// </summary>
+    /// <param name="contents">The contents of the user message.</param>
+    public UserMessage(IReadOnlyList<Content> contents) : base(Role.User, contents)
+    {
+    }
+    
+    /// <summary>
+    /// Adds additional content to the message and returns a new instance.
+    /// </summary>
+    /// <param name="content">The content part to append.</param>
+    public UserMessage Add(Content content)
+        => new ([..Contents,  content]);
+    
+    public override string ToString() 
+        => base.ToString();
+}
