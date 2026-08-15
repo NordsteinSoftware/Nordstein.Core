@@ -18,6 +18,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- Lets NSubstitute (Castle DynamicProxy) mock interfaces that reference this assembly's
+             internal test-double types, e.g. IRepository&lt;IAlwaysInvalidEntity&gt;. -->
+        <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Nordstein.Core.Domain\Nordstein.Core.Domain.csproj" />
         <ProjectReference Include="..\Nordstein.Core.Testing\Nordstein.Core.Testing.csproj" />
     </ItemGroup>
