@@ -21,13 +21,51 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
     where TDomainEntity : class, IDomainEntity
     where TStoredEntity : Entity
 {
+    /// <summary>
+    /// Resolves the <see cref="DbContext"/> for the current flow: returns the shared ambient context
+    /// when a transaction is active, or a fresh one from the DI scope otherwise.
+    /// </summary>
     protected readonly Func<DbContext> contextFactory;
+
+    /// <summary>
+    /// The transaction seam used for all write operations. Ensures that add, update, upsert, and
+    /// remove calls run inside a logical transaction and share the ambient context.
+    /// </summary>
     protected readonly ITransaction transaction;
+
+    /// <summary>
+    /// Maps between the domain entity <typeparamref name="TDomainEntity"/> and its EF storage
+    /// counterpart <typeparamref name="TStoredEntity"/> in both directions.
+    /// </summary>
     protected readonly IMapper<TDomainEntity, TStoredEntity> mapper;
+
+    /// <summary>
+    /// The ambient-context holder for the current DI scope. Used to check whether a transaction is
+    /// active (<see cref="AmbientDbContext.IsActive"/>) and to register post-commit callbacks via
+    /// <see cref="AmbientDbContext.RegisterPostCommit"/>.
+    /// </summary>
     protected readonly AmbientDbContext ambient;
+
     private readonly IEntityCache<TDomainEntity>? cache;
     private readonly IEntityEventService entityEvents;
 
+    /// <summary>
+    /// Initializes the repository with its required collaborators.
+    /// </summary>
+    /// <param name="mapper">Maps between domain and storage entities in both directions.</param>
+    /// <param name="contextFactory">
+    /// Factory that returns the <see cref="DbContext"/> appropriate for the current async flow.
+    /// </param>
+    /// <param name="transaction">The transaction seam used for all write operations.</param>
+    /// <param name="entityEvents">Service that broadcasts entity-change events to subscribers.</param>
+    /// <param name="ambient">
+    /// The ambient-context holder; threads the shared EF context across nested repository calls
+    /// inside a single logical transaction.
+    /// </param>
+    /// <param name="cache">
+    /// Optional scope-local entity cache. When <see langword="null"/> the repository performs no
+    /// caching and always reads from the database.
+    /// </param>
     protected AbstractRepository(
         IMapper<TDomainEntity, TStoredEntity> mapper,
         Func<DbContext> contextFactory,
@@ -44,6 +82,17 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
         this.cache = cache;
     }
 
+    /// <summary>
+    /// Fires an <see cref="EntityChangedEvent"/> for <paramref name="id"/> and
+    /// <paramref name="change"/>, deferred to after the outermost transaction commits.
+    /// </summary>
+    /// <param name="id">The identifier of the entity that changed.</param>
+    /// <param name="change">The type of change: added, updated, or removed.</param>
+    /// <remarks>
+    /// When no transaction is active the notification is dispatched immediately. Deferring prevents
+    /// SSE broadcasters and cache invalidators from observing writes that a later step in the same
+    /// logical unit could still roll back.
+    /// </remarks>
     protected void Notify(Guid id, EntityChangeType change)
     {
         var changedEvent = new EntityChangedEvent(id, typeof(TDomainEntity), change);
@@ -148,6 +197,20 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
             .AsNoTracking()
             .CountAsync(cancellationToken);
 
+    /// <summary>
+    /// Streams all entities of this type as an async enumerable, without caching.
+    /// </summary>
+    /// <param name="cancellationToken">Propagates notification that the enumeration should be cancelled.</param>
+    /// <returns>
+    /// An <see cref="IAsyncEnumerable{T}"/> that yields each entity as it is read and mapped from
+    /// the database. Cancellation is honored between yields.
+    /// </returns>
+    /// <remarks>
+    /// No filtering is applied (unlike <see cref="GetAllAsync"/> and <see cref="GetPagedAsync"/>
+    /// which call <c>FilterListQuery</c>). Prefer <see cref="GetAllAsync"/> for small or bounded
+    /// collections that can be held in memory; use <c>EnumerateAsync</c> only when streaming a
+    /// large result set is necessary to avoid materializing the entire set at once.
+    /// </remarks>
     public async IAsyncEnumerable<TDomainEntity> EnumerateAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         IAsyncEnumerable<TStoredEntity> enumerable =  contextFactory()
