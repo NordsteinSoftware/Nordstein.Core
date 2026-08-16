@@ -16,6 +16,13 @@ public sealed class LicensingModule : Autofac.Module
     private readonly LicensingConfiguration configuration;
     private readonly ILicenseTierPolicy policy;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="LicensingModule"/> with the product's licensing
+    /// configuration and tier policy. Both parameters are required and must not be
+    /// <see langword="null"/>.
+    /// </summary>
+    /// <param name="configuration">The licensing configuration (issuer, audience, trusted keys, license JWT); must not be <see langword="null"/>.</param>
+    /// <param name="policy">The tier policy for this product (tier definitions, fallback tier); must not be <see langword="null"/>.</param>
     public LicensingModule(LicensingConfiguration configuration, ILicenseTierPolicy policy)
     {
         this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));

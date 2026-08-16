@@ -11,6 +11,16 @@ public sealed class StoredDomainEntityAttribute : Attribute
     /// <summary>The domain entity type this stored entity maps to.</summary>
     public Type DomainEntityType { get; }
 
+    /// <summary>
+    /// Initializes the attribute, associating the decorated stored entity class with its
+    /// corresponding domain entity type.
+    /// </summary>
+    /// <param name="domainEntityType">
+    /// The domain entity interface (implementing <c>IDomainEntity</c>) that this stored entity maps
+    /// to. Must be an interface — the assembly-scanned discovery in
+    /// <see cref="StorageFoundationModule{TContext}"/> uses this to pair stored types with their
+    /// repository registrations.
+    /// </param>
     public StoredDomainEntityAttribute(Type domainEntityType)
     {
         DomainEntityType = domainEntityType;

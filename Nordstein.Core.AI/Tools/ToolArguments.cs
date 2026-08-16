@@ -112,7 +112,11 @@ namespace Nordstein.Core.AI.Tools
             return schemaString;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Validates that <see cref="JsonSchema"/> is valid JSON, then validates each individual
+        /// argument. Yields <c>Validation.Success</c> entries on success.
+        /// </summary>
+        /// <param name="validationContext">The validation context provided by the framework.</param>
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
             => Validation.Json(JsonSchema).AsEnumerable()
                 .Concat(Arguments.SelectMany(argument => argument.Validate(validationContext)));

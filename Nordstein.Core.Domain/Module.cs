@@ -17,6 +17,21 @@ public sealed class Module : Autofac.Module
 
     private readonly IReadOnlyCollection<Assembly> domainAssemblies;
 
+    /// <summary>
+    /// Initialises the module with the assemblies to scan for domain types and generators.
+    /// </summary>
+    /// <remarks>
+    /// At least one assembly must be supplied. Duplicates are deduplicated automatically.
+    /// </remarks>
+    /// <param name="domainAssemblies">
+    /// The product assemblies to scan for domain types, generators, and implementors.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="domainAssemblies"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="domainAssemblies"/> is empty.
+    /// </exception>
     public Module(params Assembly[] domainAssemblies)
     {
         ArgumentNullException.ThrowIfNull(domainAssemblies);

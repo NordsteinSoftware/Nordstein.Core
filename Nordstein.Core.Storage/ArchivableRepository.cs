@@ -18,6 +18,24 @@ public abstract class ArchivableRepository<TDomainEntity, TStoredEntity>
     where TDomainEntity : class, IArchivable
     where TStoredEntity : Entity, IArchivableEntity
 {
+    /// <summary>
+    /// Initializes the archivable repository by forwarding all parameters to
+    /// <see cref="AbstractRepository{TDomainEntity,TStoredEntity}"/>.
+    /// </summary>
+    /// <param name="mapper">Maps between domain and storage entities in both directions.</param>
+    /// <param name="contextFactory">
+    /// Factory that returns the <see cref="DbContext"/> appropriate for the current async flow.
+    /// </param>
+    /// <param name="transaction">The transaction seam used for all write operations.</param>
+    /// <param name="entityEvents">Service that broadcasts entity-change events to subscribers.</param>
+    /// <param name="ambient">
+    /// The ambient-context holder; threads the shared EF context across nested repository calls
+    /// inside a single logical transaction.
+    /// </param>
+    /// <param name="cache">
+    /// Optional scope-local entity cache. When <see langword="null"/> the repository performs no
+    /// caching and always reads from the database.
+    /// </param>
     protected ArchivableRepository(
         IMapper<TDomainEntity, TStoredEntity> mapper,
         Func<DbContext> contextFactory,

@@ -41,17 +41,36 @@ public enum InvalidLicenseReason
 /// </summary>
 public sealed class InvalidLicenseException : Exception
 {
+    /// <summary>
+    /// Initializes a new instance with the standard message for the given
+    /// <paramref name="reason"/>. The <see cref="Reason"/> property is set from
+    /// <paramref name="reason"/>.
+    /// </summary>
+    /// <param name="reason">The specific reason the license JWT was rejected.</param>
     public InvalidLicenseException(InvalidLicenseReason reason)
         : this(reason, $"The configured license is invalid: {reason}.")
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance with a custom message and the given
+    /// <paramref name="reason"/>.
+    /// </summary>
+    /// <param name="reason">The specific reason the license JWT was rejected.</param>
+    /// <param name="message">A custom error message describing the failure.</param>
     public InvalidLicenseException(InvalidLicenseReason reason, string message)
         : base(message)
     {
         Reason = reason;
     }
 
+    /// <summary>
+    /// Initializes a new instance with a custom message, an inner exception, and the given
+    /// <paramref name="reason"/>. Use this overload when wrapping a JWT validation exception.
+    /// </summary>
+    /// <param name="reason">The specific reason the license JWT was rejected.</param>
+    /// <param name="message">A custom error message describing the failure.</param>
+    /// <param name="innerException">The exception that caused this validation failure, such as a JWT parsing error.</param>
     public InvalidLicenseException(InvalidLicenseReason reason, string message, Exception innerException)
         : base(message, innerException)
     {

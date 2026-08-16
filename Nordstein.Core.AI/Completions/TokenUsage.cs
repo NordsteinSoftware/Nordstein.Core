@@ -84,9 +84,28 @@ public sealed record TokenUsage : IDomainObject
                 a.OutputTokenCount + b.OutputTokenCount,
                 a.CachedInputTokenCount + b.CachedInputTokenCount);
 
+    /// <summary>
+    /// Creates a <see cref="TokenUsage"/> from nullable input and output token counts.
+    /// Returns <see langword="null"/> if either <paramref name="inputTokenCount"/> or
+    /// <paramref name="outputTokenCount"/> is <see langword="null"/> (usage unknown).
+    /// <see cref="CachedInputTokenCount"/> defaults to zero.
+    /// </summary>
+    /// <param name="inputTokenCount">The total number of input tokens, or <see langword="null"/> if unknown.</param>
+    /// <param name="outputTokenCount">The number of output tokens, or <see langword="null"/> if unknown.</param>
+    /// <returns>A new <see cref="TokenUsage"/>, or <see langword="null"/> if either count is unknown.</returns>
     public static TokenUsage? Create(ulong? inputTokenCount, ulong? outputTokenCount)
         => Create(inputTokenCount, outputTokenCount, cachedInputTokenCount: 0);
 
+    /// <summary>
+    /// Creates a <see cref="TokenUsage"/> from nullable counts including the cached input subset.
+    /// Returns <see langword="null"/> if either <paramref name="inputTokenCount"/> or
+    /// <paramref name="outputTokenCount"/> is <see langword="null"/> (usage unknown).
+    /// A <see langword="null"/> <paramref name="cachedInputTokenCount"/> is treated as zero.
+    /// </summary>
+    /// <param name="inputTokenCount">The total number of input tokens (cached portion included), or <see langword="null"/> if unknown.</param>
+    /// <param name="outputTokenCount">The number of output tokens, or <see langword="null"/> if unknown.</param>
+    /// <param name="cachedInputTokenCount">The cached subset of the input tokens, or <see langword="null"/> to default to zero.</param>
+    /// <returns>A new <see cref="TokenUsage"/>, or <see langword="null"/> if either required count is unknown.</returns>
     public static TokenUsage? Create(ulong? inputTokenCount, ulong? outputTokenCount, ulong? cachedInputTokenCount)
         => inputTokenCount.HasValue && outputTokenCount.HasValue
             ? new TokenUsage(inputTokenCount.Value, outputTokenCount.Value, cachedInputTokenCount ?? 0)

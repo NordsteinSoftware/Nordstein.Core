@@ -26,12 +26,28 @@ public sealed record Content : IDomainObject
         Data  = data;
     }
     
+    /// <summary>
+    /// Creates a text content part.
+    /// </summary>
+    /// <param name="text">The text payload; must not be <see langword="null"/> or whitespace.</param>
+    /// <returns>A new <see cref="Content"/> of kind <see cref="ContentKind.Text"/>.</returns>
     public static Content FromText(string text)
         => new(text, null);
-    
+
+    /// <summary>
+    /// Creates an image content part.
+    /// </summary>
+    /// <param name="data">The binary image payload; must carry a non-empty <see cref="BinaryData.MediaType"/>.</param>
+    /// <returns>A new <see cref="Content"/> of kind <see cref="ContentKind.Image"/>.</returns>
     public static Content FromImage(BinaryData data)
         => new(null, data);
-    
+
+    /// <summary>
+    /// Validates that exactly one of <see cref="Text"/> or <see cref="Data"/> is set, and that
+    /// the set payload satisfies its own non-emptiness rules. Yields
+    /// <c>Validation.Success</c> entries on success.
+    /// </summary>
+    /// <param name="validationContext">The validation context provided by the framework.</param>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (Text.NotNullOrWhiteSpace() && Data != null)

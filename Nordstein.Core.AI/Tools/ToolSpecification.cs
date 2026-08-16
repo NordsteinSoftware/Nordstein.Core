@@ -33,6 +33,11 @@ public sealed record ToolSpecification : IDomainObject
         Arguments = arguments;
     }
 
+    /// <summary>
+    /// Validates that <see cref="Name"/> and <see cref="Description"/> are non-empty and that
+    /// <see cref="Arguments"/> are valid. Yields <c>Validation.Success</c> entries on success.
+    /// </summary>
+    /// <param name="validationContext">The validation context provided by the framework.</param>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         yield return Validation.NotNullOrWhiteSpace(Name);

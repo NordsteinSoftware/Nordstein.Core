@@ -20,15 +20,59 @@ public sealed class AmbientDbContext
 {
     private readonly AsyncLocal<State?> current = new();
 
+    /// <summary>
+    /// The EF <see cref="DbContext"/> active for the current async flow; <see langword="null"/> when no
+    /// logical transaction is in progress.
+    /// </summary>
+    /// <remarks>
+    /// Backed by an <see cref="AsyncLocal{T}"/>, so the value is private to each async flow. Reading
+    /// this from outside an active <c>ITransaction.InvokeAsync</c> call returns <see langword="null"/>;
+    /// use <see cref="RequireContext"/> when a non-null value is required.
+    /// </remarks>
     public DbContext? Context => current.Value?.Context;
 
+    /// <summary>
+    /// The EF transaction active for the current async flow; <see langword="null"/> when no logical
+    /// transaction is in progress.
+    /// </summary>
+    /// <remarks>
+    /// Backed by an <see cref="AsyncLocal{T}"/>. Populated by <c>ITransaction.InvokeAsync</c>
+    /// alongside <see cref="Context"/>; both are set and cleared as a unit.
+    /// </remarks>
     public IDbContextTransaction? Transaction => current.Value?.Transaction;
 
+    /// <summary>
+    /// <see langword="true"/> when a logical transaction has been opened in the current async flow;
+    /// <see langword="false"/> otherwise.
+    /// </summary>
+    /// <remarks>
+    /// Use this to distinguish a top-level call (no ambient transaction) from a nested one. Nested
+    /// calls share the same context and connection rather than opening a second transaction.
+    /// </remarks>
     public bool IsActive => current.Value is not null;
 
+    /// <summary>
+    /// Activates the ambient state for the current async flow by associating the supplied
+    /// <paramref name="context"/> and <paramref name="transaction"/>.
+    /// </summary>
+    /// <param name="context">The <see cref="DbContext"/> opened for this logical transaction.</param>
+    /// <param name="transaction">The EF transaction wrapping the operation.</param>
+    /// <remarks>
+    /// Called by <c>ITransaction.InvokeAsync</c> when opening a new outermost transaction.
+    /// Application code must not call this directly; doing so would corrupt the ambient state for
+    /// the current flow.
+    /// </remarks>
     public void Set(DbContext context, IDbContextTransaction transaction)
         => current.Value = new State(context, transaction);
 
+    /// <summary>
+    /// Clears the ambient state for the current async flow after a transaction commits or rolls back.
+    /// </summary>
+    /// <remarks>
+    /// Called by <c>ITransaction.InvokeAsync</c> in its finally block.
+    /// Application code must not call this directly; doing so would discard the active context
+    /// mid-transaction and leave subsequent operations without a shared connection.
+    /// </remarks>
     public void Clear()
         => current.Value = null;
 
