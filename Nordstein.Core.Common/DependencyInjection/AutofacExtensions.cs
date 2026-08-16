@@ -10,6 +10,24 @@ public static class AutofacExtensions
 {
     private const string PopulatedDescriptorsKey = "Nordstein.Core.Common.ServiceCollection.PopulatedDescriptors";
 
+    /// <summary>
+    /// Populates an <see cref="IServiceCollection"/> configured by <paramref name="config"/> into
+    /// the Autofac container, deduplicating type-based descriptors that an earlier call already registered.
+    /// </summary>
+    /// <param name="builder">The Autofac container builder to register services into.</param>
+    /// <param name="config">
+    /// A delegate that populates an <see cref="IServiceCollection"/> with the desired service
+    /// registrations. Invoked immediately.
+    /// </param>
+    /// <remarks>
+    /// Framework extension methods (e.g. <c>AddHttpClient</c>, <c>AddLogging</c>) add shared
+    /// plumbing via <c>TryAdd</c>/<c>TryAddEnumerable</c>, which deduplicates only within a single
+    /// <see cref="IServiceCollection"/>. When multiple modules each call such methods, each call
+    /// builds a fresh collection and the plumbing is re-added every time, producing duplicate
+    /// Autofac registrations. This method tracks previously populated type-based descriptors and
+    /// removes exact duplicates before populating, preventing the "four logging handlers" class of
+    /// problem.
+    /// </remarks>
     public static void RegisterServiceCollection(this ContainerBuilder builder, Action<IServiceCollection> config)
     {
         var services = new ServiceCollection();
@@ -65,8 +83,21 @@ public static class AutofacExtensions
         }
     }
 
+    /// <summary>
+    /// Returns all concrete, non-abstract types in <paramref name="assembly"/> that implement
+    /// or extend <paramref name="type"/>.
+    /// </summary>
+    /// <param name="type">The interface or base type to search for implementations of.</param>
+    /// <param name="assembly">
+    /// The assembly to scan. When <c>null</c>, defaults to the assembly that declares
+    /// <paramref name="type"/>.
+    /// </param>
+    /// <returns>
+    /// A read-only collection of concrete types assignable to <paramref name="type"/>,
+    /// excluding interfaces and abstract classes.
+    /// </returns>
     public static IReadOnlyCollection<Type> GetImplementations(
-        this Type type, 
+        this Type type,
         Assembly? assembly = null)
     {
         assembly ??= type.Assembly;
@@ -76,6 +107,17 @@ public static class AutofacExtensions
             .ToArray();
     }
 
-    public static void OnDispose(this ContainerBuilder builder, Action action) 
+    /// <summary>
+    /// Registers an <paramref name="action"/> that is invoked when the Autofac container is disposed.
+    /// </summary>
+    /// <param name="builder">The container builder to register the cleanup action on.</param>
+    /// <param name="action">The cleanup delegate to invoke when the container is disposed.</param>
+    /// <remarks>
+    /// Useful for lifecycle cleanup that is not naturally tied to any single registered service —
+    /// for example, releasing unmanaged resources or flushing buffers that span multiple services.
+    /// The action is wrapped in a <see cref="Lifecycle.Disposable"/> and registered as a singleton
+    /// instance so Autofac calls it during container disposal.
+    /// </remarks>
+    public static void OnDispose(this ContainerBuilder builder, Action action)
         => builder.RegisterInstance(Disposable.Create(action));
 }
