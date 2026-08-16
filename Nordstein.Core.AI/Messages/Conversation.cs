@@ -20,6 +20,11 @@ public sealed record Conversation : IDomainObject
     public IReadOnlyList<Message> Messages
         => messages;
 
+    /// <summary>
+    /// The system message prepended to this conversation, or <see langword="null"/> if none has
+    /// been added. Returns the first message with <see cref="Role.System"/> cast to
+    /// <see cref="Messages.SystemMessage"/>.
+    /// </summary>
     public SystemMessage? SystemMessage
         => Messages.FirstOrDefault(x => x.Role == Role.System) as SystemMessage;
 

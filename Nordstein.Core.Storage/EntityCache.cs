@@ -88,7 +88,7 @@ public sealed class EntityCache<TDomainEntity> : IEntityCache<TDomainEntity>
     }
 
     /// <summary>
-    /// Stores <paramref name="entity"/> in the cache under its <see cref="IDomainEntity.Id"/>,
+    /// Stores <paramref name="entity"/> in the cache under its <see cref="IDomainEntityData.Id"/>,
     /// replacing any existing entry for that id.
     /// </summary>
     /// <param name="entity">The entity to cache.</param>
