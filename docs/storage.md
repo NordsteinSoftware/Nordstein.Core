@@ -105,6 +105,8 @@ stored `… : Entity` record with `[StoredDomainEntity(typeof(IThing))]`, an
   comparisons and realignment happen at microsecond granularity (`ConcurrencyTokenExtensions`).
 - **Soft delete.** Derive from `ArchivableRepository<,>` and implement `IArchivableEntity`. Archived
   rows are excluded from list/paged queries but still resolve by id, so history keeps loading.
+  Overriding `SupportsHardDelete => false` makes archiving the *only* delete path: the gate covers
+  **both** single-row `RemoveAsync` and bulk `RemoveAllAsync`, so neither can bypass the contract.
 - **Reference-data cache.** Mark a slow-changing entity `[Cacheable]`. Entries are per-lifetime-scope
   (a cached domain object holds the repository it came from), but invalidation is process-wide via the
   singleton `EntityCacheVersions<>`. Never cache high-volume entities. The cache is bypassed while a

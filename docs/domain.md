@@ -110,8 +110,8 @@ at map time. The foundation ships an opt-in soft delete instead:
   `GetAsync`, `GetManyAsync`, and fingerprint/name resolution like `GetOrCreateAsync` —
   unfiltered so history and attribution keep resolving.
 - For entities whose history a hard delete would cascade-destroy, make archiving the *only*
-  delete path: `ArchivableRepository.SupportsHardDelete => false` refuses `RemoveAsync` in
-  application code, **complemented** (not replaced) by a database-level FK `Restrict` as the
+  delete path: `ArchivableRepository.SupportsHardDelete => false` refuses both `RemoveAsync` and
+  `RemoveAllAsync` in application code, **complemented** (not replaced) by a database-level FK `Restrict` as the
   backstop against raw SQL and bulk deletes the repository never sees.
 - A by-key `GetOrCreateAsync` that matches an archived row should **un-archive** it
   (`UnarchiveAsync`) rather than leave a live-but-hidden zombie.

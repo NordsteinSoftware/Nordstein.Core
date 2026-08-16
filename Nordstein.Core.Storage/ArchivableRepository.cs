@@ -50,6 +50,19 @@ public abstract class ArchivableRepository<TDomainEntity, TStoredEntity>
                 $"{typeof(TDomainEntity).Name} is archive-only and cannot be hard-deleted; call " +
                 "ArchiveAsync instead. A hard delete would cascade-remove the history that references it.");
 
+    /// <summary>
+    /// Refuses a bulk hard delete on an archive-only entity (<see cref="SupportsHardDelete"/> is
+    /// <c>false</c>), redirecting the caller to <see cref="ArchiveAsync"/>. The gate mirrors
+    /// <see cref="RemoveAsync"/> so the soft-delete contract cannot be bypassed by clearing the table
+    /// instead of removing rows one by one. Otherwise removes every row as normal.
+    /// </summary>
+    public override Task RemoveAllAsync(CancellationToken cancellationToken = default)
+        => SupportsHardDelete
+            ? base.RemoveAllAsync(cancellationToken)
+            : throw new InvalidOperationException(
+                $"{typeof(TDomainEntity).Name} is archive-only and cannot be hard-deleted; call " +
+                "ArchiveAsync instead. A hard delete would cascade-remove the history that references it.");
+
     /// <inheritdoc />
     public async Task<bool> ArchiveAsync(Guid id, CancellationToken cancellationToken = default)
     {

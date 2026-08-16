@@ -521,8 +521,13 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
     /// is a single indexed column projection rather than a full-entity materialization, and callers
     /// depend on the events (SSE, cache invalidation), so it stays.
     /// </para>
+    /// <para>
+    /// Derived repositories may refuse the operation: an archive-only
+    /// <see cref="ArchivableRepository{TDomainEntity,TStoredEntity}"/> overrides this to throw, so a
+    /// bulk delete cannot bypass the soft-delete contract that <c>RemoveAsync</c> enforces.
+    /// </para>
     /// </remarks>
-    public async Task RemoveAllAsync(CancellationToken cancellationToken = default)
+    public virtual async Task RemoveAllAsync(CancellationToken cancellationToken = default)
     {
         Guid[] removedIds = await transaction.InvokeAsync(async () =>
         {

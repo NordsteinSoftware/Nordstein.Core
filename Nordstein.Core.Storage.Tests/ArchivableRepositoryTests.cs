@@ -116,6 +116,34 @@ public sealed class ArchivableRepositoryTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public async Task RemoveAllAsync_OnArchiveOnlyRepository_Throws()
+    {
+        IServiceProvider services = GetServices();
+        var repository = services.GetRequiredService<IRepository<ITestLockedDoc>>();
+        ITestLockedDoc doc = await repository.AddAsync(NewLockedDoc("permanent"), CancellationToken);
+
+        await FluentActions
+            .Invoking(() => repository.RemoveAllAsync(CancellationToken))
+            .Should().ThrowAsync<InvalidOperationException>();
+
+        // The rows are untouched — the refusal happens before any delete.
+        (await repository.FindAsync(doc.Id, CancellationToken)).Should().NotBeNull();
+    }
+
+    [TestMethod]
+    public async Task RemoveAllAsync_WhenHardDeleteAllowed_ClearsEveryRow()
+    {
+        IServiceProvider services = GetServices();
+        var repository = services.GetRequiredService<ITestDocRepository>();
+        await repository.AddAsync(NewDoc("one"), CancellationToken);
+        await repository.AddAsync(NewDoc("two"), CancellationToken);
+
+        await repository.RemoveAllAsync(CancellationToken);
+
+        (await repository.CountAsync(CancellationToken)).Should().Be(0);
+    }
+
+    [TestMethod]
     public async Task ArchiveAsync_OnArchiveOnlyRepository_StillWorks()
     {
         IServiceProvider services = GetServices();
