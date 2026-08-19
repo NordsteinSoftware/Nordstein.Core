@@ -585,7 +585,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
     /// depend on the events (SSE, cache invalidation), so it stays.
     /// </para>
     /// </remarks>
-    public async Task RemoveAllAsync(CancellationToken cancellationToken = default)
+    public virtual async Task RemoveAllAsync(CancellationToken cancellationToken = default)
     {
         Guid[] removedIds = await transaction.InvokeAsync(async () =>
         {

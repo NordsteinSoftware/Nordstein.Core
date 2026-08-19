@@ -37,6 +37,20 @@ public sealed class AbstractRepositoryTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public void RemovalMethods_AreVirtual_SoConsumersCanFenceThem()
+    {
+        // Consumers of AbstractRepository override RemoveAsync/RemoveAllAsync to refuse hard deletes
+        // on immutable/archive-only entities. Both must stay virtual; a docs edit once dropped the
+        // keyword from RemoveAllAsync and broke every such consumer.
+        Type repositoryType = typeof(AbstractRepository<,>);
+
+        repositoryType.GetMethod(nameof(IRepository<ITestThing>.RemoveAsync))?.IsVirtual
+            .Should().BeTrue("consumers override RemoveAsync to fence hard deletes");
+        repositoryType.GetMethod(nameof(IRepository<ITestThing>.RemoveAllAsync))?.IsVirtual
+            .Should().BeTrue("consumers override RemoveAllAsync to fence hard deletes");
+    }
+
+    [TestMethod]
     public async Task GetPagedAsync_ReturnsPageWithTotal_NewestFirst()
     {
         IServiceProvider services = GetServices();
