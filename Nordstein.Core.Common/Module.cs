@@ -2,8 +2,12 @@ using Autofac;
 using Nordstein.Core.Common.Async;
 using Nordstein.Core.Common.Conversion;
 using Nordstein.Core.Common.Conversion.Internal;
+using Nordstein.Core.Common.Cryptography;
+using Nordstein.Core.Common.Cryptography.Internal;
 using Nordstein.Core.Common.Hosting;
 using Nordstein.Core.Common.Hosting.Internal;
+using Nordstein.Core.Common.Io;
+using Nordstein.Core.Common.Io.Internal;
 using Nordstein.Core.Common.Lifecycle;
 using Nordstein.Core.Common.Lifecycle.Internal;
 using Nordstein.Core.Common.Random;
@@ -49,5 +53,13 @@ public class Module : Autofac.Module
         builder.RegisterType<TempDirectory>()
             .As<ITempDirectory>()
             .OwnedByLifetimeScope();
+
+        builder.RegisterType<AeadStreamCodec>().As<IAeadStreamCodec>().SingleInstance();
+
+        builder.RegisterType<AeadKeyWrap>().As<IAeadKeyWrap>().SingleInstance();
+
+        builder.RegisterType<DurableFilePublisher>().As<IDurableFilePublisher>().SingleInstance();
+
+        builder.RegisterType<SecretFileLoader>().As<ISecretFileLoader>().SingleInstance();
     }
 }
