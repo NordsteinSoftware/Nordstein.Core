@@ -116,6 +116,23 @@ public sealed class ArchivableRepositoryTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public async Task RemoveAllAsync_OnArchiveOnlyRepository_Throws()
+    {
+        IServiceProvider services = GetServices();
+        var repository = services.GetRequiredService<IRepository<ITestLockedDoc>>();
+        await repository.AddAsync(NewLockedDoc("permanent"), CancellationToken);
+
+        // The bulk delete is the same escape hatch as RemoveAsync and must be refused the same way,
+        // or archive-only history is wiped in one call.
+        await FluentActions
+            .Invoking(() => repository.RemoveAllAsync(CancellationToken))
+            .Should().ThrowAsync<InvalidOperationException>();
+
+        // Every row survives — the refusal happens before any delete.
+        (await repository.CountAsync(CancellationToken)).Should().Be(1);
+    }
+
+    [TestMethod]
     public async Task ArchiveAsync_OnArchiveOnlyRepository_StillWorks()
     {
         IServiceProvider services = GetServices();
