@@ -6,7 +6,6 @@ namespace Nordstein.Core.Common.Io.Internal;
 internal sealed class FileWriteHandle : IFileWriteHandle
 {
     private readonly string stagingPath;
-    private readonly string directory;
     private readonly FileStream stream;
 
     private bool streamClosed;
@@ -15,7 +14,6 @@ internal sealed class FileWriteHandle : IFileWriteHandle
 
     internal FileWriteHandle(string destinationDirectory)
     {
-        directory = destinationDirectory;
         stagingPath = System.IO.Path.Combine(destinationDirectory, $".{Guid.NewGuid():N}.tmp");
 
         try
@@ -83,7 +81,6 @@ internal sealed class FileWriteHandle : IFileWriteHandle
         }
 
         published = true;
-        NativeFileApi.FlushDirectory(directory);
     }
 
     public async ValueTask DisposeAsync()

@@ -4,7 +4,7 @@
 publishing and mode-checked secret-file loading. Both are registered as singletons in
 `Nordstein.Core.Common.Module`.
 
-## `IDurableFilePublisher` — stage, flush, publish, fsync
+## `IDurableFilePublisher` — stage, flush, atomic publish
 
 Writes a file so that a crash leaves either the old state or the fully written new file, never a
 torn one:
@@ -15,25 +15,20 @@ torn one:
    does not reuse `ITempDirectory`, which stages under the system temp directory.
 2. The caller writes content through `IFileWriteHandle.Content`.
 3. `PublishAsync(destinationPath)` flushes the content to disk (`FileStream.Flush(flushToDisk: true)`),
-   atomically publishes with create-without-replace (`File.Move` without overwrite, which throws if
-   the destination exists — surfaced as `DestinationAlreadyExistsException`), then flushes the
-   containing directory. `PublishReplacingAsync` is the same but replaces an existing destination.
+   then atomically publishes with create-without-replace (`File.Move` without overwrite, which throws
+   if the destination exists — surfaced as `DestinationAlreadyExistsException`).
+   `PublishReplacingAsync` is the same but replaces an existing destination.
 4. Disposing the handle without publishing aborts the write and deletes the staging file
    (best-effort); a leaked staging file is recoverable and never a final artifact.
 
-### The one native interop in Core
+### Durability scope (the file, not the directory entry)
 
-No public BCL API flushes a *directory*, yet without that flush a crash can lose the rename even
-after the file's data is durable — you get a durable file at no name. So this is the single place
-Core uses native interop: a source-generated `LibraryImport` of `open`/`fsync`/`close` on libc
-(`Io/Internal/NativeFileApi.cs`), opening the directory read-only and `fsync`-ing it. It is a no-op
-on Windows, where NTFS metadata journaling and the rename semantics make a directory handle
-unnecessary. The interop is struct-free (no `stat`) and adds no package dependency; it uses
-source-generated `LibraryImport`, whose generated marshalling stub requires `AllowUnsafeBlocks` on
-the assembly (there is no hand-written `unsafe` code). This is a deliberate, reviewed exception to
-Core's otherwise pure-managed posture,
-justified by the fact that the alternative — skipping the flush — silently breaks crash-consistency
-in every consuming product.
+The publisher flushes the **file's own data** to disk before the rename, so a crash never yields a
+half-written file. It does **not** flush the containing *directory*, so on a crash immediately after
+the rename the new directory entry can still be lost (the data is durable, but at the old name or no
+name). Flushing a directory has no BCL API and would require native interop; Core stays pure-managed,
+so directory durability is left to the platform/filesystem and to the consuming product if it needs
+a stronger guarantee. This is a deliberate scope decision, not an oversight.
 
 ### Known residual: create-no-replace is not race-free
 

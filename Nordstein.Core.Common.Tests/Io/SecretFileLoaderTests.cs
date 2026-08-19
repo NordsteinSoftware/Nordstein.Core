@@ -50,7 +50,7 @@ public sealed class SecretFileLoaderTests : BaseTest<Module>
         string dir = CreateDirectory(temp, "vault", Mode0700);
         string secret = Path.Combine(dir, "key.bin");
         File.WriteAllBytes(secret, "loose"u8.ToArray());
-        File.SetUnixFileMode(secret, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+        SetMode(secret, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
 
         Action act = () => Loader.Load(secret);
 
@@ -66,7 +66,7 @@ public sealed class SecretFileLoaderTests : BaseTest<Module>
         string dir = CreateDirectory(temp, "vault", Mode0700 | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
         string secret = Path.Combine(dir, "key.bin");
         File.WriteAllBytes(secret, "content"u8.ToArray());
-        File.SetUnixFileMode(secret, Mode0600);
+        SetMode(secret, Mode0600);
 
         Action act = () => Loader.Load(secret);
 
@@ -120,7 +120,7 @@ public sealed class SecretFileLoaderTests : BaseTest<Module>
         string dir = CreateDirectory(temp, "vault", Mode0700);
         string path = Path.Combine(dir, name);
         File.WriteAllBytes(path, content);
-        File.SetUnixFileMode(path, Mode0600);
+        SetMode(path, Mode0600);
         return path;
     }
 
@@ -128,8 +128,16 @@ public sealed class SecretFileLoaderTests : BaseTest<Module>
     {
         string dir = temp.Combine(name);
         Directory.CreateDirectory(dir);
-        File.SetUnixFileMode(dir, mode);
+        SetMode(dir, mode);
         return dir;
+    }
+
+    private static void SetMode(string path, UnixFileMode mode)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(path, mode);
+        }
     }
 
     private static void SkipIfUnixModesUnavailable()

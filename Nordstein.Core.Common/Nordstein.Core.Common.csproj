@@ -8,10 +8,6 @@
              background-service hosting defaults.
         </Description>
         <PackageTags>nordstein;autofac;dependency-injection;utilities</PackageTags>
-        <!-- Required only by the source-generated LibraryImport marshalling stub for the single
-             libc directory-fsync interop in Io/Internal/NativeFileApi.cs. No hand-written unsafe
-             code exists in this assembly. -->
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>

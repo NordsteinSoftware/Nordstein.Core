@@ -28,7 +28,12 @@ internal sealed class AeadStreamCodec : IAeadStreamCodec
     {
         ArgumentNullException.ThrowIfNull(plaintext);
         ArgumentNullException.ThrowIfNull(destination);
-        RequireSaltLength(salt.Length);
+        if (salt.Length != SaltSize)
+        {
+            throw new ArgumentException(
+                $"The salt must be {SaltSize} bytes; use {nameof(NewSalt)}.",
+                nameof(salt));
+        }
 
         int chunkSize = (parameters ?? ChunkParameters.Default).ChunkSize;
 
@@ -93,7 +98,12 @@ internal sealed class AeadStreamCodec : IAeadStreamCodec
         ChunkParameters? parameters = null)
     {
         ArgumentNullException.ThrowIfNull(ciphertext);
-        RequireSaltLength(salt.Length);
+        if (salt.Length != SaltSize)
+        {
+            throw new ArgumentException(
+                $"The salt must be {SaltSize} bytes; use {nameof(NewSalt)}.",
+                nameof(salt));
+        }
 
         int chunkSize = (parameters ?? ChunkParameters.Default).ChunkSize;
         byte[] subkey = DeriveSubkey(key.Span, salt.Span, info.Span);
@@ -127,15 +137,5 @@ internal sealed class AeadStreamCodec : IAeadStreamCodec
         }
 
         return total;
-    }
-
-    private void RequireSaltLength(int length)
-    {
-        if (length != SaltSize)
-        {
-            throw new ArgumentException(
-                $"The salt must be {SaltSize} bytes; the codec produces one through {nameof(NewSalt)}.",
-                "salt");
-        }
     }
 }

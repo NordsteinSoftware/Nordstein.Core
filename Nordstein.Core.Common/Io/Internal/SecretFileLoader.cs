@@ -37,7 +37,7 @@ internal sealed class SecretFileLoader : ISecretFileLoader
             return false;
         }
 
-        if (!OperatingSystem.IsWindows() && !HasExpectedUnixModes(path))
+        if (!HasExpectedUnixModes(path))
         {
             rejection = SecretFileRejection.WrongMode;
             return false;
@@ -50,6 +50,12 @@ internal sealed class SecretFileLoader : ISecretFileLoader
 
     private static bool HasExpectedUnixModes(string path)
     {
+        if (OperatingSystem.IsWindows())
+        {
+            // Unix permission bits do not apply on Windows; existence and symlink checks still hold.
+            return true;
+        }
+
         if (File.GetUnixFileMode(path) != FileMode0600)
         {
             return false;

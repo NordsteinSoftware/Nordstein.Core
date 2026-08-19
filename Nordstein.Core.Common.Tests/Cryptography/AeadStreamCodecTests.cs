@@ -15,7 +15,7 @@ public sealed class AeadStreamCodecTests : BaseTest<Module>
 
     private IAeadStreamCodec Codec => GetServices().GetRequiredService<IAeadStreamCodec>();
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow(0)]
     [DataRow(1)]
     [DataRow(15)]
