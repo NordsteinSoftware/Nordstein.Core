@@ -16,7 +16,7 @@
         <!-- BinaryData: the payload envelope of binary message content parts. Microsoft-owned
              BCL-extension package; the alternative (raw byte[] + media-type pairs) would fork
              the moved contract for no gain. -->
-        <PackageReference Include="System.Memory.Data" Version="10.0.11" />
+        <PackageReference Include="System.Memory.Data" Version="10.0.12" />
     </ItemGroup>
 
     <ItemGroup>
