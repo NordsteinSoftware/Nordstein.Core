@@ -67,6 +67,32 @@ public sealed class AbstractRepositoryTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public async Task GetPagedAsync_RowsSharingCreatedAt_OrderByIdDescendingAcrossPages()
+    {
+        // Rows created in one instant (a batch import) have no order without a tiebreaker: offset
+        // pages then repeat and skip rows. The contract is CreatedAt descending, then Id descending,
+        // so every page is a stable slice of one total order.
+        IServiceProvider services = GetServices();
+        IRepository<ITestThing> repository = Repo(services);
+        var instant = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var ids = new List<Guid>();
+        for (int i = 0; i < 6; i++)
+        {
+            ITestThing added = await repository.AddAsync(NewThing($"tied-{i}", instant), CancellationToken);
+            ids.Add(added.Id);
+        }
+
+        PagedResult<ITestThing> first = await repository.GetPagedAsync(1, 2, CancellationToken);
+        PagedResult<ITestThing> second = await repository.GetPagedAsync(2, 2, CancellationToken);
+        PagedResult<ITestThing> third = await repository.GetPagedAsync(3, 2, CancellationToken);
+
+        Guid[] seen = [.. first.Items.Concat(second.Items).Concat(third.Items).Select(t => t.Id)];
+        seen.Should().OnlyHaveUniqueItems("no row may repeat across pages");
+        seen.Should().BeEquivalentTo(ids, "no row may be skipped across pages");
+        seen.Should().BeInDescendingOrder("CreatedAt ties break on Id descending");
+    }
+
+    [TestMethod]
     public async Task GetPagedAsync_ClampsOutOfRangeArguments()
     {
         IServiceProvider services = GetServices();
