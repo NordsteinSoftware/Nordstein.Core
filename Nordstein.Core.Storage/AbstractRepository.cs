@@ -269,8 +269,11 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
 
         var query = FilterListQuery(contextFactory().Set<TStoredEntity>().AsNoTracking());
         int total = await query.CountAsync(cancellationToken);
+        // CreatedAt alone is not a total order (a batch lands in one instant); Id breaks the tie so
+        // offset pages never repeat or skip a row.
         var stored = await query
             .OrderByDescending(e => e.CreatedAt)
+            .ThenByDescending(e => e.Id)
             .Skip(Paging.Offset(page, pageSize))
             .Take(pageSize)
             .ToListAsync(cancellationToken);
