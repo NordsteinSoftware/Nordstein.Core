@@ -18,7 +18,7 @@ PostgreSQL.
 | `Entity` | Base record for stored entities: `Id`, `CreatedAt`, `UpdatedAt` + validation. |
 | `IEntity`, `IArchivableEntity`, `IEntityAdapter`, `StoredDomainEntityAttribute`, `EntityExtensions` | Stored-entity contracts and the stored↔domain association the discovery reads. |
 | `IMapper<TDomain,TStored>` | Bidirectional map between a domain entity and its stored form. One per entity, product-supplied. |
-| `AbstractRepository<TDomain,TStored>` | Generic CRUD, paging, upsert, `GetMany`, optimistic concurrency, deferred change notifications, optional caching. |
+| `AbstractRepository<TDomain,TStored>` | Generic CRUD, paging (ordered by `CreatedAt` descending, then `Id` descending — a total order, so offset pages never repeat or skip same-instant rows), upsert, `GetMany`, optimistic concurrency, deferred change notifications, optional caching. |
 | `ArchivableRepository<TDomain,TStored>` | Adds soft-delete (`ArchiveAsync`/`UnarchiveAsync`), excludes archived rows from list queries, and can refuse hard deletes. |
 | `AmbientDbContext`, `ITransaction` (from Core.Domain) | The ambient-transaction seam: one shared context/connection per logical unit, with post-commit side effects. |
 | `IEntityCache<T>`, `EntityCache<T>`, `EntityCacheVersions<T>`, `CacheableAttribute` | In-memory cache for slow-changing reference data, scope-local with process-wide invalidation. |
