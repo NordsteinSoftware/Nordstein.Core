@@ -6,15 +6,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="10.0.1">
+        <PackageReference Include="coverlet.collector" Version="10.1.0">
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
         <!-- The full hosting package (not just Abstractions): HostingServiceCollectionExtensionsTests
              builds a real IHost to exercise the framework's own BackgroundService fault handling. -->
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
-        <PackageReference Include="MSTest" Version="4.3.3" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+        <PackageReference Include="MSTest" Version="4.4.1" />
     </ItemGroup>
 
     <ItemGroup>
