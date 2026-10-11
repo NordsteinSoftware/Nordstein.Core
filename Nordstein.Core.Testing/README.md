@@ -23,8 +23,8 @@ public sealed class ThingTests : BaseTest<MyProduct.Application.Module>
 ```
 
 - `GetServices(Action<ContainerBuilder>?)` builds a container registered for per-test cleanup.
-- `BuildContainer(...)` is the static escape hatch for a `[ClassInitialize]` fixture shared
-  across a class; the caller owns disposal.
+- `BuildContainer(...)` is the static escape hatch for an expensive `[ClassInitialize]` fixture
+  that holds no test data; the caller owns disposal.
 - `ConfigureContainer` is the per-class override point for substitutes.
 - `CancellationToken` comes from the `TestContext`, so a test that hangs is cancelled by the
   runner rather than running to the timeout.
