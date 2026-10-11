@@ -21,7 +21,10 @@ the only safety net the foundation has.
 
 1. **No shared state between tests.** No system-under-test, fakes, fixtures, or seeded entities
    in instance fields, static fields, or `TestContext.Properties`. Everything a test needs is
-   built *inside* the test method from a fresh service provider.
+   built *inside* the test method from a fresh service provider. A shared service-container
+   handle under the opt-in exception in
+   [Container-backed tests](#container-backed-tests-rare-deliberate) is infrastructure, not test
+   state: it holds no test data and is never a fixture.
 2. **No `[TestFixture]`-style helper classes or shared setup objects.** Dependencies are
    configured through **DI + NSubstitute**, not hand-rolled fixture plumbing.
 3. **The DI container is the fixture.** A fresh, isolated container (with its own in-memory
@@ -64,7 +67,8 @@ How it works, and why it is stateless:
   `ConfigureContainer(ContainerBuilder)` override, then the per-call `action`.
 - Containers are recorded in `TestContext.Properties` and disposed in `[TestCleanup]` — never
   manage container lifetime yourself. `BuildContainer` (static, not auto-disposed) exists as a
-  deliberate last-resort escape hatch for a genuinely expensive `[ClassInitialize]` fixture.
+  deliberate last-resort escape hatch for a genuinely expensive `[ClassInitialize]` fixture that
+  holds no test data.
 - `CancellationToken` is a protected property sourced from `TestContext.CancellationToken`; pass
   it to every async call.
 - MSTest creates a new test-class instance per test method, and each test builds its own
@@ -110,7 +114,8 @@ mocked suite cannot see a wire-format change (a full protocol switch in a Redis 
 mocked suite untouched). Where reply parsing or server-side semantics are the thing under test,
 start the real service in a throwaway container (Testcontainers):
 
-- Build the container **inside the test method** — the no-shared-fixture rule still applies.
+- Build the container **inside the test method** by default — the no-shared-fixture rule still
+  applies.
 - Pin the image to the tag the deployed stack actually runs.
 - When no container runtime is reachable, `Assert.Inconclusive` (report as skipped) — `dotnet
   test` must never acquire a hard Docker dependency. Provide an environment flag (Proxytrace uses
@@ -118,6 +123,19 @@ start the real service in a throwaway container (Testcontainers):
   the coverage can never be lost silently.
 - The skip guard must wrap the builder's `Build()` call, not just `StartAsync` — Testcontainers
   pings the Docker endpoint during `Build()`, so that is where a missing runtime actually throws.
+- **Opt-in exception: one shared service container per test process.** A product may start one
+  container lazily and share it across a test process only when every condition holds:
+  - every test creates its own namespace on the server (a database, a schema, a bucket) from a
+    generated name inside the test method, and drops it when the test ends — also when it fails
+    or is inconclusive;
+  - the server holds no test data between tests: anything shared, such as a template the
+    namespaces are cloned from, holds only schema and its bookkeeping;
+  - startup is lazy, thread-safe and not bound to one test's cancellation token: a cancelled
+    first caller never fails a later one;
+  - a startup failure reaches every test through the skip/require policy above, per test;
+  - the handle exposes only the per-test namespace's connection details, never the container;
+  - tests that act on the server itself or on server-wide objects (roles, tablespaces, server
+    configuration) keep their own container.
 
 Default to a mock; a container test is a targeted supplement for what a mock structurally cannot
 cover, and it costs seconds, not milliseconds.

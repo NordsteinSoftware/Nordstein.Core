@@ -75,10 +75,13 @@ public abstract class BaseTest<TModule> where TModule : Autofac.Module, new()
     }
 
     /// <summary>
-    /// Builds a DI container without registering it for per-test cleanup. Useful from a
-    /// static <c>[ClassInitialize]</c> to share an expensive fixture (e.g. seeded data)
-    /// across the tests of a class; the caller owns disposal.
+    /// Builds a DI container without registering it for per-test cleanup; the caller owns disposal.
     /// </summary>
+    /// <remarks>
+    /// A last-resort escape hatch for a genuinely expensive <c>[ClassInitialize]</c> fixture that
+    /// holds no test data: seeded entities shared between tests break principle #1 of
+    /// <c>docs/testing.md</c>.
+    /// </remarks>
     protected static IContainer BuildContainer(Action<ContainerBuilder>? action = null)
     {
         ContainerBuilder builder = new ContainerBuilder();
