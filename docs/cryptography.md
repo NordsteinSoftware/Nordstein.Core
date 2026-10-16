@@ -2,7 +2,9 @@
 
 `Nordstein.Core.Common.Cryptography` provides two product-agnostic AEAD primitives built on the
 BCL only (`System.Security.Cryptography.AesGcm` and `HKDF`): a chunked stream codec and an AEAD key
-wrap. Both are registered as singletons in `Nordstein.Core.Common.Module`.
+wrap. Both are registered as singletons in `Nordstein.Core.Common.Module`. Password hashing
+(`IPasswordHasher` in `Nordstein.Core.Common.Security`) has its own section,
+[Password hashing](#password-hashing).
 
 ## The one rule this area lives by
 
@@ -80,9 +82,48 @@ means a wrapped key moved to a different slot fails to unwrap. A fresh CSPRNG no
 wrap. Core defines no on-disk layout for the `WrappedKey` (nonce + ciphertext-with-tag) — the caller
 stores the two fields however it likes.
 
+## Password hashing
+
+`IPasswordHasher` (`Nordstein.Core.Common.Security`) hashes passwords and other human-chosen secrets;
+`ISecretHasher` and `Sha256` stay for high-entropy, verify-only values. It uses the BCL only
+(`Rfc2898DeriveBytes.Pbkdf2`) and is registered as a singleton in `Nordstein.Core.Common.Module`.
+
+- **Parameters.** PBKDF2-HMAC-SHA256, 600,000 iterations (OWASP's figure for this PRF), a fresh
+  16-byte CSPRNG salt per hash, and a 32-byte output: one SHA-256 block, so no iteration runs twice.
+  One `Hash` or `Verify` costs about 0.2 s of CPU on a current server core.
+- **Encoding.** The PHC string `$pbkdf2-sha256$i=600000$<salt>$<hash>`, salt and output in standard
+  base64 without padding: 90 ASCII characters today. The string names its algorithm and parameters,
+  so the defaults can change without a data migration.
+- **Password bytes.** The UTF-8 bytes of the string as given: no normalization, trimming, case
+  folding, length limit or truncation. A string with an unpaired surrogate has no UTF-8 encoding, so
+  `Hash` throws `ArgumentException` and `Verify` returns `Failed`. The lenient `Encoding.UTF8` would
+  map every unpaired surrogate to U+FFFD and make distinct passwords collide. The byte copy of the
+  password is zeroed after use; the caller's `string` cannot be.
+- **Rehash signal.** `Verify` returns `SucceededRehashNeeded` when the password matches but the hash
+  has fewer iterations than the default, or a salt or output length other than 16 or 32 bytes. The
+  caller then stores `Hash(password)` while it holds the plaintext. A later Core version that raises
+  the default thus upgrades each account at its next sign-in. A hash with more iterations than the
+  default is not downgraded.
+- **Strict parsing.** A stored hash is input. `Verify` accepts exactly the five segments; iterations
+  1 to 10,000,000 without sign or leading zero; a salt of 8 to 64 bytes and an output of 16 to 64
+  bytes, in canonical base64 without padding. Anything else is a `FormatException` whose message
+  holds neither argument. The bounds cap one check at about 20 million HMAC rounds (10,000,000
+  iterations for each of two output blocks). The 16-byte floor keeps a short output from matching
+  a wrong password by chance.
+- **Comparison.** `CryptographicOperations.FixedTimeEquals` over the full output.
+- **Policy stays with the caller.** Minimum length, normalization (NFKC, if wanted), rate limiting,
+  lockout and a bound on the request size belong to the product. The hasher hashes the empty string
+  like any other value.
+
 ## Review focus (Standard of Care #3)
 
 When changing this area, the adversarial pass hunts specifically for: nonce reuse under one subkey;
 associated data or the final flag not bound into a chunk's tag; a truncation that is reported as
 success; the chunk counter wrapping; any code path that releases unauthenticated plaintext; and any
 use of a non-CSPRNG source for a nonce or salt.
+
+For password hashing it also hunts for: a comparison that is not constant-time or not over the full
+output; a salt not drawn fresh from the CSPRNG for each hash; a parser that accepts trailing data,
+whitespace, padding or a second spelling of a value; an iteration count or output length that is
+unbounded or can overflow; a password or encoded hash in a log line or exception message; and a
+rehash signal on a failed check or on a hash stronger than the default.

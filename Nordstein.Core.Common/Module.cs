@@ -12,6 +12,8 @@ using Nordstein.Core.Common.Lifecycle;
 using Nordstein.Core.Common.Lifecycle.Internal;
 using Nordstein.Core.Common.Random;
 using Nordstein.Core.Common.Random.Internal;
+using Nordstein.Core.Common.Security;
+using Nordstein.Core.Common.Security.Internal;
 using Nordstein.Core.Common.Serialization;
 using Nordstein.Core.Common.Serialization.Internal;
 using Nordstein.Core.Common.Time;
@@ -57,6 +59,8 @@ public class Module : Autofac.Module
         builder.RegisterType<AeadStreamCodec>().As<IAeadStreamCodec>().SingleInstance();
 
         builder.RegisterType<AeadKeyWrap>().As<IAeadKeyWrap>().SingleInstance();
+
+        builder.RegisterType<Pbkdf2PasswordHasher>().As<IPasswordHasher>().SingleInstance();
 
         builder.RegisterType<DurableFilePublisher>().As<IDurableFilePublisher>().SingleInstance();
 
