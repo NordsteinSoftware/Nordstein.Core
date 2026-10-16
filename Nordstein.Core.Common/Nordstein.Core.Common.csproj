@@ -4,7 +4,7 @@
         <Description>
             Product-agnostic building blocks shared across Nordstein applications: clock and
              randomness seams, async primitives, validation helpers, type conversion, security
-             contracts, AEAD cryptography, durable file IO, Autofac registration helpers, and
+             contracts, password hashing, AEAD cryptography, durable file IO, Autofac registration helpers, and
              background-service hosting defaults.
         </Description>
         <PackageTags>nordstein;autofac;dependency-injection;utilities</PackageTags>

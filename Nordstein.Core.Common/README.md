@@ -15,7 +15,7 @@ Product-agnostic building blocks shared across Nordstein applications.
 | `Io` | `IDurableFilePublisher` (staging + flush + atomic no-replace publish + directory fsync) and `ISecretFileLoader` (mode-checked secret-file loading) |
 | `Lifecycle` | `Disposable`, `ITempDirectory` |
 | `Net` | Endpoint URL parsing and validation |
-| `Security` | `ISecretProtector`, `ISecretHasher`, and `Sha256` |
+| `Security` | `ISecretProtector`, `ISecretHasher`, `Sha256`, and `IPasswordHasher` (salted PBKDF2-HMAC-SHA256 password hashes as PHC strings, with a rehash signal) |
 | `Serialization` | `ISerializer` and a `System.Text.Json` implementation |
 | `Text` | `LogSafeExtensions`, `SlugExtensions` |
 
