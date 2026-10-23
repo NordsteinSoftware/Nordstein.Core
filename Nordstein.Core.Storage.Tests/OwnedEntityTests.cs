@@ -33,7 +33,9 @@ public sealed class OwnedEntityTests : BaseTest<Module>
 
         await repository.UpdateAsync(With(owner, "second"), CancellationToken);
 
-        (await repository.FindAsync(owner.Id, CancellationToken))!.Note.Should().Be("second");
+        ITestOwner? reloaded = await repository.FindAsync(owner.Id, CancellationToken);
+        Assert.IsNotNull(reloaded);
+        reloaded.Note.Should().Be("second");
     }
 
     [TestMethod]
@@ -45,7 +47,9 @@ public sealed class OwnedEntityTests : BaseTest<Module>
 
         await repository.UpdateAsync(With(owner, null), CancellationToken);
 
-        (await repository.FindAsync(owner.Id, CancellationToken))!.Note.Should().BeNull();
+        ITestOwner? reloaded = await repository.FindAsync(owner.Id, CancellationToken);
+        Assert.IsNotNull(reloaded);
+        reloaded.Note.Should().BeNull();
     }
 
     [TestMethod]
@@ -57,6 +61,8 @@ public sealed class OwnedEntityTests : BaseTest<Module>
 
         await repository.UpdateAsync(With(owner, "added"), CancellationToken);
 
-        (await repository.FindAsync(owner.Id, CancellationToken))!.Note.Should().Be("added");
+        ITestOwner? reloaded = await repository.FindAsync(owner.Id, CancellationToken);
+        Assert.IsNotNull(reloaded);
+        reloaded.Note.Should().Be("added");
     }
 }

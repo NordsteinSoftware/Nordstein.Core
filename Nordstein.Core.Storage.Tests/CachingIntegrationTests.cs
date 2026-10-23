@@ -38,11 +38,15 @@ public sealed class CachingIntegrationTests : BaseTest<Module>
         ITestCachedThing added = await repository.AddAsync(NewThing("cached"), CancellationToken);
 
         // First read populates...
-        (await repository.FindAsync(added.Id, CancellationToken))!.Name.Should().Be("cached");
+        ITestCachedThing? first = await repository.FindAsync(added.Id, CancellationToken);
+        Assert.IsNotNull(first);
+        first.Name.Should().Be("cached");
         cache.TryGet(added.Id).Should().NotBeNull();
 
         // ...second read is served from the cache (same value).
-        (await repository.FindAsync(added.Id, CancellationToken))!.Name.Should().Be("cached");
+        ITestCachedThing? second = await repository.FindAsync(added.Id, CancellationToken);
+        Assert.IsNotNull(second);
+        second.Name.Should().Be("cached");
     }
 
     [TestMethod]
@@ -56,8 +60,9 @@ public sealed class CachingIntegrationTests : BaseTest<Module>
 
         await repository.GetAllAsync(CancellationToken);
 
-        cache.TryGetAll().Should().NotBeNull();
-        cache.TryGetAll()!.Should().HaveCount(2);
+        IReadOnlyList<ITestCachedThing>? snapshot = cache.TryGetAll();
+        Assert.IsNotNull(snapshot);
+        snapshot.Should().HaveCount(2);
     }
 
     [TestMethod]

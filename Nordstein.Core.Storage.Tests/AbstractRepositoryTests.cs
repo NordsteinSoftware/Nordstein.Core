@@ -174,7 +174,8 @@ public sealed class AbstractRepositoryTests : BaseTest<Module>
         await repository.AddAsync(NewThing("old", baseTime), CancellationToken);
 
         ITestThing? first = await repository.FindFirstAsync(CancellationToken);
-        first!.Name.Should().Be("old"); // ordered by CreatedAt ascending
+        Assert.IsNotNull(first);
+        first.Name.Should().Be("old"); // ordered by CreatedAt ascending
     }
 
     [TestMethod]

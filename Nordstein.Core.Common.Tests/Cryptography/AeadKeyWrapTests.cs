@@ -88,7 +88,11 @@ public sealed class AeadKeyWrapTests : BaseTest<Module>
     {
         IAeadKeyWrap keyWrap = KeyWrap;
 
-        Action act = () => keyWrap.Unwrap(Kek, null!, Aad);
+        // WHY: the null-forgiving operator is banned, tests included. A default array element is a
+        // genuine null the compiler types as non-null — exactly what a mis-wired caller would pass.
+        WrappedKey missing = (new WrappedKey[1])[0];
+
+        Action act = () => keyWrap.Unwrap(Kek, missing, Aad);
 
         act.Should().Throw<ArgumentNullException>();
     }

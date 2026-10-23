@@ -144,7 +144,11 @@ public sealed class AeadStreamCodecTests : BaseTest<Module>
         IAeadStreamCodec codec = Codec;
         using var destination = new MemoryStream();
 
-        Func<Task> act = () => codec.EncryptAsync(null!, destination, Key, codec.NewSalt(), Info, Aad);
+        // WHY: the null-forgiving operator is banned, tests included. A default array element is a
+        // genuine null the compiler types as non-null — exactly what a mis-wired caller would pass.
+        Stream missing = (new Stream[1])[0];
+
+        Func<Task> act = () => codec.EncryptAsync(missing, destination, Key, codec.NewSalt(), Info, Aad);
 
         await act.Should().ThrowAsync<ArgumentNullException>();
     }
