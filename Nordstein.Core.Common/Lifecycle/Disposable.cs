@@ -70,7 +70,7 @@ public class Disposable : IDisposable, IAsyncDisposable
     /// </remarks>
     public void Dispose()
     {
-        if(isDisposed)
+        if (isDisposed)
         {
             return;
         }
@@ -92,7 +92,7 @@ public class Disposable : IDisposable, IAsyncDisposable
     /// </remarks>
     public async ValueTask DisposeAsync()
     {
-        if(isDisposed)
+        if (isDisposed)
         {
             return;
         }

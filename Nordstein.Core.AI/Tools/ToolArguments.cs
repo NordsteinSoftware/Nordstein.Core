@@ -169,7 +169,7 @@ namespace Nordstein.Core.AI.Tools
                 var isRequired = requiredFields.Contains(name);
                 return new JsonToolArgument(name, isRequired, property.Value);
             }).ToList();
-            
+
             ToolArguments result = new ToolArguments(arguments);
             result.Validate();
             return result;

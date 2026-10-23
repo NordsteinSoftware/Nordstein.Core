@@ -85,7 +85,7 @@ public sealed record Conversation : IDomainObject
         {
             throw new InvalidOperationException("System messages must be added using WithSystemMessage");
         }
-        return new Conversation([..messages, message]);
+        return new Conversation([.. messages, message]);
     }
 
     /// <summary>
@@ -98,14 +98,14 @@ public sealed record Conversation : IDomainObject
         {
             throw new InvalidOperationException("Conversation already contains a system message");
         }
-        return new Conversation([systemMessage, ..messages]);
+        return new Conversation([systemMessage, .. messages]);
     }
 
     /// <summary>
     /// Returns the Conversation without the system message
     /// </summary>
     [Pure]
-    public Conversation WithoutSystemMessage() 
+    public Conversation WithoutSystemMessage()
         => new(Messages.Where(x => x.Role != Role.System).ToArray());
 
     /// <inheritdoc />
@@ -116,7 +116,7 @@ public sealed record Conversation : IDomainObject
 
     /// <inheritdoc />
     public bool Equals(Conversation? other)
-        => other is not null && 
+        => other is not null &&
            Messages.SequenceEqual(other.Messages);
 
     /// <inheritdoc />
@@ -131,7 +131,7 @@ public sealed record Conversation : IDomainObject
         }
         return hash.ToHashCode();
     }
-    
+
     /// <summary>
     /// Replaces any existing system Prompt with this system prompt
     /// </summary>
@@ -139,6 +139,6 @@ public sealed record Conversation : IDomainObject
     public static Conversation ReplaceSystemMessage(Conversation conversation, SystemMessage systemMessage)
         => conversation.WithoutSystemMessage().WithSystemMessage(systemMessage);
 
-    public override string ToString() 
+    public override string ToString()
         => string.Join(Environment.NewLine, messages.Select(x => x.ToString()));
 }

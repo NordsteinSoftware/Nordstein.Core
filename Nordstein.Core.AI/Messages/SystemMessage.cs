@@ -19,7 +19,7 @@ public sealed record SystemMessage : Message
         : base(Role.System, contents)
     {
     }
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="SystemMessage"/> class with the specified prompt and output format.
     /// </summary>
@@ -51,6 +51,6 @@ public sealed record SystemMessage : Message
     }
 
     /// <inheritdoc />
-    public override string ToString() 
+    public override string ToString()
         => base.ToString();
 }

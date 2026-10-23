@@ -12,14 +12,14 @@ public sealed record UserMessage : Message
     public UserMessage(IReadOnlyList<Content> contents) : base(Role.User, contents)
     {
     }
-    
+
     /// <summary>
     /// Adds additional content to the message and returns a new instance.
     /// </summary>
     /// <param name="content">The content part to append.</param>
     public UserMessage Add(Content content)
-        => new ([..Contents,  content]);
-    
-    public override string ToString() 
+        => new([.. Contents, content]);
+
+    public override string ToString()
         => base.ToString();
 }

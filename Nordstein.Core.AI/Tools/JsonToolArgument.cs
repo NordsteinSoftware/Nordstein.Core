@@ -18,7 +18,7 @@ internal sealed record JsonToolArgument : IToolArgument
     /// <inheritdoc />
     public Type Type
         => typeof(object);
-    
+
     /// <inheritdoc />
     public string? Description { get; }
 
@@ -37,14 +37,14 @@ internal sealed record JsonToolArgument : IToolArgument
         Name = name;
         IsRequired = isRequired;
         JsonSchema = json.GetRawText();
-        
+
         if (json.TryGetProperty("description", out JsonElement descriptionElement)
             && descriptionElement.ValueKind == JsonValueKind.String)
         {
             Description = descriptionElement.GetString();
         }
     }
-    
+
     /// <inheritdoc />
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

@@ -10,20 +10,20 @@ internal sealed record Completion : ICompletion
     public TokenUsage? Usage { get; }
     public TimeSpan Latency { get; }
 
-    public Completion(AssistantMessage response,  TokenUsage? usage, TimeSpan latency)
+    public Completion(AssistantMessage response, TokenUsage? usage, TimeSpan latency)
     {
         Response = response;
         Usage = usage;
         Latency = latency;
     }
-    
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         foreach (var validationResult in Response.Validate(validationContext))
         {
             yield return validationResult;
         }
-        
+
         foreach (var validationResult in Usage?.Validate(validationContext) ?? [])
         {
             yield return validationResult;

@@ -19,7 +19,7 @@ public abstract record Message : IDomainObject
     /// </summary>
     [JsonIgnore]
     public Role Role { get; }
-    
+
     /// <summary>
     /// The content of the message
     /// </summary>
@@ -37,13 +37,13 @@ public abstract record Message : IDomainObject
         Role = role;
         Contents = contents;
     }
-    
+
     /// <summary>
     /// Creates a new <see cref="Role.User"/> message with the <paramref name="content"/>
     /// </summary>
     public static UserMessage CreateUserMessage(string content)
         => CreateUserMessage([Content.FromText(content)]);
-    
+
     /// <summary>
     /// Creates a new <see cref="Role.System"/> message with the <paramref name="systemPrompt"/>
     /// as literal text. Prefer the <see cref="IPromptTemplate"/> overload when the prompt has
@@ -51,12 +51,12 @@ public abstract record Message : IDomainObject
     /// </summary>
     public static SystemMessage CreateSystemMessage(string systemPrompt)
         => new(systemPrompt);
-    
+
     public static SystemMessage CreateSystemMessage(
-        IPromptTemplate template, 
+        IPromptTemplate template,
         IReadOnlyDictionary<string, string>? variables = null)
         => new(template.Render(variables).ToPromptString());
-    
+
     /// <summary>
     /// Creates a new <see cref="Role.User"/> message with the <paramref name="content"/>
     /// </summary>
@@ -70,7 +70,7 @@ public abstract record Message : IDomainObject
         IReadOnlyList<Content> contents,
         IReadOnlyList<ToolRequest> toolRequests)
         => new(contents, toolRequests);
-    
+
     /// <summary>
     /// Creates a new <see cref="Role.Tool"/> message with the given <paramref name="response"/>.
     /// </summary>

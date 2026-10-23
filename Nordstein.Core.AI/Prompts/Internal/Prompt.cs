@@ -31,12 +31,12 @@ internal record Prompt : IPrompt
     }
 
     /// <inheritdoc />
-    public string ToPromptString() 
+    public string ToPromptString()
         => promptString;
 
     /// <inheritdoc />
     [Pure]
-    public IPrompt Append(IPrompt other) 
+    public IPrompt Append(IPrompt other)
         => new Prompt(
             name: $"{Name}_{other.Name}",
             promptString: string.Join(Environment.NewLine, ToPromptString(), other.ToPromptString()));
