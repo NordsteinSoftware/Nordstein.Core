@@ -111,7 +111,9 @@ stored `… : Entity` record with `[StoredDomainEntity(typeof(IThing))]`, an
   transaction is active.
 - **The transaction seam.** Repository writes run inside `ITransaction.InvokeAsync`. Nested calls share
   the one ambient context/connection (never promoting to a two-phase transaction), and change
-  notifications fire only after the outermost commit.
+  notifications fire only after the outermost commit. The caller's cancellation token is honored when
+  the transaction begins and inside the operation, never during commit or rollback: a commit cancelled
+  mid-flight could report failure for a transaction the database did commit.
 - **Search patterns.** Build `LIKE` right-hand sides with `LikePattern.Contains` (it lowercases and
   escapes wildcards); lower the column in the query too.
 
