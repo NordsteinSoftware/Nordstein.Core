@@ -39,8 +39,8 @@ public sealed class ArchivableRepositoryTests : BaseTest<Module>
         (await repository.GetPagedAsync(1, 10, CancellationToken)).Total.Should().Be(0);
         // ...but still resolvable by id, now flagged archived.
         ITestDoc? reloaded = await repository.FindAsync(doc.Id, CancellationToken);
-        reloaded.Should().NotBeNull();
-        reloaded!.IsArchived.Should().BeTrue();
+        Assert.IsNotNull(reloaded);
+        reloaded.IsArchived.Should().BeTrue();
     }
 
     [TestMethod]
@@ -74,7 +74,9 @@ public sealed class ArchivableRepositoryTests : BaseTest<Module>
         await repository.Unarchive(doc.Id, CancellationToken);
 
         (await repository.GetAllAsync(CancellationToken)).Should().ContainSingle();
-        (await repository.FindAsync(doc.Id, CancellationToken))!.IsArchived.Should().BeFalse();
+        ITestDoc? reloaded = await repository.FindAsync(doc.Id, CancellationToken);
+        Assert.IsNotNull(reloaded);
+        reloaded.IsArchived.Should().BeFalse();
     }
 
     [TestMethod]

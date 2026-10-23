@@ -34,8 +34,8 @@ public sealed class StorageFoundationTests : BaseTest<Module>
         ITestThing added = await repository.AddAsync(NewThing("widget"), CancellationToken);
 
         ITestThing? loaded = await repository.FindAsync(added.Id, CancellationToken);
-        loaded.Should().NotBeNull();
-        loaded!.Name.Should().Be("widget");
+        Assert.IsNotNull(loaded);
+        loaded.Name.Should().Be("widget");
         (await repository.CountAsync(CancellationToken)).Should().Be(1);
     }
 
@@ -72,7 +72,8 @@ public sealed class StorageFoundationTests : BaseTest<Module>
         updated.UpdatedAt.Should().BeOnOrAfter(added.UpdatedAt);
 
         ITestThing? reloaded = await repository.FindAsync(added.Id, CancellationToken);
-        reloaded!.Name.Should().Be("after");
+        Assert.IsNotNull(reloaded);
+        reloaded.Name.Should().Be("after");
     }
 
     [TestMethod]
@@ -114,10 +115,10 @@ public sealed class StorageFoundationTests : BaseTest<Module>
         var context = services.GetRequiredService<TestDbContext>();
 
         var entityType = context.Model.FindEntityType(typeof(TestThingEntity));
-        entityType.Should().NotBeNull();
-        var updatedAt = entityType!.FindProperty(nameof(Entity.UpdatedAt));
-        updatedAt.Should().NotBeNull();
-        updatedAt!.IsConcurrencyToken.Should().BeTrue();
+        Assert.IsNotNull(entityType);
+        var updatedAt = entityType.FindProperty(nameof(Entity.UpdatedAt));
+        Assert.IsNotNull(updatedAt);
+        updatedAt.IsConcurrencyToken.Should().BeTrue();
     }
 
     private static ITestThing NewThing(string name)
