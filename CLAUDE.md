@@ -72,6 +72,8 @@ area — do not rely on this file alone:
 |-----|--------------|
 | [`docs/architecture.md`](docs/architecture.md) | Touching package structure, layering, Autofac modules/discovery, or hosting helpers |
 | [`docs/code-style.md`](docs/code-style.md) | Writing any C# — style rules + key conventions |
+| [`docs/cryptography.md`](docs/cryptography.md) | Touching `Common/Cryptography` or `Common/Security` — AEAD, key wrap, password hashing, CSPRNG rule |
+| [`docs/io.md`](docs/io.md) | Touching `Common/Io` — durable publishing, secret-file custody |
 | [`docs/domain.md`](docs/domain.md) | Touching the domain foundation (`Nordstein.Core.Domain`) — entity/object contracts, factory delegates, generators, repositories, archiving |
 | [`docs/storage.md`](docs/storage.md) | Touching `Nordstein.Core.Storage` — `NordsteinDbContext`, generic repositories, the transaction seam, the cache |
 | [`docs/validation.md`](docs/validation.md) | Touching validation helpers, or adding validation to anything |
