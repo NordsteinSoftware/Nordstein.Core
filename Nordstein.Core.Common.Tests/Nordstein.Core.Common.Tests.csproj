@@ -23,6 +23,11 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Nordstein.Core.Common\Nordstein.Core.Common.csproj" />
+      <!-- SeededRandomIsNotUsedForSecretsTests scans every production package of the solution. -->
+      <ProjectReference Include="..\Nordstein.Core.AI\Nordstein.Core.AI.csproj" />
+      <ProjectReference Include="..\Nordstein.Core.Domain\Nordstein.Core.Domain.csproj" />
+      <ProjectReference Include="..\Nordstein.Core.Licensing\Nordstein.Core.Licensing.csproj" />
+      <ProjectReference Include="..\Nordstein.Core.Storage\Nordstein.Core.Storage.csproj" />
       <ProjectReference Include="..\Nordstein.Core.Testing\Nordstein.Core.Testing.csproj" />
     </ItemGroup>
 
