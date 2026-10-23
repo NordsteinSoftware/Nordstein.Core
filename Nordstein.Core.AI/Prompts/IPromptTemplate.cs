@@ -6,17 +6,17 @@
 public interface IPromptTemplate : IDomainObject
 {
     public delegate IPromptTemplate Create(string name, string template);
-    
+
     /// <summary>
     /// The name of the prompt template.
     /// </summary>
     public string Name { get; }
-    
+
     /// <summary>
     /// The template string with variables in {curly braces}.
     /// </summary>
     string Template { get; }
-    
+
     /// <summary>
     /// The names of the variables in the template.
     /// </summary>

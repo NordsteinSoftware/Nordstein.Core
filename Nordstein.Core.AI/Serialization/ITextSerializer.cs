@@ -9,14 +9,14 @@ public interface ITextSerializer
     /// Serializes <paramref name="input"/> to a string
     /// </summary>
     string Serialize(object? input, bool writeIndented = false);
-    
+
     /// <summary>
     /// Parses model output to <typeparamref name="TOutput"/>
     /// </summary>
     Task<TOutput?> DeserializeAsync<TOutput>(
-        string output, 
+        string output,
         CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Parses model output to <typeparamref name="TOutput"/>
     /// </summary>

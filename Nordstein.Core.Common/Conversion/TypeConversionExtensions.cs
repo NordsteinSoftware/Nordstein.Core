@@ -8,7 +8,7 @@ public static class TypeConversionExtensions
     /// <summary>
     /// Converts an object to a specified type, throwing an exception if the conversion fails. This method is useful for ensuring that an object is of a specific type before using it, and provides a clear error message if the conversion is not possible.
     /// </summary>
-    public static T As<T>(this object obj) where T : class 
-        => obj as T 
+    public static T As<T>(this object obj) where T : class
+        => obj as T
             ?? throw new InvalidCastException($"Cannot cast object of type {obj.GetType().FullName} to type {typeof(T).FullName}");
 }

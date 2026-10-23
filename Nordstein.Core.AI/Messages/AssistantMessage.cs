@@ -22,7 +22,7 @@ public sealed record AssistantMessage : Message
         IReadOnlyList<ToolRequest> toolRequests)
         : base(Role.Assistant, contents)
     {
-        ToolRequests = [..toolRequests];
+        ToolRequests = [.. toolRequests];
     }
 
     /// <inheritdoc />
@@ -30,9 +30,9 @@ public sealed record AssistantMessage : Message
     {
         foreach (var result in base.Validate(validationContext))
         {
-            yield return result;    
+            yield return result;
         }
-        
+
         foreach (var result in ToolRequests.SelectMany(tr => tr.Validate(validationContext)))
         {
             yield return result;
@@ -76,9 +76,9 @@ public sealed record AssistantMessage : Message
         {
             throw new InvalidOperationException("Cannot get text response from an AssistantMessage that contains tool requests.");
         }
-        
+
         return Contents.Any(x => x.Kind != ContentKind.Text)
-            ? throw new InvalidOperationException("Cannot get text response from an AssistantMessage that contains non-text content.") 
+            ? throw new InvalidOperationException("Cannot get text response from an AssistantMessage that contains non-text content.")
             : string.Join(string.Empty, Contents.Select(x => x.Text));
     }
 

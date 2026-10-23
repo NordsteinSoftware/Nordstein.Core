@@ -26,7 +26,7 @@ public class Module : Autofac.Module
     protected override void Load(ContainerBuilder builder)
     {
         base.Load(builder);
-        
+
         builder
             .RegisterType<TypeConverter>()
             .As<ITypeConverter>()
@@ -34,7 +34,7 @@ public class Module : Autofac.Module
 
         builder.RegisterType<SeededRandom>()
             .AsSelf();
-        
+
         builder
             .Register(c => c.Resolve<SeededRandom.Factory>()(seed: 420))
             .As<IRandom>()
@@ -51,7 +51,7 @@ public class Module : Autofac.Module
         builder.RegisterType<AppVersion>().As<IAppVersion>().SingleInstance();
 
         builder.RegisterType<NullHostedService>().AsSelf();
-        
+
         builder.RegisterType<TempDirectory>()
             .As<ITempDirectory>()
             .OwnedByLifetimeScope();

@@ -9,7 +9,7 @@ public enum ContentKind
     /// Text content.
     /// </summary>
     Text,
-    
+
     /// <summary>
     /// Image content.
     /// </summary>

@@ -19,7 +19,7 @@ internal record PromptTemplate : IPromptTemplate
     public IReadOnlyCollection<string> Variables { get; }
 
     public PromptTemplate(
-        string name, 
+        string name,
         string template)
     {
         Name = name;
@@ -32,7 +32,7 @@ internal record PromptTemplate : IPromptTemplate
     {
         this.Validate();
         string renderedTemplate = Template;
-        values ??= new  Dictionary<string, string>();
+        values ??= new Dictionary<string, string>();
 
         // Replace each variable with its value
         foreach (string variable in Variables)

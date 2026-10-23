@@ -12,12 +12,12 @@ public sealed record ToolRequest : IDomainObject
     /// The id of the tool request
     /// </summary>
     public string Id { get; }
-    
+
     /// <summary>
     /// The name of the tool to call
     /// </summary>
     public string Name { get; }
-    
+
     /// <summary>
     /// The arguments to pass to the tool
     /// </summary>

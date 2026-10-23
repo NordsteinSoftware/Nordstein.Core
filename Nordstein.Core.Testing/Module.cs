@@ -17,7 +17,7 @@ internal class Module : Autofac.Module
         builder
             .Register(sp => new AutofacServiceProvider(sp.Resolve<ILifetimeScope>()))
             .As<IServiceProvider>();
-        
+
         builder.Register(c =>
         {
             var dir = c.Resolve<ITempDirectory.Create>()();

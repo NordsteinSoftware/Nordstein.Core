@@ -30,13 +30,13 @@ internal class ObjectToInferredTypesConverter : JsonConverter<object>
     }
 
     /// <inheritdoc />
-    public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) 
+    public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
         => System.Text.Json.JsonSerializer.Serialize(writer, value, value.GetType(), options);
 
     private object ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         var dictionary = new Dictionary<string, object?>();
-        
+
         while (reader.Read())
         {
             if (reader.TokenType == JsonTokenType.EndObject)
@@ -61,7 +61,7 @@ internal class ObjectToInferredTypesConverter : JsonConverter<object>
     private object ReadArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         var list = new List<object?>();
-        
+
         while (reader.Read())
         {
             if (reader.TokenType == JsonTokenType.EndArray)

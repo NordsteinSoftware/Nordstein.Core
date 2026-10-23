@@ -13,7 +13,7 @@ namespace Nordstein.Core.AI.Serialization.Internal;
 internal record JsonOutputFormat : IOutputFormat
 {
     internal delegate JsonOutputFormat Create(Type type);
-    
+
     private readonly ITextSerializer serializer;
 
     /// <summary>
@@ -22,11 +22,11 @@ internal record JsonOutputFormat : IOutputFormat
     public string Schema { get; }
 
     public JsonOutputFormat(
-        Type type, 
+        Type type,
         ITextSerializer serializer)
     {
         this.serializer = serializer;
-        
+
         JsonSerializerOptions jsonSerializerOptions = new()
         {
             TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
@@ -34,7 +34,7 @@ internal record JsonOutputFormat : IOutputFormat
         };
         jsonSerializerOptions.Converters.Add(
             new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true));
-        
+
         JsonSchemaExporterOptions jsonSchemaExporterOptions1 = new()
         {
             TreatNullObliviousAsNonNullable = false,
@@ -64,7 +64,7 @@ internal record JsonOutputFormat : IOutputFormat
                 return schema;
             }
         };
-        
+
         Schema = jsonSerializerOptions.GetJsonSchemaAsNode(
             type,
             jsonSchemaExporterOptions1).ToString();
@@ -73,7 +73,7 @@ internal record JsonOutputFormat : IOutputFormat
     /// <inheritdoc />
     public string ToPromptString()
         => $"Respond only in JSON format that adheres to the following JSON schema definition:\n{Schema}";
-    
+
     public async Task<TOutput?> ParseAsync<TOutput>(string? output, CancellationToken cancellationToken = default)
     {
         string? cleanedOutput = TrimArtifacts(output);
@@ -118,13 +118,13 @@ internal record JsonOutputFormat : IOutputFormat
 
         return default;
     }
-    
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         yield return Validation.NotNullOrWhiteSpace(Schema);
         yield return Validation.Json(Schema);
     }
-    
+
     private string? TrimArtifacts(string? output)
     {
         if (string.IsNullOrWhiteSpace(output))

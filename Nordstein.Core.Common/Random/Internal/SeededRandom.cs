@@ -9,7 +9,7 @@ internal class SeededRandom : IRandom
 
     private readonly System.Random random;
     private readonly Lock lockObject = new();
-    
+
     public SeededRandom(int seed)
     {
         random = new System.Random(seed);
@@ -33,7 +33,7 @@ internal class SeededRandom : IRandom
         }
     }
 
-    public string String() 
+    public string String()
         => Enumerable.Range(0, Int(min: 1, max: 5))
             .Select(_ => Any(Words))
             .Aggregate((a, b) => $"{a} {b}");

@@ -23,9 +23,9 @@ public sealed record Content : IDomainObject
         BinaryData? data)
     {
         Text = text;
-        Data  = data;
+        Data = data;
     }
-    
+
     /// <summary>
     /// Creates a text content part.
     /// </summary>
@@ -65,13 +65,13 @@ public sealed record Content : IDomainObject
                 [nameof(Text), nameof(Data)]);
             yield break;
         }
-        
+
         if (Kind is ContentKind.Text)
         {
             yield return Validation.NotNullOrWhiteSpace(Text);
             yield return Validation.NotEmpty(Text);
         }
-        
+
         if (Kind is ContentKind.Image)
         {
             yield return Validation.NotNull(Data);

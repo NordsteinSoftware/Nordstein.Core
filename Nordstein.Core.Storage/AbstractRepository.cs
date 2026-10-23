@@ -213,7 +213,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
     /// </remarks>
     public async IAsyncEnumerable<TDomainEntity> EnumerateAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        IAsyncEnumerable<TStoredEntity> enumerable =  contextFactory()
+        IAsyncEnumerable<TStoredEntity> enumerable = contextFactory()
             .Set<TStoredEntity>()
             .AsNoTracking()
             .AsAsyncEnumerable();

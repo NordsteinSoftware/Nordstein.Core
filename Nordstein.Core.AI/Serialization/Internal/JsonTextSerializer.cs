@@ -8,11 +8,11 @@ using Nordstein.Core.Common.Validation;
 
 namespace Nordstein.Core.AI.Serialization.Internal;
 
-    /// <inheritdoc />
+/// <inheritdoc />
 internal class JsonTextSerializer : ITextSerializer
 {
     private readonly JsonSerializerOptions serializerOptions;
-    
+
     public JsonTextSerializer() : this([]) { }
 
     public JsonTextSerializer(IEnumerable<JsonConverter> converters)
@@ -37,7 +37,7 @@ internal class JsonTextSerializer : ITextSerializer
 
         serializerOptions = jsonSerializerOptions;
     }
-    
+
     /// <inheritdoc />
     public string Serialize(object? input, bool writeIndented = false)
     {
@@ -72,7 +72,7 @@ internal class JsonTextSerializer : ITextSerializer
 
             };
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             if (ex is OperationCanceledException)
             {
@@ -85,11 +85,11 @@ internal class JsonTextSerializer : ITextSerializer
     /// <inheritdoc />
     public TOutput? Deserialize<TOutput>(string value)
     {
-        if(typeof(TOutput) == typeof(string))
+        if (typeof(TOutput) == typeof(string))
         {
             return (TOutput)(object)value;
         }
-        
+
         TOutput? deserialized = System.Text.Json.JsonSerializer.Deserialize<TOutput>(value, serializerOptions);
         if (deserialized is IValidatableObject validatable)
         {
@@ -112,8 +112,8 @@ internal class JsonTextSerializer : ITextSerializer
         return deserialized;
     }
 
-    private Guid? ParseGuid(string data) 
-        => Guid.TryParse(data, out Guid result) 
-            ? result 
+    private Guid? ParseGuid(string data)
+        => Guid.TryParse(data, out Guid result)
+            ? result
             : null;
 }

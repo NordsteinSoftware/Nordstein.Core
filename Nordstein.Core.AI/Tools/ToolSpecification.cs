@@ -12,12 +12,12 @@ public sealed record ToolSpecification : IDomainObject
     /// The name of the tool. Must be unique within the agent's toolset.
     /// </summary>
     public string Name { get; }
-    
+
     /// <summary>
     /// The description of the tool. This will be shown to the agent when deciding which tool to use.
     /// </summary>
     public string Description { get; }
-    
+
     /// <summary>
     /// The arguments the tool accepts
     /// </summary>

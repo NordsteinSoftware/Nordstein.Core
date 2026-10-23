@@ -25,8 +25,8 @@ internal class TypeConverter : ITypeConverter
         {
             return value;
         }
-        
-        if(value is string strValue && underlyingType == typeof(Guid))
+
+        if (value is string strValue && underlyingType == typeof(Guid))
         {
             return Guid.Parse(strValue);
         }
@@ -41,23 +41,23 @@ internal class TypeConverter : ITypeConverter
         if (underlyingType.IsGenericType && value is IEnumerable enumerable)
         {
             var genericTypeDef = underlyingType.GetGenericTypeDefinition();
-            
+
             // Handle List<T>, IList<T>, ICollection<T>, IEnumerable<T>
-            if (genericTypeDef == typeof(List<>) || 
-                genericTypeDef == typeof(IList<>) || 
-                genericTypeDef == typeof(ICollection<>) || 
+            if (genericTypeDef == typeof(List<>) ||
+                genericTypeDef == typeof(IList<>) ||
+                genericTypeDef == typeof(ICollection<>) ||
                 genericTypeDef == typeof(IEnumerable<>))
             {
                 var elementType = underlyingType.GetGenericArguments()[0];
                 var listType = typeof(List<>).MakeGenericType(elementType);
                 IList list = Activator.CreateInstance(listType) as IList
                     ?? throw new InvalidCastException($"Cannot create list of type {listType.Name}.");
-                
+
                 foreach (var item in enumerable)
                 {
                     list.Add(ChangeType(item, elementType));
                 }
-                
+
                 return list;
             }
         }
