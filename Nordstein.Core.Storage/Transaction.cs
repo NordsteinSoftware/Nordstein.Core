@@ -39,7 +39,9 @@ internal sealed class Transaction : ITransaction
         try
         {
             result = await operation();
-            await efTransaction.CommitAsync(cancellationToken);
+            // Never cancel the commit (documented contract): a cancellation landing during COMMIT
+            // could report failure for a transaction the server did commit.
+            await efTransaction.CommitAsync(CancellationToken.None);
             // Capture deferred notifications only after the commit succeeds.
             postCommit = ambient.TakePostCommit();
         }
