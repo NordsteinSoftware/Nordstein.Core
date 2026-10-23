@@ -94,14 +94,15 @@ When asked to review a diff or PR, or when self-reviewing before hand-off:
 
 - Evaluate against `csharp_code_style.md`, not against "what the rest of the repo does". A
   violation that predates this change is not a licence to repeat it; call it out as debt (and file
-  an issue via the `file-issue` skill if it is out of scope) rather than copying it.
+  a GitHub issue on this repository if it is out of scope) rather than copying it.
 - Report findings as `file:line — rule (guide §N) — why it matters — suggested fix`. Rank them:
   **blocking** (forbidden list, nullability, DI/lifetime bugs, missing cancellation, swallowed
   errors) versus **nit** (naming, expression style, docs).
 - Distinguish "the compiler will catch this" from "only review will". `TreatWarningsAsErrors` is
   on, so anything that builds is already warning-free — the remaining risks are structural:
   lifetimes, statelessness, cancellation flow, leaked entities, logging shape.
-- For new code, verify tests exist at the right layer (then the `test` skill governs their shape).
+- For new code, verify tests exist at the right layer (then
+  [`docs/testing.md`](../../../docs/testing.md) governs their shape).
 
 ## Common failure modes to look for
 
