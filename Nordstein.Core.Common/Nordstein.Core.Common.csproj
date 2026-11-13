@@ -23,6 +23,7 @@
            AddResilientBackgroundServices configures) lives in the full hosting package. -->
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
       <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0" />
     </ItemGroup>
 
 </Project>
