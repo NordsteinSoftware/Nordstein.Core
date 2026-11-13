@@ -21,7 +21,7 @@
         <!-- Relational (not a specific provider) carries IsRelational()/ExecuteDelete and the base
              EF Core package. Provider packages (Npgsql, InMemory) stay in the consuming product. -->
         <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.14" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
     </ItemGroup>
 
     <ItemGroup>
