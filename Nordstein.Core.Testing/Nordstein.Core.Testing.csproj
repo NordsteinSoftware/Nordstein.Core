@@ -15,7 +15,7 @@
       <PackageReference Include="AwesomeAssertions" Version="9.6.0" />
       <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.15" />
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.15" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.15" />
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0" />
       <PackageReference Include="MSTest.TestFramework" Version="4.5.3" />
       <PackageReference Include="NSubstitute" Version="6.2.0" />
     </ItemGroup>
