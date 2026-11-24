@@ -2,7 +2,7 @@
 # keep the noise down; majors arrive as individual PRs so each can be evaluated on its
 # own. Every PR runs the full CI + CodeQL gates.
 #
-# `ignore:` blocks (none yet) are where updates we have evaluated and rejected live.
+# `ignore:` blocks (one so far, on the nuget entry) are where updates we have evaluated and rejected live.
 # Prefer them over the `@dependabot ignore ...` comment command: the command is not
 # accepted on a grouped PR, so a rejection made in a comment silently fails to stick
 # and the same bump returns on the next run. Every entry added must state why it exists
@@ -20,6 +20,18 @@ updates:
         update-types:
           - minor
           - patch
+    # Majors of the 10.x runtime packages. The solution targets net10; an 11.x package
+    # on net10 mixes 10.x and 11.x assemblies: NU1605 package downgrades (#47) and
+    # System.Text.Json 11 pulled in transitively (#48). Rejected PRs: #38, #40, #42,
+    # #43, #44, #46, #47, #48. Minor and patch updates of these packages still arrive in
+    # the group above. Delete these entries when the solution moves to net11.
+    ignore:
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "System.Memory.Data"
+        update-types: ["version-update:semver-major"]
 
   # The actions pinned in .github/workflows. Kept current so the pipeline never drifts
   # onto an unmaintained action version — which is also what CodeQL's `actions` pack flags.
