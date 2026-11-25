@@ -20,6 +20,22 @@ For referenced entities, cascade validation:
 foreach (var r in Account.Validate(validationContext)) yield return r;
 ```
 
+## Member names
+
+Every failure from a `Validation` helper names the member it checked in
+`ValidationResult.MemberNames` (exactly one entry: the `memberName` argument, or the argument's
+source expression when omitted, so pass `nameof(...)` for a clean name). Consumers map an error
+to a form field from there; `Validator.ValidateObject` throws a `ValidationException` whose
+`ValidationResult` carries the first failure. An entity-wide rule (one no single member owns)
+names no member:
+
+```csharp
+if (Cancelled && Shipped)
+    yield return new ValidationResult("A cancelled order cannot be shipped");   // MemberNames empty
+```
+
+A hand-written member rule passes the names: `new ValidationResult("...", [nameof(Quantity)])`.
+
 ## Writing a new check
 
 A check returns a `ValidationResult` describing the failure, or `Validation.Success` when the
