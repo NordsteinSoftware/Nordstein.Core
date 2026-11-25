@@ -530,8 +530,9 @@ public static class Validation
     /// <param name="greateOrEqual">The inclusive lower bound.</param>
     /// <param name="lessOrEqual">The inclusive upper bound.</param>
     /// <param name="memberName">
-    /// The name used in the failure message. Defaults to the source expression of
-    /// <paramref name="value"/> via <see cref="CallerArgumentExpressionAttribute"/>.
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="value"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
     /// </param>
     /// <returns>
     /// <see cref="ValidationResult.Success"/> when <paramref name="value"/> is between
@@ -540,7 +541,7 @@ public static class Validation
     /// </returns>
     public static ValidationResult InRange(int value, int greateOrEqual, int lessOrEqual, [CallerArgumentExpression(nameof(value))] string memberName = "")
         => value < greateOrEqual || value > lessOrEqual
-            ? new ValidationResult($"{memberName} must be between {greateOrEqual} and {lessOrEqual}")
+            ? new ValidationResult($"{memberName} must be between {greateOrEqual} and {lessOrEqual}", [memberName])
             : Success;
 
     /// <summary>
@@ -549,8 +550,9 @@ public static class Validation
     /// <param name="variable">The integer value to check.</param>
     /// <param name="greaterThan">The exclusive lower bound.</param>
     /// <param name="memberName">
-    /// The name used in the failure message. Defaults to the source expression of
-    /// <paramref name="variable"/> via <see cref="CallerArgumentExpressionAttribute"/>.
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="variable"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
     /// </param>
     /// <returns>
     /// <see cref="ValidationResult.Success"/> when <paramref name="variable"/> is strictly greater
@@ -558,7 +560,7 @@ public static class Validation
     /// </returns>
     public static ValidationResult GreaterThan(int variable, int greaterThan, [CallerArgumentExpression(nameof(variable))] string memberName = "")
         => variable <= greaterThan
-            ? new ValidationResult($"{memberName} must be greater than {greaterThan}")
+            ? new ValidationResult($"{memberName} must be greater than {greaterThan}", [memberName])
             : Success;
 
     /// <summary>
@@ -567,8 +569,9 @@ public static class Validation
     /// </summary>
     /// <param name="variable">The time span to check.</param>
     /// <param name="memberName">
-    /// The name used in the failure message. Defaults to the source expression of
-    /// <paramref name="variable"/> via <see cref="CallerArgumentExpressionAttribute"/>.
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="variable"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
     /// </param>
     /// <returns>
     /// <see cref="ValidationResult.Success"/> when <paramref name="variable"/> is greater than
@@ -576,7 +579,7 @@ public static class Validation
     /// </returns>
     public static ValidationResult Positive(TimeSpan variable, [CallerArgumentExpression(nameof(variable))] string memberName = "")
         => variable <= TimeSpan.Zero
-            ? new ValidationResult($"{memberName} must be positive")
+            ? new ValidationResult($"{memberName} must be positive", [memberName])
             : Success;
 
     /// <summary>
@@ -584,8 +587,9 @@ public static class Validation
     /// </summary>
     /// <param name="value">The boolean to check.</param>
     /// <param name="memberName">
-    /// The name used in the failure message. Defaults to the source expression of
-    /// <paramref name="value"/> via <see cref="CallerArgumentExpressionAttribute"/>.
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="value"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
     /// </param>
     /// <returns>
     /// <see cref="ValidationResult.Success"/> when <paramref name="value"/> is <c>true</c>;
@@ -593,6 +597,6 @@ public static class Validation
     /// </returns>
     public static ValidationResult True(bool value, [CallerArgumentExpression(nameof(value))] string memberName = "")
         => !value
-            ? new ValidationResult($"{memberName} must be true")
+            ? new ValidationResult($"{memberName} must be true", [memberName])
             : Success;
 }
