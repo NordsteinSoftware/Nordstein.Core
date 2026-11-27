@@ -53,3 +53,10 @@ and `Mentions` (the parameter walk), `StaticMembers` (the static-member scan),
 metadata reference scan), and `SolutionFile` / `SolutionProject` (the solution-derived assembly
 list). Every scan returns sorted, distinct lines to compare with an allowlist; prove each fence can
 fail with a planted violating type in its own test project.
+
+## Performance budgets (`Performance`)
+
+`PerfTestBase<TModule>` gates every scenario behind an opt-in environment variable (inconclusive
+unless it is `1`) and asserts against the committed `perf-budgets.json` through `PerfBudgets`
+(dotted keys, `MEASURE-ONLY` for a key with no budget, loud on a malformed file). `Measurement`
+records latencies and reports nearest-rank percentiles; `OptInGate` is the gate on its own.

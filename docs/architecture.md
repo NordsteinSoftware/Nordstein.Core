@@ -17,7 +17,7 @@ Nordstein.Core.Workflows (BCL + Autofac only)
 | `Nordstein.Core.Storage` | EF Core storage foundation: `NordsteinDbContext`, generic repositories, the ambient-transaction seam, reference-data cache, `StorageFoundationModule<TContext>`. **Provider-neutral** — see [`storage.md`](storage.md) | EF Core **Relational only** (no provider), Autofac |
 | `Nordstein.Core.Licensing` | Generic license engine: JWT verification, activation, snapshot/status, server check — see [`licensing.md`](licensing.md) | System.IdentityModel.Tokens.Jwt, MS.Extensions Http |
 | `Nordstein.Core.Workflows` | Workflow kernel: a DAG of typed nodes with data references, the validator and the deterministic interpreter with suspend and resume — see [`workflows.md`](workflows.md) | Autofac |
-| `Nordstein.Core.Testing` | The shared test harness: `BaseTest<TModule>` + the MSTest / AwesomeAssertions / NSubstitute baseline, the shared fakes (`Time/`, `Http/`, `Logging/`, `Certificates/`) and the architecture fence kit (`Fences/`) — see [`testing.md`](testing.md) | MSTest, AwesomeAssertions, NSubstitute, Autofac |
+| `Nordstein.Core.Testing` | The shared test harness: `BaseTest<TModule>` + the MSTest / AwesomeAssertions / NSubstitute baseline, the shared fakes (`Time/`, `Http/`, `Logging/`, `Certificates/`), the architecture fence kit (`Fences/`) and the perf-budget harness (`Performance/`) — see [`testing.md`](testing.md) | MSTest, AwesomeAssertions, NSubstitute, Autofac |
 
 Each package has a sibling `*.Tests` project; the whole solution builds and tests standalone
 (`dotnet build/test Nordstein.Core.sln`) — that standalone property is the extraction guarantee.

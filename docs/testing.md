@@ -174,6 +174,28 @@ check reads the sources, which is exact in Core because Core declares file-scope
 Together they place every internal type in an `Internal/` folder. A new shipped project fails the
 fence until `Nordstein.Core.Testing.Tests` references it.
 
+## Performance budgets
+
+`Nordstein.Core.Testing.Performance` is the dependency-free half of a product's perf suite (the
+database, container and query-plan half stays in the product):
+
+- `PerfTestBase<TModule>` — the base of a scenario. Override `OptInVariable` (the product's
+  `…_RUN_PERF_TESTS`); its `[TestInitialize]` ends every scenario inconclusive (skipped) unless that
+  variable is `1`, so a solution-wide `dotnet test` never runs, and never passes, a perf test.
+  Unset, empty or `0` skip; any other value fails the test, so a misspelt opt-in is loud. Never
+  gate in a test body: one forgotten call puts a large seed back into every run.
+- `Measurement` — the latencies of one scenario (`TimeAsync`, `Record`) and nearest-rank `P50Ms`,
+  `P95Ms`, `MaxMs`, `MeanMs`, `Percentile(q)`. A measurement with no samples throws instead of
+  reporting zero. Pass a `ManualClock` to its constructor to test timing code deterministically.
+- `PerfBudgets` — the committed `perf-budgets.json` (comments allowed, nested groups flattened to
+  dotted keys). `ShouldBeAtMostBudget(key, measured, unit)` / `ShouldBeAtLeastBudget` on the base
+  class log `BUDGET [key] …` and fail past the budget with a message naming the key, both numbers
+  and the file; a key with no budget logs `MEASURE-ONLY` and passes, so a new scenario lands first
+  and gets its budget from measured numbers. A malformed file (a string, boolean, null, array,
+  negative or non-finite budget, a dotted or empty name, a duplicate key) fails loudly. The base
+  class reads the file lazily, behind the gate.
+- `OptInGate` — the gate on its own, for any other opt-in suite.
+
 ## Naming
 
 ```
