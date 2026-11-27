@@ -31,8 +31,8 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
 
-    <!-- Code-style analyzers (IDExxxx) fail the build, so .editorconfig severities are enforced in
-         Core as in the consuming product. -->
+    <!-- Code-style analyzers (IDExxxx) fail the build, so the severities in Core's own
+         .editorconfig (root = true) are enforced standalone and inside a consuming product. -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 

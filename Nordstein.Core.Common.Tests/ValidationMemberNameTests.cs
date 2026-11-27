@@ -120,7 +120,9 @@ public sealed class ValidationMemberNameTests
             yield return Check.GreaterThan(Quantity, 0, nameof(Quantity));
 
             if (Cancelled && Shipped)
+            {
                 yield return new ValidationResult("A cancelled order cannot be shipped");
+            }
         }
     }
 }

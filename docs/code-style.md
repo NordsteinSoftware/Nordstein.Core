@@ -7,8 +7,9 @@
 > claiming done.
 >
 > **`EnforceCodeStyleInBuild=true`** is set in `Directory.Build.props` too, so code-style rules
-> (`IDExxxx`) that the `.editorconfig` in effect raises to warning or error fail the build as well
-> (inside Nordstein.Dms: braces always, file-scoped namespaces, modifier order).
+> (`IDExxxx`) that Core's own [`.editorconfig`](../.editorconfig) raises to warning or error fail
+> the build as well: braces always, file-scoped namespaces, modifier order, `readonly` fields. That
+> file is `root = true`, so a consuming product's `.editorconfig` never reaches Core projects.
 
 These rules are shared across all Nordstein backends; Core is where they are held most strictly.
 

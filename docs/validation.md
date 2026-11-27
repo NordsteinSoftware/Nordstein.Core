@@ -48,7 +48,9 @@ names no member:
 
 ```csharp
 if (Cancelled && Shipped)
+{
     yield return new ValidationResult("A cancelled order cannot be shipped");   // MemberNames empty
+}
 ```
 
 A hand-written member rule passes the names: `new ValidationResult("...", [nameof(Quantity)])`.
