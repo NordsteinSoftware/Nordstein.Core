@@ -54,13 +54,19 @@ public sealed class OptInGate
     /// </summary>
     /// <exception cref="InvalidOperationException">The variable holds a value other than unset, empty, <c>0</c> or <c>1</c>.</exception>
     public bool IsOpen
-        => readVariable(VariableName) switch
+    {
+        get
         {
-            "1" => true,
-            null or "" or "0" => false,
-            { } other => throw new InvalidOperationException(
-                $"{VariableName} is '{other}'; 1 runs the opt-in tests, unset, empty or 0 skips them."),
-        };
+            string? value = readVariable(VariableName);
+            return value switch
+            {
+                "1" => true,
+                null or "" or "0" => false,
+                _ => throw new InvalidOperationException(
+                    $"{VariableName} is '{value}'; 1 runs the opt-in tests, unset, empty or 0 skips them."),
+            };
+        }
+    }
 
     /// <summary>
     /// Ends the calling test as inconclusive (reported as skipped) unless the run opted in.
@@ -69,9 +75,11 @@ public sealed class OptInGate
     /// <exception cref="InvalidOperationException">The variable holds a value other than unset, empty, <c>0</c> or <c>1</c>.</exception>
     public void SkipUnlessOpen()
     {
-        if (!IsOpen)
+        if (IsOpen)
         {
-            Assert.Inconclusive($"This test is opt-in: set {VariableName}=1 to run it. Unset, empty or 0 skips it.");
+            return;
         }
+
+        Assert.Inconclusive($"This test is opt-in: set {VariableName}=1 to run it. Unset, empty or 0 skips it.");
     }
 }

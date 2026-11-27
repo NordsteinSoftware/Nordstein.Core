@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using Nordstein.Core.Testing.Fences.Internal;
 
 namespace Nordstein.Core.Testing.Fences;
@@ -26,8 +25,10 @@ namespace Nordstein.Core.Testing.Fences;
 /// </para>
 /// <para>All members are pure reads of reflection or metadata and safe to call concurrently.</para>
 /// </remarks>
-public static partial class FenceScanExtensions
+public static class FenceScanExtensions
 {
+    private const string BackingFieldSuffix = ">k__BackingField";
+
     private const BindingFlags DeclaredStatics =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
@@ -148,7 +149,8 @@ public static partial class FenceScanExtensions
                 && !type.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)
                 && type.Namespace?.EndsWith(".Internal", StringComparison.Ordinal) != true
                 && isExempt?.Invoke(type) != true)
-            .Select(type => type.FullName ?? type.Name)
+            // A top-level type's full name, its namespace (none for the global namespace) and its name.
+            .Select(type => (type.Namespace + "." + type.Name).TrimStart('.'))
             .Order(StringComparer.Ordinal)
             .ToArray();
     }
@@ -209,7 +211,8 @@ public static partial class FenceScanExtensions
         }
 
         // A type nested in a generic type is generic without a backtick in its own name.
-        string name = Arity().Replace(type.Name, string.Empty);
+        int arity = type.Name.IndexOf('`', StringComparison.Ordinal);
+        string name = arity < 0 ? type.Name : type.Name[..arity];
         return $"{name}<{string.Join(", ", type.GetGenericArguments().Select(Display))}>";
     }
 
@@ -229,8 +232,9 @@ public static partial class FenceScanExtensions
             .Select(property => property.Name);
         IEnumerable<string> fields = type.GetFields(DeclaredStatics)
             .Where(field => !field.IsLiteral && !field.IsInitOnly)
-            .Select(field => BackingField().Match(field.Name) is { Success: true } backing
-                ? backing.Groups["property"].Value
+            // Only the compiler names a field <Property>k__BackingField: C# identifiers hold no '>'.
+            .Select(field => field.Name.EndsWith(BackingFieldSuffix, StringComparison.Ordinal)
+                ? field.Name[1..^BackingFieldSuffix.Length]
                 : field.Name);
         return methods.Concat(properties).Concat(fields);
     }
@@ -294,10 +298,4 @@ public static partial class FenceScanExtensions
             .Order(StringComparer.Ordinal)
             .ToArray();
     }
-
-    [GeneratedRegex("`[0-9]+")]
-    private static partial Regex Arity();
-
-    [GeneratedRegex("^<(?<property>[^>]+)>k__BackingField$")]
-    private static partial Regex BackingField();
 }

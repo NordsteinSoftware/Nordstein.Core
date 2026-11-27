@@ -23,6 +23,10 @@ public sealed class SolutionFileTests : BaseTest<Module>
         EndProject
         Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Example.Scripts", "src\Example.Scripts\Example.Scripts.fsproj", "{44444444-4444-4444-4444-444444444444}"
         EndProject
+        Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Example.Legacy", "src\Example.Legacy\Example.Legacy.vbproj", "{55555555-5555-5555-5555-555555555555}"
+        EndProject
+        Project("{broken line without its fields
+        EndProject
         Global
         EndGlobal
         """;
@@ -50,9 +54,23 @@ public sealed class SolutionFileTests : BaseTest<Module>
         solution.Path.Should().Be(Path.Combine(root.Path, "Example.sln"));
         solution.Directory.Should().Be(root.Path);
         solution.Projects.Select(project => (project.Name, project.RelativePath)).Should().Equal(
+            ("Example.Legacy", "src/Example.Legacy/Example.Legacy.vbproj"),
             ("Example.Scripts", "src/Example.Scripts/Example.Scripts.fsproj"),
             ("Example.Service", "src/Example.Service/Example.Service.csproj"),
             ("Example.Service.Tests", "tests/Example.Service.Tests/Example.Service.Tests.csproj"));
+    }
+
+    [TestMethod]
+    public void Sln_WithWindowsLineEndings_ReadsTheSameProjects()
+    {
+        using ITempDirectory root = GetServices().GetTempDirectory();
+        WriteSolution(root.Path, "Example.sln", Sln.ReplaceLineEndings("\r\n"));
+
+        new SolutionFile("Example.sln", root.Path).Projects.Select(project => project.RelativePath).Should().Equal(
+            "src/Example.Legacy/Example.Legacy.vbproj",
+            "src/Example.Scripts/Example.Scripts.fsproj",
+            "src/Example.Service/Example.Service.csproj",
+            "tests/Example.Service.Tests/Example.Service.Tests.csproj");
     }
 
     [TestMethod]
@@ -229,6 +247,19 @@ public sealed class SolutionFileTests : BaseTest<Module>
 
         new SolutionFile("Example.sln", root.Path).Projects.Single(project => project.Name == "Example.Service")
             .AssemblyName.Should().Be("same");
+    }
+
+    [TestMethod]
+    public void AssemblyName_OfAProjectFileThatIsNotXml_ThrowsInvalidData()
+    {
+        using ITempDirectory root = GetServices().GetTempDirectory();
+        WriteSolution(root.Path, "Example.sln", Sln);
+        WriteProject(root.Path, "src/Example.Service/Example.Service.csproj", "<Project><PropertyGroup>");
+
+        SolutionProject service = new SolutionFile("Example.sln", root.Path).Projects.Single(project => project.Name == "Example.Service");
+        Action act = () => _ = service.AssemblyName;
+
+        act.Should().Throw<InvalidDataException>().WithMessage("*src/Example.Service/Example.Service.csproj is not a well-formed project file*");
     }
 
     [TestMethod]

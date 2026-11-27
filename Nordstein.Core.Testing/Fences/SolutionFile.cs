@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -18,7 +17,7 @@ namespace Nordstein.Core.Testing.Fences;
 /// </para>
 /// <para>Read once, at construction; immutable afterwards and safe to read from any thread.</para>
 /// </remarks>
-public sealed partial class SolutionFile
+public sealed class SolutionFile
 {
     /// <summary>
     /// Finds <paramref name="fileName"/> in <paramref name="startDirectory"/> or the nearest
@@ -84,9 +83,21 @@ public sealed partial class SolutionFile
         throw new FileNotFoundException($"{fileName} was not found in {startDirectory} or any directory above it.", fileName);
     }
 
+    /// <summary>
+    /// The project lines of a <c>.sln</c>, <c>Project("{type}") = "Name", "Path", "{id}"</c>: split
+    /// on its quotes, the name and the path are the fourth and sixth fields.
+    /// </summary>
     private static IEnumerable<(string Name, string Path)> ReadSln(string content)
-        => SlnProject().Matches(content)
-            .Select(match => (match.Groups["name"].Value, match.Groups["path"].Value));
+        => content.Split('\n')
+            .Where(line => line.StartsWith("Project(\"", StringComparison.Ordinal))
+            .Select(line => line.Split('"'))
+            .Where(fields => fields.Length > 5 && IsProjectFile(fields[5]))
+            .Select(fields => (fields[3], fields[5]));
+
+    private static bool IsProjectFile(string path)
+        => path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".fsproj", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".vbproj", StringComparison.OrdinalIgnoreCase);
 
     private IEnumerable<(string Name, string Path)> ReadSlnx(string content)
     {
@@ -103,14 +114,8 @@ public sealed partial class SolutionFile
         return document.Descendants("Project")
             .Select(project => project.Attribute("Path")?.Value
                 ?? throw new InvalidDataException($"{Path} lists a project without a Path attribute."))
-            .Where(path => ProjectFile().IsMatch(path))
+            .Where(IsProjectFile)
             .Select(path => (System.IO.Path.GetFileNameWithoutExtension(path.Replace('\\', '/')), path))
             .ToArray();
     }
-
-    [GeneratedRegex(@"^Project\(""\{[^}]+\}""\)\s*=\s*""(?<name>[^""]+)"",\s*""(?<path>[^""]+\.(?:cs|fs|vb)proj)""", RegexOptions.Multiline)]
-    private static partial Regex SlnProject();
-
-    [GeneratedRegex(@"\.(?:cs|fs|vb)proj$")]
-    private static partial Regex ProjectFile();
 }

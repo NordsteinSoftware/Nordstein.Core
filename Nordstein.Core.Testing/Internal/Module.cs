@@ -1,5 +1,4 @@
 using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,17 +10,15 @@ namespace Nordstein.Core.Testing.Internal;
 
 /// <summary>
 /// The harness's own registrations, stacked under every test container before the module under
-/// test: the <see cref="IServiceProvider"/> façade, a substitute <see cref="IHostEnvironment"/> rooted
-/// in a temporary directory, logging, and an ephemeral Data Protection key ring.
+/// test: a substitute <see cref="IHostEnvironment"/> rooted in a temporary directory, logging, and an
+/// ephemeral Data Protection key ring. Populating those service collections also registers the
+/// <see cref="IServiceProvider"/> façade over the container (Autofac's <c>AutofacServiceProvider</c>).
 /// </summary>
 internal sealed class Module : Autofac.Module
 {
     protected override void Load(ContainerBuilder builder)
     {
         base.Load(builder);
-        builder
-            .Register(sp => new AutofacServiceProvider(sp.Resolve<ILifetimeScope>()))
-            .As<IServiceProvider>();
 
         builder.Register(c =>
         {

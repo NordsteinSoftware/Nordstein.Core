@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace Nordstein.Core.Testing.Fences;
 
@@ -12,7 +13,7 @@ namespace Nordstein.Core.Testing.Fences;
 /// Immutable; safe to read from any thread. <see cref="AssemblyName"/> reads the project file on
 /// first use and keeps the answer.
 /// </remarks>
-public sealed partial class SolutionProject
+public sealed class SolutionProject
 {
     private readonly SolutionFile solution;
     private readonly Lazy<string> assemblyName;
@@ -52,6 +53,7 @@ public sealed partial class SolutionProject
     /// file (<c>Directory.Build.props</c>) is not seen.
     /// </summary>
     /// <exception cref="FileNotFoundException">The project file does not exist.</exception>
+    /// <exception cref="InvalidDataException">The project file is not well-formed XML.</exception>
     /// <exception cref="InvalidOperationException">
     /// The project file declares more than one different assembly name, or one that needs MSBuild to
     /// evaluate (it holds <c>$(</c>).
@@ -112,8 +114,19 @@ public sealed partial class SolutionProject
             throw new FileNotFoundException($"{Name}'s project file {RelativePath} does not exist.", FullPath);
         }
 
-        string[] declared = AssemblyNameElement().Matches(File.ReadAllText(FullPath))
-            .Select(match => match.Groups["name"].Value.Trim())
+        XDocument project;
+        try
+        {
+            project = XDocument.Load(FullPath);
+        }
+        catch (XmlException exception)
+        {
+            throw new InvalidDataException($"{RelativePath} is not a well-formed project file: {exception.Message}", exception);
+        }
+
+        string[] declared = project.Descendants()
+            .Where(element => element.Name.LocalName == "AssemblyName")
+            .Select(element => element.Value.Trim())
             .Distinct(StringComparer.Ordinal)
             .ToArray();
         if (declared.Length > 1)
@@ -135,7 +148,4 @@ public sealed partial class SolutionProject
 
         return declared[0];
     }
-
-    [GeneratedRegex("<AssemblyName>(?<name>[^<]+)</AssemblyName>")]
-    private static partial Regex AssemblyNameElement();
 }

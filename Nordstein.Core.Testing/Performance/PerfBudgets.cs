@@ -176,7 +176,9 @@ public sealed class PerfBudgets
                     break;
 
                 case JsonValueKind.Number:
-                    if (!property.Value.TryGetDouble(out double budget) || !double.IsFinite(budget))
+                    // A number too large for a double reads as infinity rather than failing to parse.
+                    double budget = property.Value.GetDouble();
+                    if (!double.IsFinite(budget))
                     {
                         throw new InvalidDataException($"Budget '{key}' in {Path} is not a finite number.");
                     }
