@@ -116,6 +116,39 @@ Patterns that transfer to any product repo:
   package restores only; Docker layer caching goes to a registry ref with `ignore-error=true` so
   fork PRs degrade to slow builds instead of failures. Clean up a PR's caches when it closes.
 
+### CI lessons that cost a red night to learn
+
+- **A skipped job counts as passing.** Branch protection treats a required check that reports
+  `skipped` as green. A job gated only through `needs:` skips when the job it needs fails, so a
+  broken gate job silently waves everything through. Start every job after the gate with
+  `if: ${{ !cancelled() && ... }}` and a first step that fails when the gate did not succeed
+  (`if: needs.<gate>.result != 'success'` → `exit 1`); never gate a required job through `needs`
+  alone. A path-gated job skips at job level on purpose, so its check reads `skipped`, never pending.
+- **Never green on a missing result.** A summary or gate step that reads test or coverage output
+  fails when the file is missing or unreadable, when the build failed, when a run aborted, or when
+  a test project exited non-zero without a failed test. "No failures found" in an empty directory
+  is not a pass. Core's coverage gate follows this rule ([`testing.md`](testing.md#the-coverage-gate-ci)).
+- **Tiers by category, not by project.** Mark container tests `[TestCategory("Integration")]` and
+  opt-in instruments `Perf` or `Eval`; the unit tier runs everything without a category
+  (`--filter "TestCategory!=Integration&TestCategory!=Perf&TestCategory!=Eval"`). Make a container
+  helper throw when the unit tier runs it, so a forgotten category is a red test, not a slow unit
+  tier. The test-level rules (perf gate, skip guards, triage) are in
+  [`testing.md`](testing.md#lessons-from-the-products).
+- **Harden the package-mode job.** It exists to prove the product builds against packed Core
+  alone, so it must not be fooled:
+  - version the packed packages uniquely per run attempt (`0.1.0-ci.<run id>.<attempt>`): a
+    runner's NuGet cache holding an older package of the same version would shadow the fresh one;
+  - restore through a scoped `nuget.config` (written to the runner's temp directory, passed with
+    `-p:RestoreConfigFile=…`) whose `packageSourceMapping` maps `Nordstein.Core.*` to the local feed
+    only and everything else to nuget.org, so a public package with a matching id cannot be picked up
+    (dependency confusion);
+  - build a solution filter holding only the product's projects, never Core's, with
+    `-p:UseLocalCore=false`; delete Core's build output first and fail the job if any reappears, so
+    "no Core project built from source" is checked, not assumed.
+- **Pin what CI runs.** Actions by commit SHA with the version as a comment, downloaded binaries by
+  version, Dependabot with a cooldown; lint the workflows (`actionlint`) in CI. Core's own policy:
+  [`dependencies.md`](dependencies.md).
+
 ## Releasing
 
 Releases are tag-triggered (`v*.*.*`): the workflow re-runs the full gate set, rolls the

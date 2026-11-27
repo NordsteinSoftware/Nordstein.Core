@@ -184,6 +184,43 @@ start the real service in a throwaway container (Testcontainers):
 Default to a mock; a container test is a targeted supplement for what a mock structurally cannot
 cover, and it costs seconds, not milliseconds.
 
+## Lessons from the products
+
+Rules a consuming product's suite learned the hard way; they hold for Core's tests too.
+
+- **Never `Assert.Inconclusive` inside an exception filter.** The runtime swallows an exception
+  thrown while a `catch (…) when (…)` filter runs: the filter counts as false, the original
+  exception propagates, and a test meant to be skipped fails instead. Catch in the body, decide
+  there, and rethrow with a bare `throw;` (which keeps the stack trace):
+
+  ```csharp
+  catch (Exception exception)
+  {
+      SkipOrRethrow(exception); // returns only when the runtime is required; else Assert.Inconclusive
+      throw;
+  }
+  ```
+- **Gate opt-in suites with an environment variable, never a runsettings filter.** VSTest ANDs a
+  runsettings `TestCaseFilter` with the command line's `--filter`, so a filter that excludes perf
+  tests silently drops the very tests a `--filter` asks for. Gate in the suite's base class
+  `[TestInitialize]`: every test is `Inconclusive` unless `<PRODUCT>_RUN_PERF_TESTS=1`. Never gate
+  inside a test body, and load budgets lazily, behind the gate.
+- **An inconclusive result is not a pass.** A local green run whose container tests were skipped
+  proves nothing about them; CI sets the require flag ([Container-backed tests](#container-backed-tests-rare-deliberate))
+  so a skip is red there.
+- **Triage before touching code.** Classify a red test from its evidence (the TRX, the logs):
+  - a product bug: the behaviour is wrong. Fix the code, keep the test;
+  - infrastructure: a registry rate limit, a daemon gone, the network denied. Fix the environment
+    and re-run once; never change a test for it;
+  - a test bug: it asserts the wrong thing, races, or depends on order or shared state. Fix the
+    test and the pattern it copied, and say so in the change.
+
+  Never skip, disable, retry until green, or quarantine a test.
+- **Every guard test carries a positive control.** A fence, scan or guard that inspects code (all
+  types in `Internal/`, no static state, no suppression) also runs against a planted violation, or
+  asserts that it finds a known instance, so a scan that silently matches nothing fails. Never
+  delete the planted violation.
+
 ## Changing the harness itself
 
 `Nordstein.Core.Testing` is consumed by thousands of tests across the products. Before changing
