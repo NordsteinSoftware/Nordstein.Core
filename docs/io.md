@@ -40,7 +40,7 @@ asm-generic 040000 everywhere else, chosen by process architecture). `EINVAL` fr
 the filesystem cannot sync directories and returns `DirectorySyncResult.Unsupported`; any other
 errno throws `IOException` naming the path and the errno. On other operating systems it does
 nothing and returns `Unsupported`. Callers that create directories (a product's day directories,
-for example) flush each new directory's parent.
+for example) flush each new directory's parent: `CreateDurably` below does both.
 
 ### Known residual: create-no-replace is not race-free
 
@@ -49,6 +49,16 @@ overwrites atomically on POSIX, so the no-replace guarantee rests on the check a
 concurrent creator of the destination (a TOCTOU). Publishers are expected to have one writer per
 destination path (unique-per-object paths), under which this cannot bite. A genuinely race-free
 `link()`-based publish is a possible later hardening.
+
+### `CreateDurably` — create directories whose entries survive a crash
+
+`sync.CreateDurably(directory, unixMode = null)` (extension on `IDirectorySync`) makes the path
+absolute (`Path.GetFullPath`, trailing separator dropped), creates every missing directory one at a
+time, outermost first (each with `unixMode`, filtered by the umask, on Unix; `Directory.CreateDirectory`
+alone would give it to the last one only), then flushes the parent of each, outermost first. It
+returns the created paths, outermost first; an existing directory is neither created nor flushed. A
+directory a concurrent caller created in between is kept as it is and flushed anyway, so concurrent
+callers all succeed. A failed create throws before any flush; a failed flush throws after all exist.
 
 ## `IExclusiveFileLock` — one holder per lock file
 

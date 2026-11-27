@@ -20,6 +20,8 @@ using Nordstein.Core.Common.Settings;
 using Nordstein.Core.Common.Settings.Internal;
 using Nordstein.Core.Common.Tabular;
 using Nordstein.Core.Common.Tabular.Internal;
+using Nordstein.Core.Common.Text;
+using Nordstein.Core.Common.Text.Internal;
 using Nordstein.Core.Common.Time;
 using Nordstein.Core.Common.Time.Internal;
 
@@ -91,9 +93,19 @@ public class Module : Autofac.Module
 
         builder.RegisterType<CsvRowWriter>().As<ICsvRowWriter>().SingleInstance();
 
+        builder.RegisterType<TextNormalizer>().As<ITextNormalizer>().SingleInstance();
+
+        builder.RegisterType<TextChunker>().As<ITextChunker>().SingleInstance();
+
+        builder.RegisterType<MarkdownRenderer>().As<IMarkdownRenderer>().SingleInstance();
+
         // Built once from every registered SettingRoot and the product's one SettingNaming; it
         // resolves only in a container that registered a SettingNaming.
         builder.RegisterType<SettingRegistry>().As<ISettingRegistry>().SingleInstance();
+
+        // Per dependency, so it never outlives the product's ISettingCollections, whatever its lifetime;
+        // it resolves only in a container that registered one.
+        builder.RegisterType<SettingResolver>().As<ISettingResolver>();
 
         // The wall clock for scheduling. A host or test that registered its own TimeProvider first
         // keeps it; IClock stays the seam for "what time is it" in feature code.

@@ -52,6 +52,7 @@ public sealed class ValidationMemberNameTests
         ["NotEmpty(collection)", (Func<ValidationResult>)(() => Check.NotEmpty(Array.Empty<int>(), Member))],
         [nameof(Check.Matches), (Func<ValidationResult>)(() => Check.Matches("a", "^b$", Member))],
         [nameof(Check.ValidUri), (Func<ValidationResult>)(() => Check.ValidUri("not a uri", Member))],
+        [nameof(Check.HttpsBaseUrl), (Func<ValidationResult>)(() => Check.HttpsBaseUrl(new Uri("http://api.example.org"), Member))],
         [nameof(Check.Defined), (Func<ValidationResult>)(() => Check.Defined((Colour)42, Member))],
         [nameof(Check.Json), (Func<ValidationResult>)(() => Check.Json("{", Member))],
         [nameof(Check.InRange), (Func<ValidationResult>)(() => Check.InRange(0, 1, 2, Member))],

@@ -174,7 +174,7 @@ internal sealed class SettingRegistry : ISettingRegistry
         return true;
     }
 
-    private static bool IsConcreteSegment(string segment) =>
+    internal static bool IsConcreteSegment(string segment) =>
         segment.Length > 0
         && segment != Wildcard
         && !segment.Contains(PathSeparator, StringComparison.Ordinal)

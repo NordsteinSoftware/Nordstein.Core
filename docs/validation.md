@@ -15,7 +15,13 @@ Validation.Empty(GroupIds, nameof(GroupIds))                 // a collection tha
 Validation.NoneDefault(GroupIds, nameof(GroupIds))           // no element equals default(T)
 Validation.InPast(CreatedAt, nameof(CreatedAt))
 Validation.NotBefore(UpdatedAt, CreatedAt, nameof(UpdatedAt))
+Validation.HttpsBaseUrl(ApiUrl, nameof(ApiUrl))   // absolute https, no user information, query or fragment
 ```
+
+`HttpsBaseUrl` is the rule for an options record's remote base URL (paths are appended to it):
+`null`, a relative URL, any other scheme, user information, a query or a fragment (an empty `?` or
+`#` too) fail with `{member} must be an absolute https URL without user information, query or
+fragment`; the message never contains the URL.
 
 For referenced entities, cascade validation:
 

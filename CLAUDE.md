@@ -78,7 +78,8 @@ area — do not rely on this file alone:
 | [`docs/io.md`](docs/io.md) | Touching `Common/Io` — durable publishing, secret-file custody |
 | [`docs/values.md`](docs/values.md) | Touching `CulturalValueParser` or `CanonicalJson` in `Nordstein.Core.Common`, or parsing culture-formatted values or hashing JSON anywhere |
 | [`docs/tabular.md`](docs/tabular.md) | Touching `Nordstein.Core.Common.Tabular` — CSV reading, dialect detection, the RFC 4180 row writer, spreadsheet number formats |
-| [`docs/settings.md`](docs/settings.md) | Touching `Nordstein.Core.Common.Settings` — setting attributes, the registry, naming |
+| [`docs/text.md`](docs/text.md) | Touching `Nordstein.Core.Common.Text` — the text normalizer and its offset maps, structure markers, the chunker and the Markdown renderer, quote folding and exact-once matching, storable text, the strict UTF-8 encoding |
+| [`docs/settings.md`](docs/settings.md) | Touching `Nordstein.Core.Common.Settings` — setting attributes, the registry, naming, value checks, template resolution |
 | [`docs/domain.md`](docs/domain.md) | Touching the domain foundation (`Nordstein.Core.Domain`) — entity/object contracts, factory delegates, generators, repositories, archiving |
 | [`docs/storage.md`](docs/storage.md) | Touching `Nordstein.Core.Storage` — `NordsteinDbContext`, generic repositories, the transaction seam, the cache |
 | [`docs/validation.md`](docs/validation.md) | Touching validation helpers, or adding validation to anything |

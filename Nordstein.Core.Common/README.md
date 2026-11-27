@@ -8,7 +8,7 @@ Product-agnostic building blocks shared across Nordstein applications.
 | `Random` | `IRandom` / `SeededRandom` — the same seam for randomness |
 | `Async` | `IAsyncLock` / `AsyncLock`, `TaskExtensions` |
 | `Banking` | `IbanExtensions.TryNormalizeIban` — an IBAN as printed to its electronic form, valid only with the ISO 7064 MOD 97-10 check (pure, culture-invariant, never throws) |
-| `Validation` | `Validation` helpers (`InPast`/`InFuture` take the caller's clock as `now`), `ValidatorExtensions`, string guards |
+| `Validation` | `Validation` helpers (`InPast`/`InFuture` take the caller's clock as `now`; `HttpsBaseUrl` for a remote base URL), `ValidatorExtensions`, string guards |
 | `Conversion` | `ITypeConverter` and the conversion extensions; `ToBase32` / `IsBase32` (lowercase unpadded RFC 4648 base32) |
 | `Collections` | `CollectionEquality` — order-independent set and dictionary equality with consistent hash codes |
 | `Culture` | `CulturalValueParser` (numbers and dates under a declared separator pair and `DateOrder`, strict) — see [`docs/values.md`](../docs/values.md) |
@@ -16,14 +16,14 @@ Product-agnostic building blocks shared across Nordstein applications.
 | `DependencyInjection` | Autofac registration helpers, including `RegisterServiceCollection` |
 | `Http` | `DirectHttpHandlerFactory` — the outbound `SocketsHttpHandler`: no proxy, no redirect, pooled connections recycled every two minutes |
 | `Hosting` | `AddResilientBackgroundServices`, `IAppVersion`, `NullHostedService`, and `IPeriodicJob` with `RegisterPeriodicJob` (recurring work, one lifetime scope per pass, on the container's `TimeProvider`) |
-| `Io` | `IDurableFilePublisher` (staging + flush + atomic no-replace publish + directory fsync), `IDirectorySync` (directory fsync on Linux), `IExclusiveFileLock` (process-lifetime exclusive lock file), `IFilesystemProbe` (filesystem type and guarantees of a directory), `IPrivateFileSpool` (owner-only create-no-replace spool with SHA-256, length and a mid-stream cap), `ISecretFileLoader` (mode-checked secret-file loading) and `IPathContainment` (may a path be inside a root, through links, ignoring case and normalization) |
+| `Io` | `IDurableFilePublisher` (staging + flush + atomic no-replace publish + directory fsync), `IDirectorySync` (directory fsync on Linux), `IExclusiveFileLock` (process-lifetime exclusive lock file), `IFilesystemProbe` (filesystem type and guarantees of a directory), `IPrivateFileSpool` (owner-only create-no-replace spool with SHA-256, length and a mid-stream cap), `ISecretFileLoader` (mode-checked secret-file loading), `CreateDurably` (missing directories created and their parents flushed) and `IPathContainment` (may a path be inside a root, through links, ignoring case and normalization) |
 | `Lifecycle` | `Disposable`, `ITempDirectory` |
 | `Net` | Endpoint URL parsing and validation; `ToDisplayString` (a URI without userinfo, query or fragment, for messages and logs) |
 | `Security` | `ISecretProtector`, `ISecretHasher` (default: upper-hex SHA-256, yields to a product registration), `Sha256`, and `IPasswordHasher` (salted PBKDF2-HMAC-SHA256 password hashes as PHC strings, with a rehash signal) |
 | `Serialization` | `ISerializer` and a `System.Text.Json` implementation; `CanonicalJson` (sorted, compact JSON for stable hashes) |
-| `Settings` | `[Setting]`, `[Protected]`, `[Sink]` on configuration records; `ISettingRegistry`, built from the registered `SettingRoot`s and the one `SettingNaming`, lists, finds and names settings in three scopes — see [`docs/settings.md`](../docs/settings.md) |
+| `Settings` | `[Setting]`, `[Protected]`, `[Sink]` on configuration records; `ISettingRegistry`, built from the registered `SettingRoot`s and the one `SettingNaming`, lists, finds and names settings in three scopes; `CheckValue` and `ValueKind` (a typed value's form, invariant); `ISettingResolver` with the product's `ISettingCollections` (templates expanded to the configured elements) — see [`docs/settings.md`](../docs/settings.md) |
 | `Tabular` | `ICsvReader` (dialect detection: encoding and delimiter; lenient RFC 4180 records), `ICsvRowWriter` (RFC 4180 rows), `CsvDialect`, `SpreadsheetNumberFormatExtensions` (spreadsheet built-in number formats, locale tags) — see [`docs/tabular.md`](../docs/tabular.md) |
-| `Text` | `LogSafeExtensions`, `SlugExtensions` |
+| `Text` | `LogSafeExtensions`, `SlugExtensions`; `ITextNormalizer` (removal, ligatures, NFC, whitespace collapse, each switchable, with a map from every raw position to the normalized text); `StructureMarker`, `ITextChunker` (structure-aware chunks with overlap and heading breadcrumbs) and `IMarkdownRenderer` (Markdown over the same markers); `FoldForQuote` and `FindExactlyOnce` (a quotation matched only when it occurs once, mapped back to the original range); `RequireStorable` (no U+0000, no lone surrogate, a length cap) and `StrictEncoding.Utf8` (the one strict, BOM-free UTF-8) — see [`docs/text.md`](../docs/text.md) |
 
 ## Registration
 
