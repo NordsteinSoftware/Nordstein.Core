@@ -114,7 +114,9 @@ internal sealed class LicenseCheckService : BackgroundService, ILicenseRefreshTr
                 }
 
                 if (changed.Task.IsCompleted)
+                {
                     licenseChanged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
             }
         }
         finally
@@ -147,7 +149,9 @@ internal sealed class LicenseCheckService : BackgroundService, ILicenseRefreshTr
     {
         var snapshot = licenseService.Current;
         if (snapshot.Jti is null)
+        {
             return;
+        }
 
         // Offline-only keys are exempt from the server check: a forced refresh (admin "Re-check
         // now") just re-evaluates expiry locally — there is nothing to ask the server.
@@ -178,57 +182,66 @@ internal sealed class LicenseCheckService : BackgroundService, ILicenseRefreshTr
         switch (result.Status)
         {
             case LicenseCheckResult.Valid:
-            {
-                // The server may move the license to another tier; a tier name it reports that the
-                // policy does not know is ignored (the current tier is kept).
-                string? updatedTier = null;
-                if (result.UpdatedTier is not null && policy.TryResolveTier(result.UpdatedTier, out var resolved))
-                    updatedTier = resolved;
-
-                var tier = updatedTier ?? snapshot.Tier;
-                var definition = policy.GetDefinition(tier);
-                var limits = new Dictionary<string, long>(definition.Limits);
-                foreach (var (k, v) in snapshot.Limits)
-                    limits[k] = v;
-                if (result.UpdatedLimits is not null)
                 {
-                    foreach (var (k, v) in result.UpdatedLimits)
+                    // The server may move the license to another tier; a tier name it reports that the
+                    // policy does not know is ignored (the current tier is kept).
+                    string? updatedTier = null;
+                    if (result.UpdatedTier is not null && policy.TryResolveTier(result.UpdatedTier, out var resolved))
                     {
-                        if (policy.TryResolveLimit(k, out var limit))
-                            limits[limit] = v;
+                        updatedTier = resolved;
                     }
+
+                    var tier = updatedTier ?? snapshot.Tier;
+                    var definition = policy.GetDefinition(tier);
+                    var limits = new Dictionary<string, long>(definition.Limits);
+                    foreach (var (k, v) in snapshot.Limits)
+                    {
+                        limits[k] = v;
+                    }
+
+                    if (result.UpdatedLimits is not null)
+                    {
+                        foreach (var (k, v) in result.UpdatedLimits)
+                        {
+                            if (policy.TryResolveLimit(k, out var limit))
+                            {
+                                limits[limit] = v;
+                            }
+                        }
+                    }
+
+                    if (snapshot.Status != LicenseStatus.Active)
+                    {
+                        logger.LogInformation("License server confirmed valid; restoring Active tier {Tier}", tier);
+                    }
+
+                    return snapshot with
+                    {
+                        Tier = tier,
+                        Status = LicenseStatus.Active,
+                        GracePeriodEndsAt = null,
+                        Features = updatedTier is null ? snapshot.Features : definition.Features,
+                        Limits = limits,
+                    };
                 }
 
-                if (snapshot.Status != LicenseStatus.Active)
-                    logger.LogInformation("License server confirmed valid; restoring Active tier {Tier}", tier);
-
-                return snapshot with
-                {
-                    Tier = tier,
-                    Status = LicenseStatus.Active,
-                    GracePeriodEndsAt = null,
-                    Features = updatedTier is null ? snapshot.Features : definition.Features,
-                    Limits = limits,
-                };
-            }
-
             case LicenseCheckResult.Revoked:
-            {
-                logger.LogWarning(
-                    "License {Jti} was revoked by the server; downgrading to {Tier}",
-                    snapshot.Jti,
-                    policy.FallbackTier);
-                return Expired(snapshot.Source);
-            }
+                {
+                    logger.LogWarning(
+                        "License {Jti} was revoked by the server; downgrading to {Tier}",
+                        snapshot.Jti,
+                        policy.FallbackTier);
+                    return Expired(snapshot.Source);
+                }
 
             default:
-            {
-                // Unknown / unreachable: fold into the offline grace window measured from the
-                // last successful server contact. Use clock.UtcNow (not result.CheckedAt) so
-                // that an Unknown response — where the server was never actually reached — still
-                // advances the elapsed window correctly.
-                return ApplyGrace(snapshot);
-            }
+                {
+                    // Unknown / unreachable: fold into the offline grace window measured from the
+                    // last successful server contact. Use clock.UtcNow (not result.CheckedAt) so
+                    // that an Unknown response — where the server was never actually reached — still
+                    // advances the elapsed window correctly.
+                    return ApplyGrace(snapshot);
+                }
         }
     }
 
@@ -306,7 +319,9 @@ internal sealed class LicenseCheckService : BackgroundService, ILicenseRefreshTr
     private TimeSpan OfflineWakeDelay(LicenseSnapshot snapshot, TimeSpan period)
     {
         if (snapshot.ExpiresAt is not { } expiresAt)
+        {
             return period;
+        }
 
         var until = expiresAt - clock.UtcNow;
         return until > TimeSpan.Zero && until < period ? until : period;

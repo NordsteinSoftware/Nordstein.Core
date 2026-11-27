@@ -1,0 +1,5 @@
+<Project>
+  <!-- Seals the targets chain, as Directory.Build.props seals the props chain. MSBuild imports
+       only the nearest Directory.Build.targets, so this file keeps a consuming product's root
+       targets file out of Core projects: Core builds the same inside a product as standalone. -->
+</Project>

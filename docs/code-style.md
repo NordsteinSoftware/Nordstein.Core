@@ -5,6 +5,10 @@
 > nullable warnings. This is why suppressing nullable warnings with `!` is both forbidden and
 > pointless (it would only move the failure). Run `dotnet build Nordstein.Core.sln` before
 > claiming done.
+>
+> **`EnforceCodeStyleInBuild=true`** is set in `Directory.Build.props` too, so code-style rules
+> (`IDExxxx`) that the `.editorconfig` in effect raises to warning or error fail the build as well
+> (inside Nordstein.Dms: braces always, file-scoped namespaces, modifier order).
 
 These rules are shared across all Nordstein backends; Core is where they are held most strictly.
 
@@ -39,7 +43,10 @@ These rules are shared across all Nordstein backends; Core is where they are hel
 
 ## Key Conventions
 
-- All timestamps are `DateTimeOffset`, never `DateTime`.
+- All timestamps are `DateTimeOffset`, never `DateTime`. "Now" comes from the injected `IClock`
+  (feature code, entities, repositories) or `TimeProvider` (scheduling), never from
+  `DateTimeOffset.UtcNow`; time checks use the `Validation.InPast`/`InFuture` overloads that take
+  that `now`.
 - Domain entities are immutable `internal record` types — no setters on domain-layer properties.
 - Domain interfaces are `public`; implementations and storage entities are `internal`.
 - Repositories return domain entities (`I[Entity]`), never storage entities.

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Nordstein.Core.AI.Completions;
 
@@ -11,7 +11,7 @@ public sealed record TokenUsage : IDomainObject
     /// The number of input tokens (prompt) used.
     /// </summary>
     public ulong InputTokenCount { get; init; }
-    
+
     /// <summary>
     /// The number of output tokens (response) generated.
     /// </summary>

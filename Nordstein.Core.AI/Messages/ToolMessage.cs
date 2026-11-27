@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Nordstein.Core.Common.Validation;
 
@@ -34,7 +34,7 @@ public sealed record ToolMessage : Message
             }
             return results;
         }
-        
+
         return [
             Content.FromText($"""
                              Status: Failure
@@ -78,8 +78,8 @@ public sealed record ToolMessage : Message
         }
 
         var id = Contents[0].Text;
-        return id.NullOrWhiteSpace() 
-            ? throw new InvalidOperationException("Invalid ToolMessage content.") 
+        return id.NullOrWhiteSpace()
+            ? throw new InvalidOperationException("Invalid ToolMessage content.")
             : (id, Contents.Skip(1).ToList());
     }
 
@@ -111,7 +111,7 @@ public sealed record ToolMessage : Message
 
         yield return Validation.NotNullOrWhiteSpace(Contents[0].Text);
     }
-    
+
     public override string ToString()
     {
         var id = Contents.Count > 0 ? Contents[0].Text : null;

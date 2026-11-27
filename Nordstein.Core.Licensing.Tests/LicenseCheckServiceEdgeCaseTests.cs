@@ -187,9 +187,14 @@ public sealed class LicenseCheckServiceEdgeCaseTests : BaseTest<Module>
             .Returns(_ =>
             {
                 if (Interlocked.Increment(ref calls) == 1)
+                {
                     firstCheck.TrySetResult();
+                }
                 else
+                {
                     secondCheck.TrySetResult();
+                }
+
                 return Valid(clock);
             });
 

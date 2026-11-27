@@ -144,7 +144,9 @@ public sealed class AeadStreamCodecTests : BaseTest<Module>
         IAeadStreamCodec codec = Codec;
         using var destination = new MemoryStream();
 
-        Func<Task> act = () => codec.EncryptAsync(null!, destination, Key, codec.NewSalt(), Info, Aad);
+        Stream missing = (new Stream[1])[0];
+
+        Func<Task> act = () => codec.EncryptAsync(missing, destination, Key, codec.NewSalt(), Info, Aad);
 
         await act.Should().ThrowAsync<ArgumentNullException>();
     }

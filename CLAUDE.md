@@ -72,11 +72,15 @@ area — do not rely on this file alone:
 |-----|--------------|
 | [`docs/architecture.md`](docs/architecture.md) | Touching package structure, layering, Autofac modules/discovery, or hosting helpers |
 | [`docs/code-style.md`](docs/code-style.md) | Writing any C# — style rules + key conventions |
+| [`docs/values.md`](docs/values.md) | Touching `CulturalValueParser` or `CanonicalJson` in `Nordstein.Core.Common`, or parsing culture-formatted values or hashing JSON anywhere |
+| [`docs/tabular.md`](docs/tabular.md) | Touching `Nordstein.Core.Common.Tabular` — CSV reading, dialect detection, the RFC 4180 row writer, spreadsheet number formats |
+| [`docs/settings.md`](docs/settings.md) | Touching `Nordstein.Core.Common.Settings` — setting attributes, the registry, naming |
 | [`docs/domain.md`](docs/domain.md) | Touching the domain foundation (`Nordstein.Core.Domain`) — entity/object contracts, factory delegates, generators, repositories, archiving |
 | [`docs/storage.md`](docs/storage.md) | Touching `Nordstein.Core.Storage` — `NordsteinDbContext`, generic repositories, the transaction seam, the cache |
 | [`docs/validation.md`](docs/validation.md) | Touching validation helpers, or adding validation to anything |
 | [`docs/licensing.md`](docs/licensing.md) | Touching `Nordstein.Core.Licensing` — the generic license engine and its product seams |
-| [`docs/ai.md`](docs/ai.md) | Touching `Nordstein.Core.AI` — the AI/agent foundation (messages, tools, prompts, completions, the agent/model-client contracts, output parsing) and its product seams |
+| [`docs/ai.md`](docs/ai.md) | Touching `Nordstein.Core.AI` — the AI/agent foundation (messages, tools, prompts, completions, the agent/model-client contracts, the agent tool-call loop, output parsing) and its product seams |
+| [`docs/workflows.md`](docs/workflows.md) | Touching `Nordstein.Core.Workflows` — the workflow kernel: graph, node contract, data references, validator, interpreter, step journal, suspend and resume |
 | [`docs/testing.md`](docs/testing.md) | Writing or modifying **any** test, or touching `Nordstein.Core.Testing` (the harness itself lives here) |
 | [`docs/product-playbook.md`](docs/product-playbook.md) | Advising on or building anything in a **consuming product** — e2e testing, user manual, i18n, CI, perf budgets: the practices proven in Proxytrace |
 | [`PUBLISHING.md`](PUBLISHING.md) | Touching packaging, versioning, or anything publish-related |

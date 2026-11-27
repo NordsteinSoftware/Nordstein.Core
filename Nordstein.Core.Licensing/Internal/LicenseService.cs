@@ -95,9 +95,14 @@ internal sealed class LicenseService : ILicenseService
     private static bool FeaturesEqual(IReadOnlySet<string>? a, IReadOnlySet<string>? b)
     {
         if (ReferenceEquals(a, b))
+        {
             return true;
+        }
+
         if (a is null || b is null)
+        {
             return false;
+        }
 
         return a.Count == b.Count && a.SetEquals(b);
     }
@@ -107,16 +112,26 @@ internal sealed class LicenseService : ILicenseService
         IReadOnlyDictionary<string, long>? b)
     {
         if (ReferenceEquals(a, b))
+        {
             return true;
+        }
+
         if (a is null || b is null)
+        {
             return false;
+        }
+
         if (a.Count != b.Count)
+        {
             return false;
+        }
 
         foreach (var (key, value) in a)
         {
             if (!b.TryGetValue(key, out var other) || other != value)
+            {
                 return false;
+            }
         }
 
         return true;

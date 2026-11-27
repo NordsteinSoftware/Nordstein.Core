@@ -30,6 +30,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+
+    <!-- Code-style analyzers (IDExxxx) fail the build, so .editorconfig severities are enforced in
+         Core as in the consuming product. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -232,4 +232,36 @@ public sealed class ValidationCoverageTests
         result.Should().NotBe(ValidationResult.Success);
         result.ErrorMessage.Should().Contain("must be true");
     }
+
+    [TestMethod]
+    public void InRange_Failure_NamesTheMember()
+    {
+        int retries = 0;
+
+        Check.InRange(retries, 1, 10).MemberNames.Should().Equal("retries");
+    }
+
+    [TestMethod]
+    public void GreaterThan_Int_Failure_NamesTheMember()
+    {
+        int dimension = 0;
+
+        Check.GreaterThan(dimension, 0).MemberNames.Should().Equal("dimension");
+    }
+
+    [TestMethod]
+    public void Positive_TimeSpan_Failure_NamesTheMember()
+    {
+        TimeSpan timeout = TimeSpan.Zero;
+
+        Check.Positive(timeout).MemberNames.Should().Equal("timeout");
+    }
+
+    [TestMethod]
+    public void True_Failure_NamesTheMember()
+    {
+        bool enabled = false;
+
+        Check.True(enabled).MemberNames.Should().Equal("enabled");
+    }
 }

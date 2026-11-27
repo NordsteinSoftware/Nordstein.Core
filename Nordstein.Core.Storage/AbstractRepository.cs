@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Nordstein.Core.Common.Time;
 using Nordstein.Core.Domain;
 using Nordstein.Core.Domain.Events;
 using Nordstein.Core.Domain.Exceptions;
@@ -48,6 +49,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
 
     private readonly IEntityCache<TDomainEntity>? cache;
     private readonly IEntityEventService entityEvents;
+    private readonly IClock clock;
 
     /// <summary>
     /// Initializes the repository with its required collaborators.
@@ -62,19 +64,24 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
     /// The ambient-context holder; threads the shared EF context across nested repository calls
     /// inside a single logical transaction.
     /// </param>
+    /// <param name="clock">The clock that stamps <c>UpdatedAt</c> on every write this repository makes.</param>
     /// <param name="cache">
     /// Optional scope-local entity cache. When <see langword="null"/> the repository performs no
     /// caching and always reads from the database.
     /// </param>
+    /// <exception cref="ArgumentNullException"><paramref name="clock"/> is null.</exception>
     protected AbstractRepository(
         IMapper<TDomainEntity, TStoredEntity> mapper,
         Func<DbContext> contextFactory,
         ITransaction transaction,
         IEntityEventService entityEvents,
         AmbientDbContext ambient,
+        IClock clock,
         IEntityCache<TDomainEntity>? cache = null)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         this.mapper = mapper;
+        this.clock = clock;
         this.contextFactory = contextFactory;
         this.transaction = transaction;
         this.entityEvents = entityEvents;
@@ -125,7 +132,9 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
         cache?.Invalidate(id);
 
         if (ambient.IsActive)
+        {
             ambient.RegisterPostCommit(() => cache?.Invalidate(id));
+        }
     }
 
     /// <summary>
@@ -137,7 +146,9 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
         cache?.InvalidateAll();
 
         if (ambient.IsActive)
+        {
             ambient.RegisterPostCommit(() => cache?.InvalidateAll());
+        }
     }
 
     // The cache must never be read from or populated while an ambient transaction is active:
@@ -213,7 +224,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
     /// </remarks>
     public async IAsyncEnumerable<TDomainEntity> EnumerateAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        IAsyncEnumerable<TStoredEntity> enumerable =  contextFactory()
+        IAsyncEnumerable<TStoredEntity> enumerable = contextFactory()
             .Set<TStoredEntity>()
             .AsNoTracking()
             .AsAsyncEnumerable();
@@ -394,7 +405,12 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
     }
 
     /// <inheritdoc />
-    public async Task AddRangeAsync(
+    /// <remarks>
+    /// An empty collection is a no-op. Virtual, like <see cref="AddAsync"/>, <see cref="UpsertAsync"/>,
+    /// <see cref="RemoveAsync"/> and <see cref="RemoveAllAsync"/>, so a repository whose rows enter only
+    /// through its own guarded path can refuse the bulk insert.
+    /// </remarks>
+    public virtual async Task AddRangeAsync(
         IReadOnlyCollection<TDomainEntity> entities,
         CancellationToken cancellationToken = default)
     {
@@ -496,7 +512,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
         // Map the updated domain entity to storage entity, then stamp UpdatedAt centrally
         // so callers don't have to bump it (and don't fight the concurrency check above).
         TStoredEntity mapped = await mapper.Map(entity, cancellationToken);
-        TStoredEntity updated = mapped with { UpdatedAt = DateTimeOffset.UtcNow };
+        TStoredEntity updated = mapped with { UpdatedAt = clock.UtcNow };
 
         // Update the tracked entity using EF Core's proper update mechanism
         EntityEntry<TStoredEntity> entry = context.Entry(existing);

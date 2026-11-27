@@ -88,7 +88,9 @@ public sealed class AeadKeyWrapTests : BaseTest<Module>
     {
         IAeadKeyWrap keyWrap = KeyWrap;
 
-        Action act = () => keyWrap.Unwrap(Kek, null!, Aad);
+        WrappedKey missing = (new WrappedKey[1])[0];
+
+        Action act = () => keyWrap.Unwrap(Kek, missing, Aad);
 
         act.Should().Throw<ArgumentNullException>();
     }

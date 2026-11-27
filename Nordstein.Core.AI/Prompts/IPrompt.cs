@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Contracts;
+using System.Diagnostics.Contracts;
 
 namespace Nordstein.Core.AI.Prompts;
 
@@ -18,7 +18,7 @@ public interface IPrompt : IDomainObject
     /// </summary>
     [Pure]
     IPrompt Append(IPrompt other);
-    
+
     /// <summary>
     /// Gets the rendered prompt string that can be sent to a language model.
     /// </summary>

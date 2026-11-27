@@ -15,7 +15,7 @@ internal class JsonSerializer : ISerializer
             options.Converters.Add(converter);
         }
     }
-    
+
     public async ValueTask<Stream> SerializeAsync<T>(T obj, CancellationToken cancellationToken = default)
     {
         Stream stream = new MemoryStream();
@@ -24,6 +24,6 @@ internal class JsonSerializer : ISerializer
         return stream;
     }
 
-    public ValueTask<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default) 
+    public ValueTask<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
         => System.Text.Json.JsonSerializer.DeserializeAsync<T>(stream, options, cancellationToken);
 }

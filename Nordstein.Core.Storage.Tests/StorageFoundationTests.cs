@@ -76,6 +76,39 @@ public sealed class StorageFoundationTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public void Constructor_NullClock_Throws()
+    {
+        IServiceProvider services = GetServices();
+
+        // guard test
+        Action act = () => _ = new TestThingRepository(
+            services.GetRequiredService<IMapper<ITestThing, TestThingEntity>>(),
+            services.GetRequiredService<Func<DbContext>>(),
+            services.GetRequiredService<ITransaction>(),
+            services.GetRequiredService<Nordstein.Core.Domain.Events.IEntityEventService>(),
+            services.GetRequiredService<AmbientDbContext>(),
+            null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("clock");
+    }
+
+    [TestMethod]
+    public async Task UpdateAsync_StampsUpdatedAtFromTheContainerClock()
+    {
+        IServiceProvider services = GetServices();
+        IRepository<ITestThing> repository = services.GetRequiredService<IRepository<ITestThing>>();
+        MutableClock clock = services.GetRequiredService<MutableClock>();
+        ITestThing added = await repository.AddAsync(NewThing("before"), CancellationToken);
+        clock.UtcNow = new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero);
+
+        var renamed = new TestThing { Id = added.Id, CreatedAt = added.CreatedAt, UpdatedAt = added.UpdatedAt, Name = "after" };
+        await repository.UpdateAsync(renamed, CancellationToken);
+
+        ITestThing reloaded = await repository.GetAsync(added.Id, CancellationToken);
+        reloaded.UpdatedAt.Should().Be(clock.UtcNow);
+    }
+
+    [TestMethod]
     public async Task UpdateAsync_WithStaleToken_ThrowsOptimisticConcurrency()
     {
         IServiceProvider services = GetServices();

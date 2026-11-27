@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Nordstein.Core.Common.Random;
+using Nordstein.Core.Common.Time;
 
 namespace Nordstein.Core.Domain.Tests;
 
@@ -8,7 +9,7 @@ namespace Nordstein.Core.Domain.Tests;
 // assembly scan never treats it as a second implementation of that interface.
 internal sealed record ProbeEntity : DomainEntity<ITestEntity>
 {
-    public ProbeEntity(IRepository<ITestEntity> repository) : base(repository)
+    public ProbeEntity(IRepository<ITestEntity> repository, IClock clock) : base(repository, clock)
     {
     }
 
@@ -42,7 +43,7 @@ internal interface IAlwaysInvalidEntity : IArchivable;
 
 internal sealed record AlwaysInvalidEntity : DomainEntity<IAlwaysInvalidEntity>, IAlwaysInvalidEntity
 {
-    public AlwaysInvalidEntity(IRepository<IAlwaysInvalidEntity> repository) : base(repository)
+    public AlwaysInvalidEntity(IRepository<IAlwaysInvalidEntity> repository, IClock clock) : base(repository, clock)
     {
     }
 
@@ -54,11 +55,14 @@ internal sealed record AlwaysInvalidEntity : DomainEntity<IAlwaysInvalidEntity>,
 
 internal sealed class AlwaysInvalidEntityGenerator : DomainEntityGenerator<IAlwaysInvalidEntity>
 {
-    public AlwaysInvalidEntityGenerator(IRepository<IAlwaysInvalidEntity> repository, IRandom random)
+    private readonly IClock clock;
+
+    public AlwaysInvalidEntityGenerator(IRepository<IAlwaysInvalidEntity> repository, IRandom random, IClock clock)
         : base(repository, random)
     {
+        this.clock = clock;
     }
 
     public override Task<IAlwaysInvalidEntity> GenerateAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IAlwaysInvalidEntity>(new AlwaysInvalidEntity(repository));
+        => Task.FromResult<IAlwaysInvalidEntity>(new AlwaysInvalidEntity(repository, clock));
 }

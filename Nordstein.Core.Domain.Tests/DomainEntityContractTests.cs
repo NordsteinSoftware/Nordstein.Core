@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using Autofac;
 using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Nordstein.Core.Common.Time;
 using Nordstein.Core.Testing;
 
 namespace Nordstein.Core.Domain.Tests;
@@ -13,8 +15,9 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
 
-        var entity = new TestEntity(repository);
+        var entity = new TestEntity(repository, clock);
 
         entity.Id.Should().NotBe(Guid.Empty);
         entity.IsArchived.Should().BeFalse();
@@ -23,11 +26,83 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public void Constructor_ForNewEntity_StampsBothTimestampsFromTheClock()
+    {
+        var pinned = new MutableClock(new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero));
+        IServiceProvider services = GetServices(builder => builder.RegisterInstance(pinned).As<IClock>());
+        var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+
+        var entity = new TestEntity(repository, pinned);
+
+        entity.CreatedAt.Should().Be(pinned.UtcNow);
+        entity.UpdatedAt.Should().Be(pinned.UtcNow);
+    }
+
+    [TestMethod]
+    public void Validate_UnderAClockAheadOfTheSystemClock_PassesForAnEntityStampedByThatClock()
+    {
+        // The timestamps are judged against the entity's clock, never the machine's: a host running
+        // ahead of real time (a demonstration clock) still constructs valid entities.
+        var ahead = new MutableClock(DateTimeOffset.UtcNow.AddYears(5));
+        IServiceProvider services = GetServices(builder => builder.RegisterInstance(ahead).As<IClock>());
+        var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        var entity = new TestEntity(repository, ahead);
+
+        var results = new List<ValidationResult>();
+        bool valid = Validator.TryValidateObject(entity, new ValidationContext(entity), results, validateAllProperties: true);
+
+        valid.Should().BeTrue();
+        results.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void Validate_ForTimestampsAfterTheClock_ProducesValidationError()
+    {
+        var pinned = new MutableClock(new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero));
+        IServiceProvider services = GetServices(builder => builder.RegisterInstance(pinned).As<IClock>());
+        var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        DateTimeOffset later = pinned.UtcNow.AddSeconds(1);
+        var entity = new TestEntity(new ExistingEntityData(Guid.NewGuid(), later, later, false), repository, pinned);
+
+        var results = new List<ValidationResult>();
+        bool valid = Validator.TryValidateObject(entity, new ValidationContext(entity), results, validateAllProperties: true);
+
+        valid.Should().BeFalse();
+        results.Should().Contain(result => result.ErrorMessage == "CreatedAt must be in the past");
+    }
+
+    [TestMethod]
+    public void Constructor_NullClock_Throws()
+    {
+        IServiceProvider services = GetServices();
+        var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+
+        // guard test
+        Action act = () => _ = new TestEntity(repository, null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("clock");
+    }
+
+    [TestMethod]
+    public void Constructor_ForExistingEntityWithNullClock_Throws()
+    {
+        IServiceProvider services = GetServices();
+        var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        DateTimeOffset past = DateTimeOffset.UtcNow.AddMinutes(-5);
+
+        // guard test
+        Action act = () => _ = new TestEntity(new ExistingEntityData(Guid.NewGuid(), past, past, false), repository, null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("clock");
+    }
+
+    [TestMethod]
     public void Validate_ForNewEntity_ProducesNoValidationErrors()
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
-        var entity = new TestEntity(repository);
+        IClock clock = services.GetRequiredService<IClock>();
+        var entity = new TestEntity(repository, clock);
 
         var results = new List<ValidationResult>();
         bool valid = Validator.TryValidateObject(
@@ -42,8 +117,9 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
         DateTimeOffset past = DateTimeOffset.UtcNow.AddMinutes(-5);
-        var entity = new TestEntity(new ExistingEntityData(Guid.Empty, past, past, false), repository);
+        var entity = new TestEntity(new ExistingEntityData(Guid.Empty, past, past, false), repository, clock);
 
         var results = new List<ValidationResult>();
         bool valid = Validator.TryValidateObject(
@@ -58,9 +134,10 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
         DateTimeOffset created = DateTimeOffset.UtcNow.AddMinutes(-5);
         DateTimeOffset updated = created.AddMinutes(-1);
-        var entity = new TestEntity(new ExistingEntityData(Guid.NewGuid(), created, updated, false), repository);
+        var entity = new TestEntity(new ExistingEntityData(Guid.NewGuid(), created, updated, false), repository, clock);
 
         var results = new List<ValidationResult>();
         bool valid = Validator.TryValidateObject(
@@ -75,8 +152,9 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
         DateTimeOffset future = DateTimeOffset.UtcNow.AddMinutes(5);
-        var entity = new TestEntity(new ExistingEntityData(Guid.NewGuid(), future, future, false), repository);
+        var entity = new TestEntity(new ExistingEntityData(Guid.NewGuid(), future, future, false), repository, clock);
 
         var results = new List<ValidationResult>();
         bool valid = Validator.TryValidateObject(
@@ -91,7 +169,8 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
-        var entity = new TestEntity(repository);
+        IClock clock = services.GetRequiredService<IClock>();
+        var entity = new TestEntity(repository, clock);
 
         ITestEntity added = await entity.AddAsync(CancellationToken);
 
@@ -104,7 +183,8 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
-        var entity = new TestEntity(repository);
+        IClock clock = services.GetRequiredService<IClock>();
+        var entity = new TestEntity(repository, clock);
         await entity.AddAsync(CancellationToken);
 
         ITestEntity reloaded = await entity.ReloadAsync(CancellationToken);
@@ -117,10 +197,11 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
         Guid id = Guid.NewGuid();
         DateTimeOffset past = DateTimeOffset.UtcNow.AddMinutes(-5);
-        var original = new TestEntity(new ExistingEntityData(id, past, past, false), repository);
-        var replacement = new TestEntity(new ExistingEntityData(id, past, past, false), repository);
+        var original = new TestEntity(new ExistingEntityData(id, past, past, false), repository, clock);
+        var replacement = new TestEntity(new ExistingEntityData(id, past, past, false), repository, clock);
         await repository.AddAsync(original, CancellationToken);
 
         ITestEntity updated = await replacement.UpdateAsync(CancellationToken);
@@ -137,7 +218,8 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
-        var entity = new TestEntity(repository);
+        IClock clock = services.GetRequiredService<IClock>();
+        var entity = new TestEntity(repository, clock);
 
         ITestEntity upserted = await entity.UpsertAsync(CancellationToken);
 
@@ -150,7 +232,8 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
-        var entity = new TestEntity(repository);
+        IClock clock = services.GetRequiredService<IClock>();
+        var entity = new TestEntity(repository, clock);
         await entity.AddAsync(CancellationToken);
 
         await entity.RemoveAsync(CancellationToken);
@@ -163,10 +246,11 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
         Guid id = Guid.NewGuid();
         DateTimeOffset created = DateTimeOffset.UtcNow.AddMinutes(-5);
-        var a = new TestEntity(new ExistingEntityData(id, created, created, false), repository);
-        var b = new TestEntity(new ExistingEntityData(id, created, created, false), repository);
+        var a = new TestEntity(new ExistingEntityData(id, created, created, false), repository, clock);
+        var b = new TestEntity(new ExistingEntityData(id, created, created, false), repository, clock);
 
         a.Should().Be(b);
         a.GetHashCode().Should().Be(b.GetHashCode());
@@ -177,11 +261,12 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
         Guid id = Guid.NewGuid();
         DateTimeOffset first = DateTimeOffset.UtcNow.AddMinutes(-10);
         DateTimeOffset second = DateTimeOffset.UtcNow.AddMinutes(-5);
-        var a = new TestEntity(new ExistingEntityData(id, first, first, false), repository);
-        var b = new TestEntity(new ExistingEntityData(id, second, second, true), repository);
+        var a = new TestEntity(new ExistingEntityData(id, first, first, false), repository, clock);
+        var b = new TestEntity(new ExistingEntityData(id, second, second, true), repository, clock);
 
         a.Should().Be(b);
         a.GetHashCode().Should().Be(b.GetHashCode());
@@ -192,9 +277,10 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
         DateTimeOffset created = DateTimeOffset.UtcNow.AddMinutes(-5);
-        var a = new TestEntity(new ExistingEntityData(Guid.NewGuid(), created, created, false), repository);
-        var b = new TestEntity(new ExistingEntityData(Guid.NewGuid(), created, created, false), repository);
+        var a = new TestEntity(new ExistingEntityData(Guid.NewGuid(), created, created, false), repository, clock);
+        var b = new TestEntity(new ExistingEntityData(Guid.NewGuid(), created, created, false), repository, clock);
 
         a.Should().NotBe(b);
     }
@@ -204,7 +290,8 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
-        var entity = new TestEntity(repository);
+        IClock clock = services.GetRequiredService<IClock>();
+        var entity = new TestEntity(repository, clock);
 
         entity.Equals((object?)null).Should().BeFalse();
     }

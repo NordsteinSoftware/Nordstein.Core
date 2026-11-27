@@ -21,9 +21,13 @@ internal sealed class TestLicenseFactory : IDisposable
     public TestLicenseFactory(bool useEcdsa = true)
     {
         if (useEcdsa)
+        {
             ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        }
         else
+        {
             rsa = RSA.Create(2048);
+        }
     }
 
     private AsymmetricAlgorithm Key => (AsymmetricAlgorithm?)ecdsa ?? rsa ?? throw new InvalidOperationException("No key generated");
@@ -78,10 +82,14 @@ internal sealed class TestLicenseFactory : IDisposable
         };
 
         foreach (var feature in features ?? [])
+        {
             claims.Add(new Claim("feat", feature));
+        }
 
         foreach (var limit in limits ?? [])
+        {
             claims.Add(new Claim("lim", limit));
+        }
 
         // Emitted as a real JSON boolean (ClaimValueTypes.Boolean) to mirror a license server's
         // wire format — `offline: true` for an offline-only key, `offline: false` defensively.
@@ -89,9 +97,13 @@ internal sealed class TestLicenseFactory : IDisposable
         // off-contract claim of a chosen JSON type (e.g. a string or number) to exercise the
         // validator's strict type-matching.
         if (offline is { } offlineValue)
+        {
             claims.Add(new Claim("offline", offlineValue ? "true" : "false", ClaimValueTypes.Boolean));
+        }
         else if (offlineRaw is { } raw)
+        {
             claims.Add(new Claim("offline", raw.Value, raw.ValueType));
+        }
 
         var signingKey = sign ? SigningSecurityKey : UntrustedKey;
         var credentials = new SigningCredentials(signingKey, Algorithm);

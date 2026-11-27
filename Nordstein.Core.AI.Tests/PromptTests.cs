@@ -16,7 +16,7 @@ public class PromptTests : BaseTest<Module>
         var template = factory(name, content);
         return template.Render();
     }
-    
+
     [TestMethod]
     public void Append_ShouldCombineNamesWithUnderscore()
     {
@@ -96,9 +96,9 @@ public class PromptTests : BaseTest<Module>
 
         // Assert
         result.Name.Should().Be("First_Second_Third");
-        string expectedContent = string.Join(Environment.NewLine, 
-            "Content1", 
-            "Content2", 
+        string expectedContent = string.Join(Environment.NewLine,
+            "Content1",
+            "Content2",
             "Content3");
         result.ToPromptString().Should().Be(expectedContent);
     }

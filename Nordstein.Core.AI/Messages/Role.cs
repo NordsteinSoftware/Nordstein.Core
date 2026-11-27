@@ -1,4 +1,4 @@
-﻿namespace Nordstein.Core.AI.Messages;
+namespace Nordstein.Core.AI.Messages;
 
 /// <summary>
 /// The role of a message in the conversation
@@ -9,17 +9,17 @@ public enum Role
     /// The system message, usually the initial prompt
     /// </summary>
     System,
-    
+
     /// <summary>
     /// Message from the user
     /// </summary>
     User,
-    
+
     /// <summary>
     /// Message from the assistant (the model)
     /// </summary>
     Assistant,
-    
+
     /// <summary>
     /// The response from a tool request
     /// </summary>

@@ -7,14 +7,16 @@ flow. Each package may only depend on packages below it:
 Nordstein.Core.Storage ──► Nordstein.Core.Domain ──► Nordstein.Core.Common
 Nordstein.Core.Licensing ─────────────────────────► Nordstein.Core.Common
 Nordstein.Core.Testing ───────────────────────────► Nordstein.Core.Common
+Nordstein.Core.Workflows (BCL + Autofac only)
 ```
 
 | Package | Role | Notable external deps |
 |---------|------|-----------------------|
-| `Nordstein.Core.Common` | Utilities every layer needs: clock (`Time/`) and randomness (`Random/`) seams, async primitives incl. the keyed `IAsyncLock` (`Async/`), validation helpers (`Validation/`), type conversion (`Conversion/`), secret-protection contracts and password hashing (`Security/` — `ISecretProtector`, `ISecretHasher`, `Sha256`, `IPasswordHasher`), AEAD cryptography (`Cryptography/` — `IAeadStreamCodec`, `IAeadKeyWrap`), durable file IO and secret-file custody (`Io/` — `IDurableFilePublisher`, `ISecretFileLoader`), serialization + text helpers, DI extensions (`DependencyInjection/`), lifecycle, hosting defaults (`Hosting/` — `AddResilientBackgroundServices`) | Autofac, MS.Extensions Hosting/DI abstractions |
+| `Nordstein.Core.Common` | Utilities every layer needs: clock (`Time/`) and randomness (`Random/`) seams, async primitives incl. the keyed `IAsyncLock` (`Async/`), validation helpers (`Validation/`), type conversion (`Conversion/`), secret-protection contracts and password hashing (`Security/` — `ISecretProtector`, `ISecretHasher`, `Sha256`, `IPasswordHasher`), AEAD cryptography (`Cryptography/` — `IAeadStreamCodec`, `IAeadKeyWrap`), durable file IO, secret-file custody and path containment (`Io/` — `IDurableFilePublisher`, `IDirectorySync`, `IExclusiveFileLock`, `IFilesystemProbe`, `IPrivateFileSpool`, `ISecretFileLoader`, `IPathContainment`), the setting catalogue (`Settings/` — `[Setting]`, `[Protected]`, `[Sink]`, `SettingRoot`, `SettingNaming`, `ISettingRegistry`; see [`settings.md`](settings.md)), endpoint URL parsing and credential-free URL display (`Net/` — `ToEndpointUri`, `ToDisplayString`), IBAN and VAT id validation (`Banking/` — `TryNormalizeIban`: whitespace-free uppercase form, ISO 7064 MOD 97-10 check; `TryNormalizeVatId`: compact uppercase form, the country's shape and check digit for AT, BE, CH, DE, DK, FI, FR, IT, LU, NL, PL, PT, SE, the shared shape elsewhere), the outbound HTTP handler (`Http/` — `DirectHttpHandlerFactory.Create()`, a `SocketsHttpHandler` with no proxy, no redirect and two-minute pooled connections, for an adapter whose configured endpoint must be the only hop), serialization + text helpers (`Text/` — `ToSlug`, `ToSingleLogLine`, `Shorten`: a cut to a length limit that never splits a surrogate pair; `CodePointText`: a string indexed and sliced in code points; `OffsetMappedText` + `OffsetMappedTextBuilder`: a transformed text that maps each of its code points to its original's offset, so a range found in it maps back), DI extensions (`DependencyInjection/`), lifecycle, hosting defaults (`Hosting/` — `AddResilientBackgroundServices`, `IPeriodicJob` + `RegisterPeriodicJob`), the container's `TimeProvider` (`TimeProvider.System` unless the host registered its own first), `ShiftedTimeProvider` (a host's clock, the real one plus a fixed offset) | Autofac, MS.Extensions Hosting/DI abstractions |
 | `Nordstein.Core.Domain` | Domain foundation: `IDomainObject`/`IDomainEntity` contracts and bases, factory-delegate conventions, generators, `IRepository`/`ITransaction`, archive contracts, paging, persistence exceptions, entity events, consuming-assembly discovery (`Module`) | Autofac |
 | `Nordstein.Core.Storage` | EF Core storage foundation: `NordsteinDbContext`, generic repositories, the ambient-transaction seam, reference-data cache, `StorageFoundationModule<TContext>`. **Provider-neutral** — see [`storage.md`](storage.md) | EF Core **Relational only** (no provider), Autofac |
 | `Nordstein.Core.Licensing` | Generic license engine: JWT verification, activation, snapshot/status, server check — see [`licensing.md`](licensing.md) | System.IdentityModel.Tokens.Jwt, MS.Extensions Http |
+| `Nordstein.Core.Workflows` | Workflow kernel: a DAG of typed nodes with data references, the validator and the deterministic interpreter with suspend and resume — see [`workflows.md`](workflows.md) | Autofac |
 | `Nordstein.Core.Testing` | The shared test harness: `BaseTest<TModule>` + the MSTest / AwesomeAssertions / NSubstitute baseline — see [`testing.md`](testing.md) | MSTest, AwesomeAssertions, NSubstitute, Autofac |
 
 Each package has a sibling `*.Tests` project; the whole solution builds and tests standalone
@@ -27,7 +29,8 @@ the seam and the product implements it. Recurring shapes of that seam:
 
 - **Interface + product implementation** — e.g. `ISecretProtector`/`ISecretHasher` live in
   `Common.Security`; each product supplies the Data Protection purpose, key-ring, and persisted
-  scheme.
+  scheme. `ISecretHasher` also has a Core default (upper-hex SHA-256, registered with
+  `PreserveExistingDefaults`) that a product's own registration replaces.
 - **Assembly handed in, never assumed** — discovery modules take the product assembly as a
   constructor argument (`Nordstein.Core.Domain.Module`, `StorageFoundationModule<TContext>`)
   rather than scanning "known" locations.
@@ -54,6 +57,12 @@ Every package ships one `Module : Autofac.Module` (`Nordstein.Core.Common.Module
 - **Domain entities are validated on activation** — the domain module wires `OnActivated` to run
   `Validator.ValidateObject`, so an invalid entity cannot even be constructed through DI. Keep
   that guarantee intact.
+- **Resolution failures are unwrapped once, in Core**: Autofac wraps a failure raised while it
+  builds an object (constructor, factory delegate, activation callback such as validation) in a
+  `DependencyResolutionException`, one per resolution hop. A surface that maps exceptions to an
+  outcome (exit code, wire error) calls `exception.UnwrapResolutionFailures()`
+  (`Common/DependencyInjection`) instead of peeling the wrapper itself. Only the Autofac wrapper
+  is peeled; any other exception is the answer.
 - **Bridging to `IServiceCollection`**: modules that need Microsoft-DI extension methods
   (`AddHttpClient`, `AddMemoryCache`, …) go through the `RegisterServiceCollection` helper, which
   populates a fresh `ServiceCollection` into Autofac and **dedupes identical type-based
@@ -83,6 +92,24 @@ on a plain `IHostedService`; anything whose failure should degrade one feature g
 `ExecuteAsync` on a `BackgroundService`. `Ignore` keeps the *host* alive — a loop that wants to
 survive its own transient failures still catches them itself.
 
+### Recurring work: `IPeriodicJob`
+
+A loop that does one bounded unit of work every so often is an `IPeriodicJob`, not a hand-written
+`BackgroundService`. `builder.RegisterPeriodicJob<TJob>(context => new PeriodicJobSchedule { … })`
+(`Common/Hosting`) registers `TJob` and the hosted service that runs it:
+
+- Every pass resolves a **new `TJob` in its own lifetime scope** (`Owned<TJob>`), disposed when the
+  pass ends, so scoped dependencies (a database context) are safe and the job keeps no state.
+- `RunOnceAsync` returns `true` when it found more work than it did: the next pass starts at once.
+  `false` waits one `Interval`, measured from the end of the pass, so passes never overlap.
+- A failing pass is logged at `Error` with the job type's name and the schedule continues; only the
+  stopping token ends the loop. Cancellation of that token during a pass ends it quietly.
+- The delay runs on the container's `TimeProvider`, so tests drive it with a manual one and never
+  wait for real time. `Nordstein.Core.Common.Module` registers `TimeProvider.System` unless the
+  host registered a `TimeProvider` first.
+
+It is a `BackgroundService`, so it falls on the "degrades one feature" side of the table above.
+
 ## How consumers reference Core
 
 A consuming product embeds this repository (today: git submodule) and declares an item, not a
@@ -104,4 +131,6 @@ dependency Core forgot to declare. Full mechanics live in the consuming product'
 
 `Directory.Build.props` here conditionally imports a parent props file so the same tree builds
 identically standalone and inside a product checkout — read the comments in that file before
-touching it.
+touching it. `Directory.Build.targets` here is empty on purpose: it seals the targets chain, so a
+product's root targets file never reaches Core projects. Core enforces its code style itself
+(`EnforceCodeStyleInBuild`, [code-style.md](code-style.md)).

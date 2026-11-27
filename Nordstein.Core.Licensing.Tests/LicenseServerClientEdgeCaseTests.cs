@@ -68,7 +68,9 @@ public sealed class LicenseServerClientEdgeCaseTests
             CancellationToken cancellationToken)
         {
             if (request.Content is { } content)
+            {
                 CapturedBody = await content.ReadAsStringAsync(cancellationToken);
+            }
 
             return new HttpResponseMessage(HttpStatusCode.OK)
             {

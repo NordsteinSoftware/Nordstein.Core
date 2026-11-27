@@ -15,6 +15,8 @@ public sealed class OptimisticConcurrencyExceptionTests
 
         exception.Message.Should().Contain(id.ToString()).And.Contain(nameof(TimeSpan));
         exception.InnerException.Should().BeNull();
+        exception.EntityId.Should().Be(id);
+        exception.EntityType.Should().Be<TimeSpan>();
     }
 
     [TestMethod]
@@ -27,5 +29,7 @@ public sealed class OptimisticConcurrencyExceptionTests
 
         exception.Message.Should().Contain(id.ToString()).And.Contain(nameof(TimeSpan));
         exception.InnerException.Should().BeSameAs(inner);
+        exception.EntityId.Should().Be(id);
+        exception.EntityType.Should().Be<TimeSpan>();
     }
 }

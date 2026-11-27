@@ -49,9 +49,13 @@ internal sealed class AsyncLock : IAsyncLock
         lock (sync)
         {
             if (locks.TryGetValue(key, out var entry))
+            {
                 locks[key] = (entry.Semaphore, entry.Count + 1);
+            }
             else
+            {
                 locks[key] = (new SemaphoreSlim(1, 1), 1);
+            }
 
             return locks[key].Semaphore;
         }
@@ -98,7 +102,10 @@ internal sealed class AsyncLock : IAsyncLock
 
         public void Dispose()
         {
-            if (disposed) return;
+            if (disposed)
+            {
+                return;
+            }
             disposed = true;
             parent.Release(key, semaphore);
         }
