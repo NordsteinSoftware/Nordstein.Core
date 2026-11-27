@@ -20,6 +20,7 @@ to and indexes these pages by task.
 | [`workflows.md`](workflows.md) | `Nordstein.Core.Workflows` — the workflow kernel: a DAG of typed nodes with data references, the validator, and the deterministic interpreter with its step journal, suspend and resume. |
 | [`testing.md`](testing.md) | The coverage bar for Core, the `BaseTest<TModule>` harness and its stateless-container principles, substitution patterns, container-backed tests, and the care required when changing the harness itself. |
 | [`product-playbook.md`](product-playbook.md) | The transferable practices for building a *consuming product*: docs-as-part-of-change, the VitePress user manual (+ automated screenshots), scoped test running, Playwright e2e over the real Docker stack, i18n, perf budgets, CI shape, releasing. |
+| [`dependencies.md`](dependencies.md) | The package bar a new dependency meets (stricter than a product's), the Dependabot cooldown, and CI actions pinned by commit SHA. |
 
 See also [`../PUBLISHING.md`](../PUBLISHING.md) for how Core is packaged and published, and — in the
 consuming product — `docs/code-reuse.md` for how a product references Core (source vs package mode) and

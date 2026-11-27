@@ -101,7 +101,7 @@ own: the output format and `JsonSchemaResponseFormat` still send a schema as giv
 
 - **What closes.** An object schema (one with `properties`, or whose `type` names `object`, also
   in an array such as `["object","null"]`) gets `additionalProperties: false` (`true` becomes
-  `false`) and a `required` listing every declared property: an existing `required` keeps its
+  `false`) and a `required` listing every declared property once: an existing `required` keeps its
   order, the missing names follow in declaration order. An object schema without `properties` is
   closed too and then accepts only `{}`. A property the caller left optional becomes required, so a
   caller that must keep its absence expressible lets it accept `null` first.

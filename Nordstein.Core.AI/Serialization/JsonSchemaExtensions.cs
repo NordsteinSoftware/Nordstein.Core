@@ -15,9 +15,10 @@ public static class JsonSchemaExtensions
     /// <summary>
     /// Returns a copy of <paramref name="schema"/> in which every object schema is closed: its
     /// <c>additionalProperties</c> is <see langword="false"/> and its <c>required</c> lists every property it declares,
-    /// the order of an existing <c>required</c> kept and the missing names appended in declaration order. Opt-in: the
-    /// schema-driven output format (<see cref="JsonSchemaOutputFormat"/>) and <see cref="Clients.JsonSchemaResponseFormat"/>
-    /// send a schema as given, and a caller that needs a strict provider's dialect passes this copy instead.
+    /// the order of an existing <c>required</c> kept (a name listed twice once) and the missing names appended in
+    /// declaration order. Opt-in: the schema-driven output format (<see cref="JsonSchemaOutputFormat"/>) and
+    /// <see cref="Clients.JsonSchemaResponseFormat"/> send a schema as given, and a caller that needs a strict provider's
+    /// dialect passes this copy instead.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -188,7 +189,10 @@ public static class JsonSchemaExtensions
                     throw Refused(at, $"names '{text}', which the object does not declare; once closed, no value could have it");
                 }
 
-                required.Add(text);
+                if (!required.Contains(text, StringComparer.Ordinal))
+                {
+                    required.Add(text);
+                }
             }
         }
 

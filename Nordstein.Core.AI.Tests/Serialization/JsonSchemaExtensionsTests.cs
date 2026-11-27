@@ -30,6 +30,14 @@ public sealed class JsonSchemaExtensionsTests
     }
 
     [TestMethod]
+    public void WithObjectsClosed_RequiredListingANameTwice_ListsItOnce()
+    {
+        JsonNode closed = Parse("""{"type":"object","required":["b","b"],"properties":{"a":{},"b":{}}}""").WithObjectsClosed();
+
+        closed["required"]?.ToJsonString().Should().Be("""["b","a"]""");
+    }
+
+    [TestMethod]
     public void WithObjectsClosed_NestedObjectsAndArraysOfObjects_ClosesEveryLevel()
     {
         const string schema = """
