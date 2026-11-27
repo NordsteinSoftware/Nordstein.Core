@@ -10,7 +10,8 @@ namespace Nordstein.Core.Common.Text;
 /// Raw positions are UTF-16 indices, as <see cref="string"/> indexes; normalized offsets are code
 /// points, as <see cref="CodePointText"/> counts. A lone surrogate in the raw text reads as one
 /// <see cref="System.Text.Rune.ReplacementChar"/>, whatever the options, so the normalized text is
-/// always well-formed.
+/// always well-formed; so does the noncharacter U+FFFE (a byte-swapped byte order mark), which .NET
+/// refuses to normalize.
 /// </para>
 /// <para>
 /// The map is exact for every step: a removed character, a folded ligature, a composed cluster and a

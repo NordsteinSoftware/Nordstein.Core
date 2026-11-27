@@ -203,6 +203,15 @@ public sealed class TextNormalizerTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public void Normalize_ByteSwappedByteOrderMark_ReadsAsTheReplacementCharacterInsteadOfThrowing()
+    {
+        // .NET refuses to compose a text holding U+FFFE; it reads as U+FFFD, like a lone surrogate.
+        Normalizer().Normalize("e\u0301\uFFFEx").Text.Should().Be("\u00E9\uFFFDx");
+        Normalizer().Normalize("a\uFFFE", NothingOn).Text.Should().Be("a\uFFFD");
+        Normalizer().Normalize("a\uFFFF\uFDD0").Text.Should().Be("a\uFFFF\uFDD0", "other noncharacters compose and stay");
+    }
+
+    [TestMethod]
     public void Normalize_LoneSurrogateWithEveryStepOff_IsStillReplaced()
     {
         Normalizer().Normalize("a\uD800", NothingOn).Text.Should().Be("a\uFFFD");

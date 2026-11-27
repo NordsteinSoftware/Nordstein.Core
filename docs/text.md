@@ -3,7 +3,8 @@
 `Nordstein.Core.Common.Text` holds the text helpers that keep offsets exact: `CodePointText` (a
 string indexed in code points), `OffsetMappedText` and its builder (a transformed text that maps
 each code point back to its original) and the services below. Offsets are code points unless a
-member says otherwise; a lone surrogate reads as one U+FFFD everywhere.
+member says otherwise; the offset helpers read a lone surrogate as one U+FFFD (the storage guard and
+the strict encoding below refuse it instead).
 
 ## `ITextNormalizer` — normalization that maps every raw position
 
@@ -20,12 +21,13 @@ units of the input) and the map.
 | `Compose` | NFC, one grapheme cluster at a time (NFC never composes across clusters, so the result is NFC of the whole). |
 | `CollapseWhitespace` | Leading and trailing whitespace goes; every other run becomes one space, or `\n\n` when it holds two or more line breaks. |
 
-- The order is fixed: lone surrogates replaced, removal and folding, then composition, then
+- The order is fixed: lone surrogates and U+FFFE replaced, removal and folding, then composition, then
   whitespace. Removal first lets `e`, U+200D, U+0301 compose to `é`; folding first lets `ﬁ` + U+0301
   compose to `fí`. With the defaults the output is NFC and normalizing it again changes nothing.
 - Line breaks: LF, CR, CRLF (one), U+0085, U+2028 count one each; U+2029 counts two. VT and FF are
   whitespace without a break. So `\r\r` (two old-style breaks) is a paragraph, `\r\n` is not.
-- Every step off: the identity, except that a lone surrogate still becomes U+FFFD.
+- Every step off: the identity, except that a lone surrogate still becomes U+FFFD, and so does
+  U+FFFE (a byte-swapped byte order mark), which .NET's normalization refuses with an exception.
 
 ### The map
 
@@ -103,7 +105,8 @@ blank, one line) labels page breaks.
 - Units in start order: `Heading`, `Paragraph`, `ListItem`, `Table`, `TableCell`, `PageBreak` (at one
   offset page breaks first, in the order given, then the longer marker). A unit starting inside a
   rendered one drops; its text outside that unit renders as loose text. A page break inside a unit
-  drops. Loose text that is not only whitespace renders trimmed, as a paragraph.
+  drops; one given a length breaks at its start. Loose text that is not only whitespace renders
+  trimmed, as a paragraph.
 - Heading: `#` × level clamped 1–6, a space, the text. List item: two spaces × (level clamped 1–9,
   minus 1), `- `, the text. Headings, list items and cells write CRLF, CR, LF as one space, trimmed;
   cells write `|` as `\|`. Paragraph and a cell outside every table: verbatim. Blank units render

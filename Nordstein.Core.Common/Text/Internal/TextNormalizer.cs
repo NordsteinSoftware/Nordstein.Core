@@ -11,8 +11,9 @@ namespace Nordstein.Core.Common.Text.Internal;
 /// <remarks>
 /// Each pass maps a position to a start (the first output character from the input at or after it)
 /// and an end (just after the last output character from the input before it). The passes are
-/// filtering (lone surrogates replaced, removal, ligatures), composition (NFC per grapheme cluster,
-/// so a position never needs to be guessed across a cluster that changed) and whitespace collapse.
+/// filtering (lone surrogates and U+FFFE replaced, removal, ligatures), composition (NFC per
+/// grapheme cluster, so a position never needs to be guessed across a cluster that changed) and
+/// whitespace collapse.
 /// </remarks>
 internal sealed class TextNormalizer : ITextNormalizer
 {
@@ -71,9 +72,11 @@ internal sealed class TextNormalizer : ITextNormalizer
         var output = new StringBuilder(input.Length);
         var pass = new Pass(input.Length);
         int index = 0;
-        foreach (Rune rune in input.EnumerateRunes())
+        foreach (Rune enumerated in input.EnumerateRunes())
         {
-            // A lone surrogate enumerates as one replacement character of width one.
+            // A lone surrogate enumerates as one replacement character of width one; U+FFFE, which
+            // .NET refuses to normalize, is read the same way.
+            Rune rune = enumerated.Value == 0xFFFE ? Rune.ReplacementChar : enumerated;
             int width = rune.Utf16SequenceLength;
             int at = output.Length;
             if (IsRemoved(rune, options))

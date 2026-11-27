@@ -253,6 +253,15 @@ public sealed class MarkdownRendererTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public void Render_PageBreakWithALength_BreaksAtItsStartAndKeepsItsText()
+    {
+        const string content = "one two three";
+        StructureMarker[] markers = [new(StructureKind.PageBreak, 4, 7, 2), new(StructureKind.Paragraph, 8, 13)];
+
+        Renderer().Render(content, markers, Paged).Should().Be("one\n\n---\n\nPage 2\n\ntwo\n\nthree\n");
+    }
+
+    [TestMethod]
     public void Render_PageBreakInsideAUnit_IsDropped()
     {
         const string content = "one two";

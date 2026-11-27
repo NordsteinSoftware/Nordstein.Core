@@ -39,6 +39,25 @@ public sealed class StorableTextTests
     }
 
     [TestMethod]
+    public void RequireStorable_UnderAnotherCulture_WritesTheLengthsInvariantly()
+    {
+        System.Globalization.CultureInfo original = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("de-AT") { NumberFormat = { PositiveSign = "plus" } };
+            string text = new('x', 1200);
+
+            Action act = () => text.RequireStorable(1000);
+
+            act.Should().Throw<ArgumentException>().Which.Message.Should().StartWith("At most 1000 characters are stored; this holds 1200.");
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = original;
+        }
+    }
+
+    [TestMethod]
     public void RequireStorable_LengthCountsUtf16Units()
     {
         // One code point, two UTF-16 units.

@@ -136,6 +136,13 @@ public sealed class SettingValueExtensionsTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public void SettingValueKind_NumericValues_AreStable()
+    {
+        Enum.GetValues<SettingValueKind>().Select(kind => ((int)kind, kind.ToString())).Should().Equal(
+            (1, "Text"), (2, "Choice"), (3, "Boolean"), (4, "Integer"), (5, "Number"), (6, "Duration"), (7, "Url"), (8, "List"));
+    }
+
+    [TestMethod]
     public void UnsupportedType_Throws()
     {
         SettingDescriptor descriptor = Descriptor(typeof(decimal));

@@ -45,9 +45,11 @@ internal sealed class MarkdownRenderer : IMarkdownRenderer
             }
 
             AddLoose(blocks, codePoints.Slice(position, unit.Start));
-            position = unit.End;
             if (unit.Kind == StructureKind.PageBreak)
             {
+                // A break is a point: one given a length breaks at its start, and its range renders
+                // as any other text.
+                position = unit.Start;
                 blocks.Add(Rule);
                 if (options.PageLabel is { } label)
                 {
@@ -57,6 +59,7 @@ internal sealed class MarkdownRenderer : IMarkdownRenderer
                 continue;
             }
 
+            position = unit.End;
             string content = codePoints.Slice(unit.Start, unit.End);
             if (string.IsNullOrWhiteSpace(content))
             {

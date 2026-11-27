@@ -440,6 +440,14 @@ public sealed class TextChunkerTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public void StructureKind_NumericValues_AreStable()
+    {
+        // Products store the kinds by number: renumbering corrupts every stored marker.
+        Enum.GetValues<StructureKind>().Select(kind => ((int)kind, kind.ToString())).Should().Equal(
+            (1, "Heading"), (2, "Paragraph"), (3, "ListItem"), (4, "TableCell"), (5, "PageBreak"), (6, "Table"), (7, "TableRow"));
+    }
+
+    [TestMethod]
     public void Chunk_DefaultOptions_AreValidAndDocumented()
     {
         var options = new TextChunkingOptions();

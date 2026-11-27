@@ -15,8 +15,10 @@ public static class QuoteMatchExtensions
     /// The texts are compared code point by code point (ordinal); only <see cref="OffsetMappedText.Text"/>
     /// of <paramref name="quote"/> is read. Overlapping occurrences each count. The range is
     /// <see cref="OffsetMappedText.ToOriginalRange"/> of the occurrence, in code points of the
-    /// original, so original characters removed inside it are covered by it. Pure and thread-safe;
-    /// linear in the text for each occurrence found.
+    /// original, so original characters removed inside it are covered by it. Every occurrence is
+    /// counted, one <see cref="string.IndexOf(string, int, StringComparison)"/> each, so the cost grows
+    /// with the text, the quote and the count; bound the text (search a window) where that matters.
+    /// Pure and thread-safe.
     /// </remarks>
     /// <param name="text">The transformed text searched.</param>
     /// <param name="quote">The transformed quote; not empty.</param>

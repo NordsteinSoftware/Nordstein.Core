@@ -12,8 +12,9 @@ namespace Nordstein.Core.Common.Text;
 /// <see cref="StructureKind.TableCell"/> and <see cref="StructureKind.PageBreak"/> markers, in start
 /// order (at one offset the page breaks first, in the order given, then the longer marker), whatever
 /// order they are passed in. A unit that starts inside one already rendered is dropped (its text outside that unit renders
-/// as loose text), and so is a page break inside a rendered unit. Zero-length markers other than
-/// page breaks, and markers of other kinds, are not units. Text outside every unit that is not only
+/// as loose text), and so is a page break inside a rendered unit. A page break given a length breaks
+/// at its start; its range renders as any other text. Zero-length markers other than page breaks,
+/// and markers of other kinds, are not units. Text outside every unit that is not only
 /// whitespace renders trimmed, as a paragraph; a page break splits it.
 /// </para>
 /// <para>

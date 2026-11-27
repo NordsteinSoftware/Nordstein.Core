@@ -78,6 +78,22 @@ public sealed class DirectorySyncExtensionsTests : BaseTest<Module>
     }
 
     [TestMethod]
+    [OSCondition(OperatingSystems.Linux | OperatingSystems.OSX | OperatingSystems.FreeBSD)]
+    [UnsupportedOSPlatform("windows")]
+    public void CreateDurably_ConcurrentCallersWithAMode_AllSucceedWithThatMode()
+    {
+        using ITempDirectory temp = NewTempDirectory();
+        IDirectorySync sync = Sync();
+        string target = Path.Combine(temp.Path, "racing", "leaf");
+        const UnixFileMode ownerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+
+        Parallel.For(0, 8, _ => sync.CreateDurably(target, ownerOnly));
+
+        File.GetUnixFileMode(target).Should().Be(ownerOnly);
+        File.GetUnixFileMode(Path.Combine(temp.Path, "racing")).Should().Be(ownerOnly);
+    }
+
+    [TestMethod]
     public void CreateDurably_RealSync_Works()
     {
         using ITempDirectory temp = NewTempDirectory();
