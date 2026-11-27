@@ -27,7 +27,9 @@ Every change to this repository — however small — meets all of the following
    of non-trivial logic gets a test; every bug fix starts with a failing regression test
    (test-driven — write the red test first, then the fix). A change that reduces effective
    coverage is incomplete. The whole suite runs in seconds — there is no excuse for an untested
-   path. See [`docs/testing.md`](docs/testing.md).
+   path. CI fails any shipped assembly below **90 % line or 90 % branch coverage**
+   (`tools/coverage_gate.py`, floors in `tools/coverage-floors.json`). See
+   [`docs/testing.md`](docs/testing.md).
 3. **Adversarial review, every time.** Before declaring any change complete, run a genuine
    adversarial review pass — as a reviewer subagent where available, otherwise as an explicit
    separate pass — whose stated goal is to **break the change**: hunt for race conditions, API

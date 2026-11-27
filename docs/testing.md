@@ -17,6 +17,32 @@ the only safety net the foundation has.
   seconds; scoped runs are for iterating only, and a scoped green run is never reported as "all
   tests pass".
 
+### The coverage gate (CI)
+
+The owner's floor is **90 % line and 90 % branch coverage for every shipped assembly**, the
+test harness `Nordstein.Core.Testing` included. CI's `build` job enforces it after the one test run:
+
+```bash
+dotnet test Nordstein.Core.sln --settings tools/coverage.runsettings --collect "XPlat Code Coverage" --results-directory artifacts/coverage
+python3 tools/coverage_gate.py --reports artifacts/coverage --floors tools/coverage-floors.json
+```
+
+- `tools/coverage.runsettings` instruments `[Nordstein.Core.*]*` except `[*.Tests]*`, and skips
+  generated code (`GeneratedCodeAttribute`, `CompilerGeneratedAttribute`) and auto-properties.
+- `tools/coverage_gate.py` merges every `coverage.cobertura.xml` under `--reports` per line (an
+  assembly appears in the report of every test project that loads it: hits add up, each branch
+  condition keeps its best coverage), truncates each percentage to one decimal (89.99 % is 89.9 %)
+  and compares it with `tools/coverage-floors.json` (`{"<assembly>": {"line": 90.0, "branch": 90.0}}`).
+- It prints `coverage gate: PASS — line N %, branch N %` (or `FAIL`) and one `BELOW`, `NO FLOOR` or
+  `NO DATA` line per failure, writes `coverage.json` next to the reports, and exits 0 or 1.
+- **Never green on a missing result.** No report file, an unreadable or empty report, unreadable
+  floors, a measured assembly without a floor and a floor without coverage all fail.
+- A new shipped assembly gets its floor (at least 90.0 for both) in the same change;
+  `tools/tests/test_coverage_config.py` fails on a shipped assembly the settings do not measure, on
+  a test project they do, and on a missing floor or one below 90. Lowering a floor needs the owner.
+- The gate's own tests run in CI's `tooling` job: `python3 -m unittest discover -s tools/tests`.
+  Python standard library only.
+
 ## Core principles (non-negotiable, shared across all Nordstein repos)
 
 1. **No shared state between tests.** No system-under-test, fakes, fixtures, or seeded entities

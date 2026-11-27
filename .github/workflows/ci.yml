@@ -63,8 +63,39 @@ jobs:
       - name: Build
         run: dotnet build Nordstein.Core.sln --nologo --no-restore
 
-      - name: Test
-        run: dotnet test Nordstein.Core.sln --nologo --verbosity minimal --no-restore
+      # One run of the full suite, collecting coverage of every shipped assembly (tools/coverage.runsettings).
+      - name: Test with coverage
+        run: >-
+          dotnet test Nordstein.Core.sln --nologo --verbosity minimal --no-restore --no-build
+          --settings tools/coverage.runsettings --collect "XPlat Code Coverage"
+          --results-directory artifacts/coverage
+
+      # Every shipped assembly at or above its floor in tools/coverage-floors.json (90 % line and branch). Never green
+      # on a missing result: no report, an unreadable one, an assembly without a floor or a floor without coverage fail.
+      - name: Coverage gate
+        run: python3 tools/coverage_gate.py --reports artifacts/coverage --floors tools/coverage-floors.json
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: artifacts/coverage
+          if-no-files-found: warn
+          retention-days: 7
+
+  # The repository's own tooling (tools/, .claude/hooks/): its Python unit tests, standard library only. Never gated
+  # on a path filter: a skipped required check counts as passing.
+  tooling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Tooling tests
+        run: python3 -m unittest discover --start-directory tools/tests --verbose
 
   # Packs the NuGet packages and uploads them. Everyday builds resolve project references,
   # which hide two things a package consumer would hit: a type that is public in source but
