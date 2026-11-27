@@ -5,6 +5,7 @@ flow. Each package may only depend on packages below it:
 
 ```
 Nordstein.Core.Storage ──► Nordstein.Core.Domain ──► Nordstein.Core.Common
+Nordstein.Core.AI ───────► Nordstein.Core.Domain ──► Nordstein.Core.Common
 Nordstein.Core.Licensing ─────────────────────────► Nordstein.Core.Common
 Nordstein.Core.Testing ───────────────────────────► Nordstein.Core.Common
 Nordstein.Core.Workflows (BCL + Autofac only)
@@ -16,6 +17,7 @@ Nordstein.Core.Workflows (BCL + Autofac only)
 | `Nordstein.Core.Domain` | Domain foundation: `IDomainObject`/`IDomainEntity` contracts and bases, factory-delegate conventions, generators, `IRepository`/`ITransaction`, archive contracts, paging, persistence exceptions, entity events, consuming-assembly discovery (`Module`) | Autofac |
 | `Nordstein.Core.Storage` | EF Core storage foundation: `NordsteinDbContext`, generic repositories, the ambient-transaction seam, reference-data cache, `StorageFoundationModule<TContext>`. **Provider-neutral** — see [`storage.md`](storage.md) | EF Core **Relational only** (no provider), Autofac |
 | `Nordstein.Core.Licensing` | Generic license engine: JWT verification, activation, snapshot/status, server check — see [`licensing.md`](licensing.md) | System.IdentityModel.Tokens.Jwt, MS.Extensions Http |
+| `Nordstein.Core.AI` | AI foundation: messages, tools, prompts, completions, the versionless `IAgent` and `IModelClient` contracts, the `IAgentLoop` tool-call loop, structured output parsing. Provider implementations stay in the products — see [`ai.md`](ai.md) | System.Memory.Data, Autofac |
 | `Nordstein.Core.Workflows` | Workflow kernel: a DAG of typed nodes with data references, the validator and the deterministic interpreter with suspend and resume — see [`workflows.md`](workflows.md) | Autofac |
 | `Nordstein.Core.Testing` | The shared test harness: `BaseTest<TModule>` + the MSTest / AwesomeAssertions / NSubstitute baseline, the shared fakes (`Time/`, `Http/`, `Logging/`, `Certificates/`), the architecture fence kit (`Fences/`) and the perf-budget harness (`Performance/`) — see [`testing.md`](testing.md) | MSTest, AwesomeAssertions, NSubstitute, Autofac |
 
