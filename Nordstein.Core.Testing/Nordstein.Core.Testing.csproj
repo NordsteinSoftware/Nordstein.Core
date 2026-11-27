@@ -3,11 +3,18 @@
     <PropertyGroup>
         <Description>
             Shared MSTest harness for Nordstein applications: the Autofac-backed
-            BaseTest&lt;TModule&gt; fixture, container/service-provider helpers, and the
-            AwesomeAssertions + NSubstitute baseline every test project builds on.
+            BaseTest&lt;TModule&gt; fixture, container/service-provider helpers, the
+            AwesomeAssertions + NSubstitute baseline every test project builds on, shared fakes
+            (a manual clock, scripted and network-refusing HTTP handlers, a recording logger, a
+            throwaway certificate authority), an architecture fence kit and the dependency-free
+            performance-budget harness.
         </Description>
         <PackageTags>nordstein;testing;mstest;autofac;nsubstitute</PackageTags>
     </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Nordstein.Core.Testing.Tests" />
+    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Autofac" Version="9.3.4" />

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Nordstein.Core.Common.Validation;
 
-namespace Nordstein.Core.AI.Tools;
+namespace Nordstein.Core.AI.Tools.Internal;
 
 /// <summary>
 /// A tool argument defined by a JSON schema.

@@ -1,5 +1,6 @@
 using Autofac;
 using Nordstein.Core.Common.Async;
+using Nordstein.Core.Common.Async.Internal;
 using Nordstein.Core.Common.Conversion;
 using Nordstein.Core.Common.Conversion.Internal;
 using Nordstein.Core.Common.Cryptography;

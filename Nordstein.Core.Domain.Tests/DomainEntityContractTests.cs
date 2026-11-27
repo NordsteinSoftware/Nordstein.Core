@@ -4,6 +4,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Nordstein.Core.Common.Time;
 using Nordstein.Core.Testing;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Domain.Tests;
 
@@ -28,7 +29,7 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     [TestMethod]
     public void Constructor_ForNewEntity_StampsBothTimestampsFromTheClock()
     {
-        var pinned = new MutableClock(new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero));
+        var pinned = new ManualClock(new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero));
         IServiceProvider services = GetServices(builder => builder.RegisterInstance(pinned).As<IClock>());
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
 
@@ -43,7 +44,7 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     {
         // The timestamps are judged against the entity's clock, never the machine's: a host running
         // ahead of real time (a demonstration clock) still constructs valid entities.
-        var ahead = new MutableClock(DateTimeOffset.UtcNow.AddYears(5));
+        var ahead = new ManualClock(DateTimeOffset.UtcNow.AddYears(5));
         IServiceProvider services = GetServices(builder => builder.RegisterInstance(ahead).As<IClock>());
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
         var entity = new TestEntity(repository, ahead);
@@ -58,7 +59,7 @@ public sealed class DomainEntityContractTests : BaseTest<Module>
     [TestMethod]
     public void Validate_ForTimestampsAfterTheClock_ProducesValidationError()
     {
-        var pinned = new MutableClock(new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero));
+        var pinned = new ManualClock(new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero));
         IServiceProvider services = GetServices(builder => builder.RegisterInstance(pinned).As<IClock>());
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
         DateTimeOffset later = pinned.UtcNow.AddSeconds(1);

@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using Nordstein.Core.Common.Async;
+using Nordstein.Core.Common.Async.Internal;
 
 namespace Nordstein.Core.Common.Tests;
 
