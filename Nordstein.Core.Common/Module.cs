@@ -66,6 +66,15 @@ public class Module : Autofac.Module
 
         builder.RegisterType<Pbkdf2PasswordHasher>().As<IPasswordHasher>().SingleInstance();
 
+        // Credential primitives; the options are defaults unless the host registered its own first.
+        builder.RegisterInstance(new PasswordPolicyOptions()).IfNotRegistered(typeof(PasswordPolicyOptions));
+        builder.RegisterInstance(new LoginLockoutOptions()).IfNotRegistered(typeof(LoginLockoutOptions));
+        builder.RegisterType<PasswordPolicy>().As<IPasswordPolicy>().SingleInstance();
+        builder.RegisterType<PasswordGenerator>().As<IPasswordGenerator>().SingleInstance();
+        builder.RegisterType<DummyPasswordVerifier>().As<IDummyPasswordVerifier>().SingleInstance();
+        builder.RegisterType<LoginLockout>().As<ILoginLockout>().SingleInstance();
+        builder.RegisterType<SecretTokenFormat>().As<ISecretTokenFormat>().SingleInstance();
+
         // The default secret hasher yields to a product's own: a registration made before this
         // module keeps the default slot (and, made after it, wins as the last registration).
         builder.RegisterType<Sha256SecretHasher>()
