@@ -20,7 +20,8 @@ Product-agnostic AI foundations for Nordstein applications.
   product's `IToolInvoker` until a final answer or `AgentLoopOptions.MaxSteps`.
 - **Serialization** — structured model-output parsing: `IOutputFormat`, the strict
   `JsonSchemaOutputFormat` over a runtime JSON Schema (`OutputFormatException` on a truncated or
-  non-conforming reply), `ITextSerializer`,
+  non-conforming reply), `JsonSchemaExtensions.WithObjectsClosed` (the opt-in step that closes every
+  object schema for a strict provider), `ITextSerializer`,
   truncated-JSON repair, and `ModelReplyExtensions` (`StripCodeFence`, `TryStripReasoning`) for
   cutting a code fence or a leading `<think>` block off a raw reply.
 

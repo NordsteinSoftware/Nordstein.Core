@@ -17,7 +17,7 @@ Microsoft-owned `System.Memory.Data` for `BinaryData` content payloads).
 | `Nordstein.Core.AI.Completions` | `ICompletion`, `TokenUsage`, `TypedCompletion<TOutput>`, `IModelParameters` |
 | `Nordstein.Core.AI.Embeddings` | `IEmbeddingClient`: `ModelId` (keys the output space), `Dimension`, `EmbedAsync` (one vector per input, in order; empty inputs, no call) |
 | `Nordstein.Core.AI.Clients` | `IModelClient` (typed + streaming completion, request preview), `ModelOptions` (with the optional `ResponseFormat`), `ModelSamplingParameters`, `ResponseFormat`/`JsonSchemaResponseFormat` (the OpenAI-compatible `response_format` member), `ModelStreamUpdate` variants, request-preview records, the transport errors every client throws: `InferenceUnavailableException` (transient: unreachable, timeout, error status) and `InferenceContractException` (permanent until the configuration changes: a reply of the wrong shape; not sealed, so a product derives its own reasons) |
-| `Nordstein.Core.AI.Serialization` | `IOutputFormat` (parse + validate model output against a type, plus the prompt instruction telling the model how to format), `JsonSchemaOutputFormat` and `OutputFormatException`/`OutputFormatViolation` (strict parse against a runtime JSON Schema, see [Output formats](#output-formats)), `ITextSerializer`, truncated-JSON repair, `ModelReplyExtensions` (`StripCodeFence`, `TryStripReasoning`: cut a Markdown code fence or a leading `<think>` block off a raw reply) |
+| `Nordstein.Core.AI.Serialization` | `IOutputFormat` (parse + validate model output against a type, plus the prompt instruction telling the model how to format), `JsonSchemaOutputFormat` and `OutputFormatException`/`OutputFormatViolation` (strict parse against a runtime JSON Schema, see [Output formats](#output-formats)), `JsonSchemaExtensions.WithObjectsClosed` (the opt-in strict-schema closer, see [Closing a schema](#closing-a-schema)), `ITextSerializer`, truncated-JSON repair, `ModelReplyExtensions` (`StripCodeFence`, `TryStripReasoning`: cut a Markdown code fence or a leading `<think>` block off a raw reply) |
 
 ## The seams — what stays product-side, and why
 
@@ -61,7 +61,9 @@ JsonNode? reply = await format.ParseAsync<JsonNode>(text, cancellationToken);
   it is `null`. The name is 1 to 64 of `[A-Za-z0-9_-]`, the wire limit.
 - **Schema as given.** The schema is never rewritten into a provider's strict dialect (every
   object with `additionalProperties: false`, every property in `required`, optional values as
-  `["string","null"]`); the caller builds a schema the provider accepts.
+  `["string","null"]`); the caller builds a schema the provider accepts. The opt-in step for the
+  first two is `schema.WithObjectsClosed()` ([Closing a schema](#closing-a-schema)), passed in
+  place of the schema: `new JsonSchemaOutputFormat(schema.WithObjectsClosed(), "line_items")`.
 - **Checked subset.** `type` (a name or an array of names; `integer` is a number without a
   fractional part, so `1.0` counts), `required`, `enum` (equality by JSON value, so `1` equals
   `1.0`), `properties`, `items` (one schema), and a boolean `additionalProperties` (`false`
@@ -90,6 +92,34 @@ JsonNode? reply = await format.ParseAsync<JsonNode>(text, cancellationToken);
 - **Not registered.** The format has no dependencies and its schema is per call, so the module
   does not register it; `IOutputFormat.Create` still maps types to the two container formats.
   Instances are immutable and thread-safe.
+
+## Closing a schema
+
+`JsonSchemaExtensions.WithObjectsClosed(this JsonNode schema)` returns a copy in which every object
+schema is closed, for a provider that decodes only against closed objects. Nothing calls it on its
+own: the output format and `JsonSchemaResponseFormat` still send a schema as given.
+
+- **What closes.** An object schema (one with `properties`, or whose `type` names `object`, also
+  in an array such as `["object","null"]`) gets `additionalProperties: false` (`true` becomes
+  `false`) and a `required` listing every declared property: an existing `required` keeps its
+  order, the missing names follow in declaration order. An object schema without `properties` is
+  closed too and then accepts only `{}`. A property the caller left optional becomes required, so a
+  caller that must keep its absence expressible lets it accept `null` first.
+- **Where.** Every subschema position: the values of `properties`, `patternProperties`, `$defs`,
+  `definitions` and `dependentSchemas`; the items of `anyOf`, `oneOf`, `allOf` and `prefixItems`;
+  `items` (one schema or a tuple), `not`, `if`, `then`, `else`, `contains`, `additionalItems`,
+  `unevaluatedItems`, `propertyNames`. A `$ref` is not followed; the definitions it points into are
+  closed where they stand. Data positions (`enum`, `const`, `default`, `examples`) and boolean
+  schemas are copied unchanged.
+- **Refused** (`ArgumentException` naming the JSON Pointer): a root that is neither an object nor
+  a boolean; nesting beyond 64 levels; an `additionalProperties` that is not a boolean (closing a
+  map would make it an empty object); a `required` that is not an array of strings or names an
+  undeclared property (no value could satisfy it once closed); a subschema keyword of the wrong
+  form (`properties` not an object, `anyOf` not an array).
+- **Guarantees.** The input is never changed; the copy has no parent; closing a closed schema
+  returns an equal schema. The method holds no state, but concurrent calls on one `JsonNode` are
+  only as safe as concurrent reads of it, which System.Text.Json does not promise for a lazily
+  materialized node.
 
 ## The agent loop
 
