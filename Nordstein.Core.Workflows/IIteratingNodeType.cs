@@ -20,7 +20,9 @@ namespace Nordstein.Core.Workflows;
 /// more than <see cref="MaxItems"/> items: the step fails), the body runs per item in order, sequentially, every body step
 /// journaled with its iteration and counted against the step budget, and the node completes on <c>done</c> with
 /// <see cref="Collect"/>. A body step that fails without an error edge fails the loop's step with its reason (the loop's own
-/// error edge then applies). A pinned loop node completes with its pin instead.
+/// error edge then applies). A <see cref="MaxItems"/> or <see cref="Collect"/> that throws fails the loop's step the way a
+/// throwing <see cref="INodeType.ExecuteAsync"/> fails its own, with the exception's type name and message as the reason. A
+/// pinned loop node completes with its pin instead.
 /// </para>
 /// </remarks>
 public interface IIteratingNodeType : INodeType

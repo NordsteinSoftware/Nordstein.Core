@@ -23,9 +23,14 @@ internal static class NodeInvoker
         }
         catch (Exception exception)
         {
-            return new NodeResult.Failed($"{exception.GetType().Name}: {exception.Message}");
+            return new NodeResult.Failed(Reason(exception));
         }
     }
+
+    /// <summary>
+    /// The failure reason of a step whose node type threw: the exception's type name and message.
+    /// </summary>
+    public static string Reason(Exception exception) => $"{exception.GetType().Name}: {exception.Message}";
 
     /// <summary>
     /// Why <paramref name="result"/> fails the node although the node did not fail itself: a branch the type does not

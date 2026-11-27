@@ -224,7 +224,18 @@ internal sealed class WorkflowInterpreter : IWorkflowInterpreter
             return await FailAsync(run, position, $"{loop.ItemsProperty} is not an array once resolved.", cancellationToken);
         }
 
-        int max = loop.MaxItems(node.Config);
+        // The loop's hooks are the node type's own code, like ExecuteAsync: one that throws fails the step with the
+        // same reason a throwing node gets (NodeInvoker), so the loop's step never stays open.
+        int max;
+        try
+        {
+            max = loop.MaxItems(node.Config);
+        }
+        catch (Exception exception)
+        {
+            return await FailAsync(run, position, NodeInvoker.Reason(exception), cancellationToken);
+        }
+
         if (items.GetArrayLength() > max)
         {
             return await FailAsync(run, position, $"{loop.ItemsProperty} holds {items.GetArrayLength()} items; at most {max}.", cancellationToken);
@@ -286,7 +297,16 @@ internal sealed class WorkflowInterpreter : IWorkflowInterpreter
         }
 
         run.Loop = null;
-        JsonElement collected = loop.Collect(context, results);
+        JsonElement collected;
+        try
+        {
+            collected = loop.Collect(context, results);
+        }
+        catch (Exception exception)
+        {
+            return await FailAsync(run, position, NodeInvoker.Reason(exception), cancellationToken);
+        }
+
         await execution.Journal.StepCompletedAsync(node.Id, collected, LoopBranches.Done, cancellationToken);
         run.Complete(node.Id, collected, LoopBranches.Done);
         return null;

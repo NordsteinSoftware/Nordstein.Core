@@ -93,7 +93,8 @@ output exists), a path its output schema has (the fixed error output for a node 
   iteration) counted against `MaxSteps`, the body's outputs forgotten after each iteration; a body step that fails
   without an error edge fails the loop's step with `iteration <n>, step '<id>': <reason>` (the loop's error edge may
   take it), a body budget failure fails the loop with its kind, and a cancellation in the body journals `Cancelled` on the
-  body step, then on the loop's step, before the `OperationCanceledException` propagates. The loop completes on `done` with
+  body step, then on the loop's step, before the `OperationCanceledException` propagates. A loop hook that throws (`MaxItems`,
+  `Collect`) fails the loop's step like a throwing node, with `<ExceptionType>: <message>`; the loop's error edge may take it. The loop completes on `done` with
   `Collect(context, results)`, `results` the last executed body node's output per item. A pinned loop completes with its
   pin and runs no body; a pinned body node is pinned per iteration. A replay names the loop's collected step, never body
   steps.
