@@ -43,10 +43,14 @@ internal sealed class StubHttpMessageHandler : HttpMessageHandler
         LastRequestUri = request.RequestUri;
 
         if (throwTransport)
+        {
             throw new HttpRequestException("simulated transport failure");
+        }
 
         if (throwTimeout)
+        {
             throw new TaskCanceledException("simulated client timeout", new TimeoutException());
+        }
 
         return Task.FromResult(new HttpResponseMessage(statusCode)
         {

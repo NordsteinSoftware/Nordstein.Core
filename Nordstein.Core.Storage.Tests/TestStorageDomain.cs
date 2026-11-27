@@ -2,18 +2,21 @@ using System.ComponentModel.DataAnnotations;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Nordstein.Core.Common.Time;
 using Nordstein.Core.Domain;
 using Nordstein.Core.Domain.Events;
 
 namespace Nordstein.Core.Storage.Tests;
 
 // A minimal, self-contained domain + storage stack the foundation tests exercise. Kept plain (no
-// repository back-reference on the domain object) so the mappers have no dependency cycle. Four
+// repository back-reference on the domain object) so the mappers have no dependency cycle. Six
 // entities give the foundation full coverage:
 //   TestThing        — plain entity (base CRUD, paging, bulk, transactions)
 //   TestCachedThing  — [Cacheable] (the read-through cache path + module cache wiring)
-//   TestDoc          — archivable, hard-delete allowed (archive/unarchive/exclude/hard-delete)
+//   TestDoc          — archivable, hard-delete allowed (archive/unarchive/exclude/hard-delete, the lock hook)
 //   TestLockedDoc    — archivable, archive-only (the hard-delete refusal)
+//   TestOwner        — owned type (the owned-navigation update path)
+//   TestGuardedThing — a repository that overrides AddRangeAsync (a consumer fencing the bulk insert)
 
 // ---------------------------------------------------------------------------------------------
 // TestThing — plain entity
@@ -82,8 +85,9 @@ internal sealed class TestThingRepository : AbstractRepository<ITestThing, TestT
         ITransaction transaction,
         IEntityEventService entityEvents,
         AmbientDbContext ambient,
+        IClock clock,
         IEntityCache<ITestThing>? cache = null)
-        : base(mapper, contextFactory, transaction, entityEvents, ambient, cache)
+        : base(mapper, contextFactory, transaction, entityEvents, ambient, clock, cache)
     {
     }
 }
@@ -156,8 +160,9 @@ internal sealed class TestCachedThingRepository : AbstractRepository<ITestCached
         ITransaction transaction,
         IEntityEventService entityEvents,
         AmbientDbContext ambient,
+        IClock clock,
         IEntityCache<ITestCachedThing>? cache = null)
-        : base(mapper, contextFactory, transaction, entityEvents, ambient, cache)
+        : base(mapper, contextFactory, transaction, entityEvents, ambient, clock, cache)
     {
     }
 }
@@ -233,19 +238,33 @@ internal sealed class TestDocMapper : IMapper<ITestDoc, TestDocEntity>
 [UsedImplicitly]
 internal sealed class TestDocRepository : ArchivableRepository<ITestDoc, TestDocEntity>, ITestDocRepository
 {
+    private readonly ArchiveLockProbe probe;
+
     public TestDocRepository(
         IMapper<ITestDoc, TestDocEntity> mapper,
         Func<DbContext> contextFactory,
         ITransaction transaction,
         IEntityEventService entityEvents,
         AmbientDbContext ambient,
+        IClock clock,
+        ArchiveLockProbe probe,
         IEntityCache<ITestDoc>? cache = null)
-        : base(mapper, contextFactory, transaction, entityEvents, ambient, cache)
+        : base(mapper, contextFactory, transaction, entityEvents, ambient, clock, cache)
     {
+        this.probe = probe;
     }
 
     public Task Unarchive(Guid id, CancellationToken cancellationToken = default)
         => UnarchiveAsync(id, cancellationToken);
+
+    protected override Task LockForArchiveAsync(DbContext context, Guid id, CancellationToken cancellationToken)
+        => probe.LockAsync();
+
+    protected override Task ArchiveRelationsAsync(DbContext context, Guid id, CancellationToken cancellationToken)
+    {
+        probe.RelationsRan();
+        return Task.CompletedTask;
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -319,8 +338,9 @@ internal sealed class TestLockedDocRepository : ArchivableRepository<ITestLocked
         ITransaction transaction,
         IEntityEventService entityEvents,
         AmbientDbContext ambient,
+        IClock clock,
         IEntityCache<ITestLockedDoc>? cache = null)
-        : base(mapper, contextFactory, transaction, entityEvents, ambient, cache)
+        : base(mapper, contextFactory, transaction, entityEvents, ambient, clock, cache)
     {
     }
 
@@ -406,10 +426,90 @@ internal sealed class TestOwnerRepository : AbstractRepository<ITestOwner, TestO
         ITransaction transaction,
         IEntityEventService entityEvents,
         AmbientDbContext ambient,
+        IClock clock,
         IEntityCache<ITestOwner>? cache = null)
-        : base(mapper, contextFactory, transaction, entityEvents, ambient, cache)
+        : base(mapper, contextFactory, transaction, entityEvents, ambient, clock, cache)
     {
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// TestGuardedThing — a repository that refuses the bulk insert
+// ---------------------------------------------------------------------------------------------
+
+internal interface ITestGuardedThing : IDomainEntity
+{
+    string Name { get; }
+}
+
+internal sealed record TestGuardedThing : ITestGuardedThing
+{
+    public required Guid Id { get; init; }
+    public required DateTimeOffset CreatedAt { get; init; }
+    public required DateTimeOffset UpdatedAt { get; init; }
+    public string Name { get; init; } = string.Empty;
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) => [];
+}
+
+[StoredDomainEntity(typeof(ITestGuardedThing))]
+internal sealed record TestGuardedThingEntity : Entity
+{
+    public required string Name { get; init; }
+}
+
+[UsedImplicitly]
+internal sealed class TestGuardedThingConfiguration : AbstractEntityConfiguration<TestGuardedThingEntity>
+{
+    public override void Configure(EntityTypeBuilder<TestGuardedThingEntity> builder)
+    {
+        builder.ToTable("TestGuardedThings");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Name).IsRequired();
+    }
+}
+
+[UsedImplicitly]
+internal sealed class TestGuardedThingMapper : IMapper<ITestGuardedThing, TestGuardedThingEntity>
+{
+    public Task<ITestGuardedThing> Map(TestGuardedThingEntity storedEntity, CancellationToken cancellationToken = default)
+        => Task.FromResult<ITestGuardedThing>(new TestGuardedThing
+        {
+            Id = storedEntity.Id,
+            CreatedAt = storedEntity.CreatedAt,
+            UpdatedAt = storedEntity.UpdatedAt,
+            Name = storedEntity.Name,
+        });
+
+    public Task<TestGuardedThingEntity> Map(ITestGuardedThing domainEntity, CancellationToken cancellationToken = default)
+        => Task.FromResult(new TestGuardedThingEntity
+        {
+            Id = domainEntity.Id,
+            CreatedAt = domainEntity.CreatedAt,
+            UpdatedAt = domainEntity.UpdatedAt,
+            Name = domainEntity.Name,
+        });
+}
+
+[UsedImplicitly]
+internal sealed class TestGuardedThingRepository : AbstractRepository<ITestGuardedThing, TestGuardedThingEntity>
+{
+    public TestGuardedThingRepository(
+        IMapper<ITestGuardedThing, TestGuardedThingEntity> mapper,
+        Func<DbContext> contextFactory,
+        ITransaction transaction,
+        IEntityEventService entityEvents,
+        AmbientDbContext ambient,
+        IClock clock,
+        IEntityCache<ITestGuardedThing>? cache = null)
+        : base(mapper, contextFactory, transaction, entityEvents, ambient, clock, cache)
+    {
+    }
+
+    public override Task AddRangeAsync(
+        IReadOnlyCollection<ITestGuardedThing> entities,
+        CancellationToken cancellationToken = default)
+        => throw new InvalidOperationException("TestGuardedThing rows enter one at a time.");
 }
 
 // ---------------------------------------------------------------------------------------------

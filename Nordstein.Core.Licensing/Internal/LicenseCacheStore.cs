@@ -29,7 +29,9 @@ internal sealed class LicenseCacheStore : ILicenseCacheStore
         try
         {
             if (!File.Exists(filePath))
+            {
                 return null;
+            }
 
             var json = File.ReadAllText(filePath);
             return JsonSerializer.Deserialize<LicenseCacheEntry>(json, Options);
@@ -47,7 +49,9 @@ internal sealed class LicenseCacheStore : ILicenseCacheStore
         {
             var directory = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(directory))
+            {
                 Directory.CreateDirectory(directory);
+            }
 
             var json = JsonSerializer.Serialize(entry, Options);
             File.WriteAllText(filePath, json);

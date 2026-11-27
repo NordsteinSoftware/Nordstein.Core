@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using Autofac;
 using Nordstein.Core.Common.DependencyInjection;
@@ -143,13 +142,7 @@ public sealed class Module : Autofac.Module
         {
             builder.RegisterType(domainObjectType)
                 .As(domainInterfaceType)
-                .OnActivated(context =>
-                {
-                    if (context.Instance is IValidatableObject validatable)
-                    {
-                        Validator.ValidateObject(validatable, new ValidationContext(context.Instance), true);
-                    }
-                });
+                .ValidateOnActivation();
         }
 
         Type generatorInterfaceType = typeof(IDomainObjectGenerator<>).MakeGenericType(domainInterfaceType);

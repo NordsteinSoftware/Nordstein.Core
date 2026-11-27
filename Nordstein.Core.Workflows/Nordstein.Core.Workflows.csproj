@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>
+            Product-agnostic workflow kernel for Nordstein applications: a workflow as a directed
+            acyclic graph of typed nodes, data references between them, a validator that checks the
+            graph and every reference against the node types' JSON schemas, and a deterministic
+            interpreter that runs a graph step by step through a product's step journal, with
+            suspend and resume.
+        </Description>
+        <PackageTags>nordstein;workflow;automation;graph</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Autofac" Version="9.3.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Nordstein.Core.Workflows.Tests" />
+    </ItemGroup>
+
+</Project>

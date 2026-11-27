@@ -15,7 +15,7 @@ PostgreSQL.
 | Type | Role |
 |------|------|
 | `NordsteinDbContext` | Abstract `DbContext` base. Applies every registered `IModelConfiguration` and enforces the `UpdatedAt` optimistic-concurrency-token convention. Each product derives a concrete context from it. |
-| `Entity` | Base record for stored entities: `Id`, `CreatedAt`, `UpdatedAt` + validation. |
+| `Entity` | Base record for stored entities: `Id`, `CreatedAt`, `UpdatedAt` + validation (set and ordered; the not-in-the-future check needs a clock and lives on the domain entity). |
 | `IEntity`, `IArchivableEntity`, `IEntityAdapter`, `StoredDomainEntityAttribute`, `EntityExtensions` | Stored-entity contracts and the stored↔domain association the discovery reads. |
 | `IMapper<TDomain,TStored>` | Bidirectional map between a domain entity and its stored form. One per entity, product-supplied. |
 | `AbstractRepository<TDomain,TStored>` | Generic CRUD, paging (ordered by `CreatedAt` descending, then `Id` descending — a total order, so offset pages never repeat or skip same-instant rows), upsert, `GetMany`, optimistic concurrency, deferred change notifications, optional caching. |
@@ -98,13 +98,21 @@ stored `… : Entity` record with `[StoredDomainEntity(typeof(IThing))]`, an
 
 ## Conventions worth knowing
 
+- **`UpdatedAt` from the container's `IClock`.** `AbstractRepository.UpdateAsync` and
+  `ArchivableRepository`'s archive and unarchive stamp `UpdatedAt` from the injected `IClock`, never
+  from the machine clock; a repository constructor takes the clock after `AmbientDbContext`.
 - **Optimistic concurrency on `UpdatedAt`.** `NordsteinDbContext` marks every entity's `UpdatedAt`
   `DateTimeOffset` as an EF concurrency token, so `UPDATE/DELETE … WHERE UpdatedAt = @original` guards
   against lost updates. The repository pre-checks in memory and the database enforces it. Because a
   relational store persists microsecond precision but an in-memory token keeps 100-ns precision,
-  comparisons and realignment happen at microsecond granularity (`ConcurrencyTokenExtensions`).
+  comparisons happen at microsecond granularity (`ConcurrencyTokenExtensions.MatchesConcurrencyToken`) and
+  realignment truncates with `Nordstein.Core.Common.Time.MicrosecondPrecisionExtensions.TruncateToMicroseconds`.
 - **Soft delete.** Derive from `ArchivableRepository<,>` and implement `IArchivableEntity`. Archived
   rows are excluded from list/paged queries but still resolve by id, so history keeps loading.
+  `ArchiveAsync` calls `LockForArchiveAsync`, then reads the row (a tracked copy is reloaded), then
+  `ArchiveRelationsAsync`. The hook is a no-op; override it with the provider's row lock (PostgreSQL:
+  `SELECT 1 … FOR NO KEY UPDATE`) so a concurrent archive of the same row returns `false` before any
+  relation clean-up, not after it through the concurrency token.
 - **Reference-data cache.** Mark a slow-changing entity `[Cacheable]`. Entries are per-lifetime-scope
   (a cached domain object holds the repository it came from), but invalidation is process-wide via the
   singleton `EntityCacheVersions<>`. Never cache high-volume entities. The cache is bypassed while a
@@ -114,6 +122,10 @@ stored `… : Entity` record with `[StoredDomainEntity(typeof(IThing))]`, an
   notifications fire only after the outermost commit. The caller's cancellation token is honored when
   the transaction begins and inside the operation, never during commit or rollback: a commit cancelled
   mid-flight could report failure for a transaction the database did commit.
+- **Fencing writes.** `AddAsync`, `AddRangeAsync`, `UpsertAsync`, `RemoveAsync`, `RemoveAllAsync` and the
+  `UpdateRelationsAsync` hook (called inside `UpdateAsync`, before the save) are virtual. A repository of
+  an immutable or guarded entity overrides them to throw. `UpdateAsync` itself is not virtual: fence it
+  in `UpdateRelationsAsync`.
 - **Search patterns.** Build `LIKE` right-hand sides with `LikePattern.Contains` (it lowercases and
   escapes wildcards); lower the column in the query too.
 

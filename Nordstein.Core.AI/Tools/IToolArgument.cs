@@ -1,4 +1,4 @@
-﻿namespace Nordstein.Core.AI.Tools;
+namespace Nordstein.Core.AI.Tools;
 
 /// <summary>
 /// A tool argument

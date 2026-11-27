@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Nordstein.Core.Common.Conversion;
+using Nordstein.Core.Common.Time;
 using Nordstein.Core.Common.Validation;
 
 namespace Nordstein.Core.Domain;
@@ -10,7 +11,9 @@ namespace Nordstein.Core.Domain;
 /// <remarks>
 /// Manages <see cref="Id"/>, timestamps (<see cref="CreatedAt"/>, <see cref="UpdatedAt"/>), and
 /// <see cref="IsArchived"/>. Persistence operations are delegated to the injected
-/// <see cref="IRepository{TSelf}"/>. Entity equality is determined by type and <see cref="Id"/>,
+/// <see cref="IRepository{TSelf}"/>; timestamps come from the injected <see cref="IClock"/>, the
+/// same clock the timestamps are validated against, so a host whose clock is not the machine's
+/// (a demonstration clock) stays consistent. Entity equality is determined by type and <see cref="Id"/>,
 /// not by value — two instances of the same type with the same <see cref="Id"/> are equal even if
 /// other properties differ.
 /// <para>
@@ -22,22 +25,28 @@ public abstract record DomainEntity<TSelf> : IDomainEntity<TSelf>
     where TSelf : class, IDomainEntity
 {
     private readonly IRepository<TSelf> repository;
+    private readonly IClock clock;
 
     /// <summary>
     /// Constructor for NEW entities.
     /// </summary>
     /// <remarks>
     /// Assigns a new <see cref="Guid"/> to <see cref="Id"/>, sets <see cref="CreatedAt"/> and
-    /// <see cref="UpdatedAt"/> to <see cref="DateTimeOffset.UtcNow"/>, and sets
+    /// <see cref="UpdatedAt"/> to one reading of <paramref name="clock"/>, and sets
     /// <see cref="IsArchived"/> to <see langword="false"/>.
     /// </remarks>
     /// <param name="repository">The repository used for persistence operations.</param>
-    protected DomainEntity(IRepository<TSelf> repository)
+    /// <param name="clock">The clock that stamps and validates the timestamps.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="clock"/> is null.</exception>
+    protected DomainEntity(IRepository<TSelf> repository, IClock clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         this.repository = repository;
+        this.clock = clock;
+        DateTimeOffset now = clock.UtcNow;
         Id = Guid.NewGuid();
-        CreatedAt = DateTimeOffset.UtcNow;
-        UpdatedAt = DateTimeOffset.UtcNow;
+        CreatedAt = now;
+        UpdatedAt = now;
         IsArchived = false;
     }
 
@@ -50,9 +59,13 @@ public abstract record DomainEntity<TSelf> : IDomainEntity<TSelf>
     /// </remarks>
     /// <param name="existing">The raw data record returned from the storage layer.</param>
     /// <param name="repository">The repository used for persistence operations.</param>
-    protected DomainEntity(IDomainEntityData existing, IRepository<TSelf> repository)
+    /// <param name="clock">The clock the timestamps are validated against.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="clock"/> is null.</exception>
+    protected DomainEntity(IDomainEntityData existing, IRepository<TSelf> repository, IClock clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         this.repository = repository;
+        this.clock = clock;
         Id = existing.Id;
         CreatedAt = existing.CreatedAt;
         UpdatedAt = existing.UpdatedAt;
@@ -85,7 +98,8 @@ public abstract record DomainEntity<TSelf> : IDomainEntity<TSelf>
 
     /// <summary>
     /// Validates <see cref="Id"/>, <see cref="CreatedAt"/>, <see cref="UpdatedAt"/>, and
-    /// <see cref="IsArchived"/> using the standard domain rules.
+    /// <see cref="IsArchived"/> using the standard domain rules; the timestamps must not be after
+    /// the injected clock's now.
     /// </summary>
     /// <remarks>
     /// Derived classes should call <c>base.Validate</c> and then <c>yield return</c> their own
@@ -98,9 +112,10 @@ public abstract record DomainEntity<TSelf> : IDomainEntity<TSelf>
     /// </returns>
     public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        DateTimeOffset now = clock.UtcNow;
         yield return Validation.NotDefault(Id);
-        yield return Validation.InPast(CreatedAt);
-        yield return Validation.InPast(UpdatedAt);
+        yield return Validation.InPast(CreatedAt, now);
+        yield return Validation.InPast(UpdatedAt, now);
         yield return Validation.NotBefore(UpdatedAt, CreatedAt);
     }
 

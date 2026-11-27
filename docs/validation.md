@@ -10,6 +10,9 @@ and yield `base.Validate(...)` first, using the helpers from
 Validation.NotNullOrWhiteSpace(Name, nameof(Name))   // note: capital S in "WhiteSpace"
 Validation.NotNull(Account, nameof(Account))
 Validation.NotDefault(SomeGuid, nameof(SomeGuid))
+Validation.NotNullOrDefault(OptionalId, nameof(OptionalId))   // Guid?: null and Guid.Empty both fail
+Validation.Empty(GroupIds, nameof(GroupIds))                 // a collection that must have no element
+Validation.NoneDefault(GroupIds, nameof(GroupIds))           // no element equals default(T)
 Validation.InPast(CreatedAt, nameof(CreatedAt))
 Validation.NotBefore(UpdatedAt, CreatedAt, nameof(UpdatedAt))
 ```
@@ -19,6 +22,20 @@ For referenced entities, cascade validation:
 ```csharp
 foreach (var r in Account.Validate(validationContext)) yield return r;
 ```
+
+A nested value or options object that is not an entity is validated with `Validation.Nested`, which
+reports its failures under the parent member:
+
+```csharp
+foreach (ValidationResult failure in Validation.Nested(Chunking))   // member name from the argument expression
+    yield return failure;
+```
+
+A failure `MaxChunkChars must be greater than 0` of the child surfaces as the message
+`Chunking:MaxChunkChars must be greater than 0` with `MemberNames` `["Chunking:MaxChunkChars"]`; a
+failure that names no member gets `["Chunking"]`. The prefix composes through further levels
+(`Outer:Chunking:MaxChunkChars`). A `null` child yields nothing: required-ness is a separate
+`Validation.NotNull` rule.
 
 ## Member names
 
@@ -31,7 +48,9 @@ names no member:
 
 ```csharp
 if (Cancelled && Shipped)
+{
     yield return new ValidationResult("A cancelled order cannot be shipped");   // MemberNames empty
+}
 ```
 
 A hand-written member rule passes the names: `new ValidationResult("...", [nameof(Quantity)])`.

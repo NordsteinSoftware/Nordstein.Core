@@ -31,6 +31,8 @@ public sealed class ValidationMemberNameTests
         [nameof(Check.NotDefault), (Func<ValidationResult>)(() => Check.NotDefault(Guid.Empty, Member))],
         [nameof(Check.InPast), (Func<ValidationResult>)(() => Check.InPast(DateTimeOffset.MaxValue, Member))],
         [nameof(Check.InFuture), (Func<ValidationResult>)(() => Check.InFuture(DateTimeOffset.MinValue, Member))],
+        ["InPast(now)", (Func<ValidationResult>)(() => Check.InPast(DateTimeOffset.MaxValue, DateTimeOffset.UnixEpoch, Member))],
+        ["InFuture(now)", (Func<ValidationResult>)(() => Check.InFuture(DateTimeOffset.MinValue, DateTimeOffset.UnixEpoch, Member))],
         [nameof(Check.NotBefore), (Func<ValidationResult>)(() => Check.NotBefore(DateTimeOffset.MinValue, DateTimeOffset.MaxValue, Member))],
         [nameof(Check.NotAfter), (Func<ValidationResult>)(() => Check.NotAfter(DateTimeOffset.MaxValue, DateTimeOffset.MinValue, Member))],
         [nameof(Check.NotNegative), (Func<ValidationResult>)(() => Check.NotNegative(-1m, Member))],
@@ -44,6 +46,9 @@ public sealed class ValidationMemberNameTests
         [nameof(Check.MinLength), (Func<ValidationResult>)(() => Check.MinLength("a", 2, Member))],
         [nameof(Check.ExactLength), (Func<ValidationResult>)(() => Check.ExactLength("a", 2, Member))],
         ["NotEmpty(string)", (Func<ValidationResult>)(() => Check.NotEmpty("", Member))],
+        [nameof(Check.NotNullOrDefault), (Func<ValidationResult>)(() => Check.NotNullOrDefault<Guid>(null, Member))],
+        [nameof(Check.Empty), (Func<ValidationResult>)(() => Check.Empty(new[] { 1 }, Member))],
+        [nameof(Check.NoneDefault), (Func<ValidationResult>)(() => Check.NoneDefault(new[] { 0 }, Member))],
         ["NotEmpty(collection)", (Func<ValidationResult>)(() => Check.NotEmpty(Array.Empty<int>(), Member))],
         [nameof(Check.Matches), (Func<ValidationResult>)(() => Check.Matches("a", "^b$", Member))],
         [nameof(Check.ValidUri), (Func<ValidationResult>)(() => Check.ValidUri("not a uri", Member))],
@@ -115,7 +120,9 @@ public sealed class ValidationMemberNameTests
             yield return Check.GreaterThan(Quantity, 0, nameof(Quantity));
 
             if (Cancelled && Shipped)
+            {
                 yield return new ValidationResult("A cancelled order cannot be shipped");
+            }
         }
     }
 }

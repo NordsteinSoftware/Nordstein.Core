@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Nordstein.Core.Common.Validation;
 
 namespace Nordstein.Core.AI.Messages;

@@ -23,6 +23,12 @@ public sealed class AbstractRepositoryTests : BaseTest<Module>
         return new TestThing { Id = Guid.NewGuid(), CreatedAt = now, UpdatedAt = now, Name = name };
     }
 
+    private static ITestGuardedThing NewGuardedThing(string name)
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        return new TestGuardedThing { Id = Guid.NewGuid(), CreatedAt = now, UpdatedAt = now, Name = name };
+    }
+
     [TestMethod]
     public async Task GetAllAsync_ReturnsEveryRow()
     {
@@ -37,17 +43,23 @@ public sealed class AbstractRepositoryTests : BaseTest<Module>
     }
 
     [TestMethod]
-    public void RemovalMethods_AreVirtual_SoConsumersCanFenceThem()
+    [DataRow(nameof(IRepository<ITestThing>.AddAsync))]
+    [DataRow(nameof(IRepository<ITestThing>.AddRangeAsync))]
+    [DataRow(nameof(IRepository<ITestThing>.UpsertAsync))]
+    [DataRow(nameof(IRepository<ITestThing>.RemoveAsync))]
+    [DataRow(nameof(IRepository<ITestThing>.RemoveAllAsync))]
+    public void WriteMethod_IsOverridable_SoConsumersCanFenceIt(string methodName)
     {
-        // Consumers of AbstractRepository override RemoveAsync/RemoveAllAsync to refuse hard deletes
-        // on immutable/archive-only entities. Both must stay virtual; a docs edit once dropped the
-        // keyword from RemoveAllAsync and broke every such consumer.
-        Type repositoryType = typeof(AbstractRepository<,>);
+        // Consumers of AbstractRepository override the write methods to refuse writes on immutable or
+        // guarded entities. Each must stay virtual; a docs edit once dropped the keyword from
+        // RemoveAllAsync and broke every such consumer. IsVirtual alone is not enough: an implicit
+        // interface implementation is emitted "virtual final", so IsVirtual is true even without the
+        // keyword. Only IsFinal == false proves a subclass can override.
+        System.Reflection.MethodInfo? method = typeof(AbstractRepository<,>).GetMethod(methodName);
 
-        repositoryType.GetMethod(nameof(IRepository<ITestThing>.RemoveAsync))?.IsVirtual
-            .Should().BeTrue("consumers override RemoveAsync to fence hard deletes");
-        repositoryType.GetMethod(nameof(IRepository<ITestThing>.RemoveAllAsync))?.IsVirtual
-            .Should().BeTrue("consumers override RemoveAllAsync to fence hard deletes");
+        method.Should().NotBeNull();
+        method?.IsVirtual.Should().BeTrue($"consumers override {methodName} to fence it");
+        method?.IsFinal.Should().BeFalse($"consumers override {methodName} to fence it");
     }
 
     [TestMethod]
@@ -228,6 +240,20 @@ public sealed class AbstractRepositoryTests : BaseTest<Module>
         await FluentActions
             .Invoking(() => repository.AddRangeAsync([existing, NewThing("b")], CancellationToken))
             .Should().ThrowAsync<EntityAlreadyExistsException>();
+    }
+
+    [TestMethod]
+    public async Task AddRangeAsync_OverriddenInASubclass_TheGenericInterfaceReachesTheOverride()
+    {
+        IServiceProvider services = GetServices();
+        var repository = services.GetRequiredService<IRepository<ITestGuardedThing>>();
+        ITestGuardedThing[] things = [NewGuardedThing("a"), NewGuardedThing("b")];
+
+        await FluentActions
+            .Invoking(() => repository.AddRangeAsync(things, CancellationToken))
+            .Should().ThrowAsync<InvalidOperationException>();
+
+        (await repository.CountAsync(CancellationToken)).Should().Be(0);
     }
 
     [TestMethod]

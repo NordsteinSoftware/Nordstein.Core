@@ -276,6 +276,48 @@ public sealed class ValidationTests
     }
 
     [TestMethod]
+    public void InPast_WithClock_AcceptsAValueNotAfterThatClock()
+    {
+        var now = new DateTimeOffset(2030, 6, 1, 12, 0, 0, TimeSpan.Zero);
+
+        global::Nordstein.Core.Common.Validation.Validation.InPast(now, now).Should().Be(ValidationResult.Success);
+        global::Nordstein.Core.Common.Validation.Validation.InPast(now.AddTicks(-1), now).Should().Be(ValidationResult.Success);
+    }
+
+    [TestMethod]
+    public void InPast_WithClock_RejectsAValueAfterThatClock_IgnoringTheSystemClock()
+    {
+        // Far in the real past, yet after the given clock: the given clock decides.
+        var now = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        var result = global::Nordstein.Core.Common.Validation.Validation.InPast(now.AddTicks(1), now, "Stamp");
+
+        result.Should().NotBe(ValidationResult.Success);
+        result.ErrorMessage.Should().Be("Stamp must be in the past");
+        result.MemberNames.Should().Equal("Stamp");
+    }
+
+    [TestMethod]
+    public void InFuture_WithClock_AcceptsOnlyAValueAfterThatClock()
+    {
+        var now = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        global::Nordstein.Core.Common.Validation.Validation.InFuture(now.AddTicks(1), now).Should().Be(ValidationResult.Success);
+        global::Nordstein.Core.Common.Validation.Validation.InFuture(now, now).Should().NotBe(ValidationResult.Success);
+    }
+
+    [TestMethod]
+    public void InFuture_WithClock_NamesTheMemberOnFailure()
+    {
+        var now = new DateTimeOffset(2030, 6, 1, 12, 0, 0, TimeSpan.Zero);
+
+        var result = global::Nordstein.Core.Common.Validation.Validation.InFuture(now.AddDays(-1), now, "Due");
+
+        result.ErrorMessage.Should().Be("Due must be in the future");
+        result.MemberNames.Should().Equal("Due");
+    }
+
+    [TestMethod]
     public void NotBefore_WithDateAfterMinValue_ReturnsSuccess()
     {
         // Arrange

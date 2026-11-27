@@ -7,13 +7,15 @@ internal sealed class FileWriteHandle : IFileWriteHandle
 {
     private readonly string stagingPath;
     private readonly FileStream stream;
+    private readonly IDirectorySync directorySync;
 
     private bool streamClosed;
     private bool published;
     private bool disposed;
 
-    internal FileWriteHandle(string destinationDirectory)
+    internal FileWriteHandle(string destinationDirectory, IDirectorySync directorySync)
     {
+        this.directorySync = directorySync;
         stagingPath = System.IO.Path.Combine(destinationDirectory, $".{Guid.NewGuid():N}.tmp");
 
         try
@@ -53,6 +55,15 @@ internal sealed class FileWriteHandle : IFileWriteHandle
             throw new InvalidOperationException("This write handle has already been published.");
         }
 
+        // Only a filesystem root has no parent directory; nothing can be published there, and
+        // without a parent there is no directory to flush after the move.
+        string? destinationDirectory = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(destinationPath));
+        if (destinationDirectory is null)
+        {
+            throw new ArgumentException(
+                $"'{destinationPath}' is a filesystem root, not a file path.", nameof(destinationPath));
+        }
+
         await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         stream.Flush(flushToDisk: true);
         await stream.DisposeAsync().ConfigureAwait(false);
@@ -81,6 +92,10 @@ internal sealed class FileWriteHandle : IFileWriteHandle
         }
 
         published = true;
+
+        // The rename is only durable once the directory holding the new entry is flushed. A failure
+        // here leaves the file published, so the handle no longer owns a staging file to delete.
+        directorySync.Flush(destinationDirectory);
     }
 
     public async ValueTask DisposeAsync()

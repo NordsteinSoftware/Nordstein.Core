@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Nordstein.Core.Common.Time;
 using Nordstein.Core.Domain;
 using Nordstein.Core.Domain.Events;
 
@@ -18,6 +19,8 @@ public abstract class ArchivableRepository<TDomainEntity, TStoredEntity>
     where TDomainEntity : class, IArchivable
     where TStoredEntity : Entity, IArchivableEntity
 {
+    private readonly IClock clock;
+
     /// <summary>
     /// Initializes the archivable repository by forwarding all parameters to
     /// <see cref="AbstractRepository{TDomainEntity,TStoredEntity}"/>.
@@ -32,6 +35,7 @@ public abstract class ArchivableRepository<TDomainEntity, TStoredEntity>
     /// The ambient-context holder; threads the shared EF context across nested repository calls
     /// inside a single logical transaction.
     /// </param>
+    /// <param name="clock">The clock that stamps <c>UpdatedAt</c> on every write, archiving included.</param>
     /// <param name="cache">
     /// Optional scope-local entity cache. When <see langword="null"/> the repository performs no
     /// caching and always reads from the database.
@@ -42,9 +46,11 @@ public abstract class ArchivableRepository<TDomainEntity, TStoredEntity>
         ITransaction transaction,
         IEntityEventService entityEvents,
         AmbientDbContext ambient,
+        IClock clock,
         IEntityCache<TDomainEntity>? cache = null)
-        : base(mapper, contextFactory, transaction, entityEvents, ambient, cache)
+        : base(mapper, contextFactory, transaction, entityEvents, ambient, clock, cache)
     {
+        this.clock = clock;
     }
 
     /// <summary>
@@ -82,24 +88,34 @@ public abstract class ArchivableRepository<TDomainEntity, TStoredEntity>
                 "ArchiveAsync per row instead. A bulk hard delete would cascade-remove the history that references it.");
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Takes <see cref="LockForArchiveAsync"/> first, then reads the row, so a concurrent archive the
+    /// lock waited for reads as already archived (<c>false</c>, no relation clean-up) rather than as a
+    /// lost race.
+    /// </remarks>
     public async Task<bool> ArchiveAsync(Guid id, CancellationToken cancellationToken = default)
     {
         bool archived = await transaction.InvokeAsync(async () =>
         {
             DbContext context = ambient.RequireContext();
-            TStoredEntity? existing = await context.Set<TStoredEntity>().FindAsync([id], cancellationToken);
+            await LockForArchiveAsync(context, id, cancellationToken);
+            TStoredEntity? existing = await ReadAfterLockAsync(context, id, cancellationToken);
             if (existing is null)
+            {
                 return false;
+            }
 
             // Already archived: report no state transition (false), so a repeated delete is a true
             // no-op — callers return 404 and skip auditing rather than recording a phantom deletion.
             if (existing.IsArchived)
+            {
                 return false;
+            }
 
             await ArchiveRelationsAsync(context, id, cancellationToken);
 
             var entry = context.Entry(existing);
-            entry.CurrentValues.SetValues(existing with { IsArchived = true, UpdatedAt = DateTimeOffset.UtcNow });
+            entry.CurrentValues.SetValues(existing with { IsArchived = true, UpdatedAt = clock.UtcNow });
             RealignConcurrencyToken(entry);
             try
             {
@@ -113,10 +129,13 @@ public abstract class ArchivableRepository<TDomainEntity, TStoredEntity>
             }
             InvalidateCacheEntry(id);
             return true;
-        });
+        }, cancellationToken);
 
         if (archived)
+        {
             Notify(id, EntityChangeType.Removed);
+        }
+
         return archived;
     }
 
@@ -132,10 +151,12 @@ public abstract class ArchivableRepository<TDomainEntity, TStoredEntity>
             DbContext context = ambient.RequireContext();
             TStoredEntity? existing = await context.Set<TStoredEntity>().FindAsync([id], cancellationToken);
             if (existing is null || !existing.IsArchived)
+            {
                 return false;
+            }
 
             var entry = context.Entry(existing);
-            entry.CurrentValues.SetValues(existing with { IsArchived = false, UpdatedAt = DateTimeOffset.UtcNow });
+            entry.CurrentValues.SetValues(existing with { IsArchived = false, UpdatedAt = clock.UtcNow });
             RealignConcurrencyToken(entry);
             try
             {
@@ -151,7 +172,47 @@ public abstract class ArchivableRepository<TDomainEntity, TStoredEntity>
         }, cancellationToken);
 
         if (unarchived)
+        {
             Notify(id, EntityChangeType.Added);
+        }
+    }
+
+    /// <summary>
+    /// Takes the store's write lock on the entity's row before <see cref="ArchiveAsync"/> reads it, so
+    /// a concurrent archive of the same row waits here and then reads it as already archived. Runs
+    /// inside the archive transaction, before <see cref="ArchiveRelationsAsync"/>; a lock taken here
+    /// is held until that transaction ends. Default no-op: the library is provider-neutral, so the
+    /// provider-specific statement (for PostgreSQL, <c>SELECT … FOR NO KEY UPDATE</c>) belongs to the
+    /// consuming repository. Without an override, a concurrent archive that commits between the read
+    /// and the flag update still ends as <c>false</c> through the <c>UpdatedAt</c> concurrency token,
+    /// but only after <see cref="ArchiveRelationsAsync"/> ran.
+    /// </summary>
+    /// <param name="context">The ambient context of the archive transaction.</param>
+    /// <param name="id">The id of the row about to be archived; it may not exist.</param>
+    /// <param name="cancellationToken">Observed while waiting for the lock.</param>
+    protected virtual Task LockForArchiveAsync(DbContext context, Guid id, CancellationToken cancellationToken)
+        => Task.CompletedTask;
+
+    /// <summary>
+    /// Reads the row as committed once the lock is held. A copy this context already tracks (the caller
+    /// read the row earlier in the same transaction) is reloaded, because a plain find would return it
+    /// unchanged; a row deleted meanwhile reads as <c>null</c>.
+    /// </summary>
+    private static async Task<TStoredEntity?> ReadAfterLockAsync(
+        DbContext context,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        bool tracked = context.ChangeTracker.Entries<TStoredEntity>().Any(entry => entry.Entity.Id == id);
+        TStoredEntity? existing = await context.Set<TStoredEntity>().FindAsync([id], cancellationToken);
+        if (existing is null || !tracked)
+        {
+            return existing;
+        }
+
+        var entry = context.Entry(existing);
+        await entry.ReloadAsync(cancellationToken);
+        return entry.State == EntityState.Detached ? null : entry.Entity;
     }
 
     /// <summary>

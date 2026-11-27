@@ -28,6 +28,7 @@
       <ProjectReference Include="..\Nordstein.Core.Domain\Nordstein.Core.Domain.csproj" />
       <ProjectReference Include="..\Nordstein.Core.Licensing\Nordstein.Core.Licensing.csproj" />
       <ProjectReference Include="..\Nordstein.Core.Storage\Nordstein.Core.Storage.csproj" />
+      <ProjectReference Include="..\Nordstein.Core.Workflows\Nordstein.Core.Workflows.csproj" />
       <ProjectReference Include="..\Nordstein.Core.Testing\Nordstein.Core.Testing.csproj" />
     </ItemGroup>
 

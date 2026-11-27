@@ -2,6 +2,7 @@ using Autofac;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using NSubstitute;
+using Nordstein.Core.Common.Time;
 using Nordstein.Core.Domain.Events;
 
 namespace Nordstein.Core.Storage.Tests;
@@ -17,6 +18,12 @@ public sealed class Module : Autofac.Module
     protected override void Load(ContainerBuilder builder)
     {
         base.Load(builder);
+
+        // The foundation stamps UpdatedAt from the container's clock; a test pins it through this instance.
+        builder.RegisterType<MutableClock>().AsSelf().As<IClock>().SingleInstance();
+
+        // One per container: a test arms the lock hook through the instance its repository holds.
+        builder.RegisterType<ArchiveLockProbe>().AsSelf().SingleInstance();
 
         builder.RegisterInstance(Substitute.For<IEntityEventService>())
             .As<IEntityEventService>()
@@ -40,6 +47,10 @@ public sealed class Module : Autofac.Module
 
         builder.RegisterType<TestOwnerMapper>()
             .As<IMapper<ITestOwner, TestOwnerEntity>>()
+            .InstancePerDependency();
+
+        builder.RegisterType<TestGuardedThingMapper>()
+            .As<IMapper<ITestGuardedThing, TestGuardedThingEntity>>()
             .InstancePerDependency();
 
         builder.Register<DbContextOptions<TestDbContext>>(_ =>

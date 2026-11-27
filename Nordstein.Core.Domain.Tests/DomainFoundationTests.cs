@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Nordstein.Core.Domain.Events;
 using Nordstein.Core.Domain.Exceptions;
 using Nordstein.Core.Domain.Paging;
+using Nordstein.Core.Common.Time;
 using Nordstein.Core.Testing;
 
 namespace Nordstein.Core.Domain.Tests;
@@ -63,13 +64,14 @@ public sealed class DomainFoundationTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
         var data = new ExistingEntityData(
             Guid.NewGuid(),
             DateTimeOffset.UtcNow.AddHours(-2),
             DateTimeOffset.UtcNow.AddHours(-1),
             true);
 
-        var entity = new TestEntity(data, repository);
+        var entity = new TestEntity(data, repository, clock);
 
         entity.Should().Match<ITestEntity>(candidate =>
             candidate.Id == data.Id
@@ -83,6 +85,7 @@ public sealed class DomainFoundationTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
+        IClock clock = services.GetRequiredService<IClock>();
 
         await FluentActions.Invoking(() => repository.GetAsync(Guid.NewGuid(), CancellationToken))
             .Should().ThrowAsync<EntityNotFoundException>();

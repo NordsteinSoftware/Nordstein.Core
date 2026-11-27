@@ -45,7 +45,9 @@ internal sealed class JwtLicenseValidator : IJwtLicenseValidator
     public LicenseSnapshot Validate(string jwt)
     {
         if (string.IsNullOrWhiteSpace(jwt))
+        {
             throw new InvalidLicenseException(InvalidLicenseReason.Malformed);
+        }
 
         var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
 
@@ -105,9 +107,13 @@ internal sealed class JwtLicenseValidator : IJwtLicenseValidator
         foreach (var claim in token.Claims.Where(c => c.Type == "feat"))
         {
             if (policy.TryResolveFeature(claim.Value, out var feature))
+            {
                 features.Add(feature);
+            }
             else
+            {
                 logger.LogWarning("Ignoring unknown license feature claim '{Feature}'", claim.Value);
+            }
         }
 
         var limits = new Dictionary<string, long>(definition.Limits);
@@ -163,7 +169,9 @@ internal sealed class JwtLicenseValidator : IJwtLicenseValidator
     private static bool ReadOfflineClaim(JwtSecurityToken token)
     {
         if (!token.Payload.TryGetValue("offline", out var raw) || raw is null)
+        {
             return false;
+        }
 
         return raw switch
         {
@@ -177,7 +185,9 @@ internal sealed class JwtLicenseValidator : IJwtLicenseValidator
     {
         var raw = token.Claims.FirstOrDefault(c => c.Type == "tier")?.Value;
         if (policy.TryResolveTier(raw, out var tier))
+        {
             return tier;
+        }
 
         logger.LogWarning(
             "Unknown license tier '{Tier}'; falling back to {Fallback}",
@@ -192,7 +202,9 @@ internal sealed class JwtLicenseValidator : IJwtLicenseValidator
         foreach (var encoded in base64SpkiKeys)
         {
             if (string.IsNullOrWhiteSpace(encoded))
+            {
                 continue;
+            }
 
             var der = Convert.FromBase64String(encoded.Trim());
 

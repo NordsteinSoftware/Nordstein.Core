@@ -26,6 +26,7 @@ public interface IFileWriteHandle : IAsyncDisposable
     /// <returns>A task that completes when the file is durably published.</returns>
     /// <exception cref="DestinationAlreadyExistsException"><paramref name="destinationPath"/> already exists.</exception>
     /// <exception cref="InvalidOperationException">The handle has already been published.</exception>
+    /// <exception cref="ArgumentException"><paramref name="destinationPath"/> is empty or a filesystem root.</exception>
     Task PublishAsync(string destinationPath, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -36,5 +37,6 @@ public interface IFileWriteHandle : IAsyncDisposable
     /// <param name="cancellationToken">Observed while flushing.</param>
     /// <returns>A task that completes when the file is durably published.</returns>
     /// <exception cref="InvalidOperationException">The handle has already been published.</exception>
+    /// <exception cref="ArgumentException"><paramref name="destinationPath"/> is empty or a filesystem root.</exception>
     Task PublishReplacingAsync(string destinationPath, CancellationToken cancellationToken = default);
 }

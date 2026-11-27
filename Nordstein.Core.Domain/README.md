@@ -5,7 +5,7 @@ Reusable domain foundations for Nordstein applications.
 - Domain object and entity contracts
 - Repository, archive, and transaction contracts
 - Domain entity and test-data generator base classes
-- Paging records and persistence exceptions
+- Paging records, the opaque keyset cursor codec (`OpaqueCursor`) and persistence exceptions
 - In-process entity change notifications
 - Autofac discovery for entities and generators in consuming assemblies
 

@@ -7,8 +7,9 @@ namespace Nordstein.Core.AI.Clients;
 /// <remarks>
 /// <para>
 /// Exists so completion-shaping controls surfaced to a caller actually reach the wire:
-/// <see cref="ModelOptions"/> carries only the model name and tools, so without this record any
-/// sampling choice a caller made would be silently dropped before the request left the process.
+/// <see cref="ModelOptions"/> otherwise carries only the model name, the tools and the response
+/// format, so without this record any sampling choice a caller made would be silently dropped
+/// before the request left the process.
 /// </para>
 /// <para>
 /// Support is per-provider: an OpenAI-compatible backend may reject or ignore individual fields

@@ -3,7 +3,8 @@ namespace Nordstein.Core.AI.Clients;
 /// <summary>
 /// A read-only snapshot of the exact request a <see cref="IModelClient"/> would send to the model:
 /// the resolved model name, the messages (system prompt already merged in), and the tool definitions.
-/// Built without contacting the provider, so it can be inspected for debugging.
+/// Built without contacting the provider, so it can be inspected for debugging. It leaves out the
+/// sampling parameters and the <c>response_format</c> (<see cref="ModelOptions.ResponseFormat"/>).
 /// </summary>
 public record ModelRequestPreview(
     string Model,

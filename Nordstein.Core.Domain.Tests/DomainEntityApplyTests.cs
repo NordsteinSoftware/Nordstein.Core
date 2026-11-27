@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Nordstein.Core.Common.Time;
 using Nordstein.Core.Testing;
 
 namespace Nordstein.Core.Domain.Tests;
@@ -13,11 +14,12 @@ public sealed class DomainEntityApplyTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
-        var probe = new ProbeEntity(repository);
+        IClock clock = services.GetRequiredService<IClock>();
+        var probe = new ProbeEntity(repository, clock);
         Guid id = Guid.NewGuid();
         DateTimeOffset past = DateTimeOffset.UtcNow.AddMinutes(-5);
-        var original = new TestEntity(new ExistingEntityData(id, past, past, false), repository);
-        var replacement = new TestEntity(new ExistingEntityData(id, past, past, false), repository);
+        var original = new TestEntity(new ExistingEntityData(id, past, past, false), repository, clock);
+        var replacement = new TestEntity(new ExistingEntityData(id, past, past, false), repository, clock);
         await repository.AddAsync(original, CancellationToken);
 
         ITestEntity result = await probe.InvokeApplyAsync(replacement, CancellationToken);
@@ -35,9 +37,10 @@ public sealed class DomainEntityApplyTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<IRepository<ITestEntity>>();
-        var probe = new ProbeEntity(repository);
+        IClock clock = services.GetRequiredService<IClock>();
+        var probe = new ProbeEntity(repository, clock);
         DateTimeOffset past = DateTimeOffset.UtcNow.AddMinutes(-5);
-        var invalid = new TestEntity(new ExistingEntityData(Guid.Empty, past, past, false), repository);
+        var invalid = new TestEntity(new ExistingEntityData(Guid.Empty, past, past, false), repository, clock);
 
         await FluentActions.Invoking(() => probe.InvokeApplyAsync(invalid, CancellationToken))
             .Should().ThrowAsync<ValidationException>();
