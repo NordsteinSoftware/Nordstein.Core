@@ -111,7 +111,7 @@ public sealed class SolutionFile
             throw new InvalidDataException($"{Path} is not a well-formed .slnx file: {exception.Message}", exception);
         }
 
-        return document.Descendants("Project")
+        return document.Descendants().Where(element => element.Name.LocalName == "Project")
             .Select(project => project.Attribute("Path")?.Value
                 ?? throw new InvalidDataException($"{Path} lists a project without a Path attribute."))
             .Where(IsProjectFile)

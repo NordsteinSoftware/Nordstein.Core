@@ -1,3 +1,4 @@
+using Autofac;
 using AwesomeAssertions;
 using Nordstein.Core.Common.Time;
 using Nordstein.Core.Testing.Time;
@@ -14,6 +15,14 @@ namespace Nordstein.Core.Testing.Tests.Time;
 public sealed class ManualClockTests
 {
     private static readonly DateTimeOffset Start = new(2030, 6, 1, 12, 0, 0, TimeSpan.Zero);
+
+    private static IContainer Container(Action<ContainerBuilder> register)
+    {
+        var builder = new ContainerBuilder();
+        builder.RegisterModule<Common.Module>();
+        register(builder);
+        return builder.Build();
+    }
 
     [TestMethod]
     public void Constructor_WithoutStart_ReadsTheDefaultStart()
@@ -43,6 +52,18 @@ public sealed class ManualClockTests
 
         asClock.UtcNow.Should().Be(Start);
         asProvider.GetUtcNow().Should().Be(Start);
+    }
+
+    [TestMethod]
+    public void RegisteredAfterTheCommonModule_ServesBothSeamsOfTheContainer()
+    {
+        // The documented wiring: registered after Nordstein.Core.Common.Module (as GetServices(...)
+        // does), the clock wins over the module's SystemClock and TimeProvider.System.
+        var clock = new ManualClock(Start);
+        using IContainer container = Container(builder => builder.RegisterInstance(clock).As<IClock>().As<TimeProvider>());
+
+        container.Resolve<IClock>().Should().BeSameAs(clock);
+        container.Resolve<TimeProvider>().Should().BeSameAs(clock);
     }
 
     [TestMethod]
@@ -438,6 +459,21 @@ public sealed class ManualClockTests
 
         clock.UtcNow.Should().Be(Start.AddSeconds(20));
         clock.GetElapsedTime(0).Should().Be(TimeSpan.FromSeconds(20));
+    }
+
+    [TestMethod]
+    public void SetUtcNow_BackBeforeTheFirstInstantDuringAnInterruptedAdvance_ThrowsAndLeavesTheTimeAlone()
+    {
+        var clock = new ManualClock(DateTimeOffset.MinValue.AddSeconds(5));
+        using ITimer failing = clock.CreateTimer(_ => throw new InvalidOperationException("boom"), null, TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
+        Action advance = () => clock.Advance(TimeSpan.FromSeconds(10));
+        advance.Should().Throw<InvalidOperationException>();
+        DateTimeOffset interrupted = clock.UtcNow;
+
+        Action act = () => clock.SetUtcNow(DateTimeOffset.MinValue.AddSeconds(3));
+
+        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("value");
+        clock.UtcNow.Should().Be(interrupted);
     }
 
     [TestMethod]

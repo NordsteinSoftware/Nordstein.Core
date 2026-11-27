@@ -47,6 +47,17 @@ public sealed class ScriptedHttpMessageHandlerTests
     }
 
     [TestMethod]
+    public void Respond_WithAMalformedMediaType_ThrowsWhileScripting()
+    {
+        using var handler = new ScriptedHttpMessageHandler();
+
+        Action act = () => handler.Respond(HttpStatusCode.OK, "x", "not a media type");
+
+        act.Should().Throw<FormatException>();
+        handler.RemainingSteps.Should().Be(0);
+    }
+
+    [TestMethod]
     public async Task Respond_WithStatusOnly_AnswersWithAnEmptyBody()
     {
         using var handler = new ScriptedHttpMessageHandler().Respond(HttpStatusCode.NoContent);
@@ -346,6 +357,20 @@ public sealed class ScriptedHttpMessageHandlerTests
 
         handler.Requests.Should().BeEmpty();
         handler.RemainingSteps.Should().Be(1);
+    }
+
+    [TestMethod]
+    public async Task Send_AfterDisposal_ThrowsObjectDisposed()
+    {
+        var handler = new ScriptedHttpMessageHandler().Respond(HttpStatusCode.OK);
+        using var invoker = new HttpMessageInvoker(handler, disposeHandler: false);
+        using var request = new HttpRequestMessage(HttpMethod.Get, Endpoint);
+
+        handler.Dispose();
+
+        await FluentActions.Awaiting(() => invoker.SendAsync(request, CancellationToken))
+            .Should().ThrowAsync<ObjectDisposedException>();
+        handler.Requests.Should().BeEmpty();
     }
 
     [TestMethod]

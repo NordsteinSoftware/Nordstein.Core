@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using Nordstein.Core.Testing.Http.Internal;
 
@@ -19,7 +20,8 @@ namespace Nordstein.Core.Testing.Http;
 /// </para>
 /// <para>
 /// A send whose token is already cancelled throws <see cref="TaskCanceledException"/> before it
-/// is recorded or takes a step, like a real handler. Otherwise the body is read (with the send's
+/// is recorded or takes a step, like a real handler; so does a send after disposal, with
+/// <see cref="ObjectDisposedException"/>. Otherwise the body is read (with the send's
 /// token) and the request recorded before the step runs, so <see cref="Requests"/> holds even the
 /// sends that a step then fails. Every response gets <see cref="HttpResponseMessage.RequestMessage"/>
 /// set to its request unless the step set one.
@@ -39,6 +41,7 @@ public sealed class ScriptedHttpMessageHandler : HttpMessageHandler
     private readonly List<RecordedHttpRequest> requests = [];
     private Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>? lastAdded;
     private Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>? repeating;
+    private volatile bool disposed;
 
     /// <summary>
     /// A snapshot of every request received so far, in the order the sends took their steps.
@@ -87,11 +90,15 @@ public sealed class ScriptedHttpMessageHandler : HttpMessageHandler
     /// <param name="mediaType">The body's media type; <c>application/json</c> unless given.</param>
     /// <returns>This handler, to add the next step.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="content"/> or <paramref name="mediaType"/> is null.</exception>
+    /// <exception cref="FormatException"><paramref name="mediaType"/> is not a media type.</exception>
     /// <exception cref="InvalidOperationException">The script already ends with <see cref="RepeatLast"/>.</exception>
     public ScriptedHttpMessageHandler Respond(HttpStatusCode status, string content, string mediaType = "application/json")
     {
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(mediaType);
+
+        // Refused here, while the script is written, rather than on the send that would use it.
+        _ = MediaTypeHeaderValue.Parse(mediaType);
         return Add((_, _) => Task.FromResult(new HttpResponseMessage(status)
         {
             Content = new StringContent(content, Encoding.UTF8, mediaType),
@@ -200,6 +207,7 @@ public sealed class ScriptedHttpMessageHandler : HttpMessageHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        ObjectDisposedException.ThrowIf(disposed, this);
         if (cancellationToken.IsCancellationRequested)
         {
             throw new TaskCanceledException("The request was cancelled before it was sent.", null, cancellationToken);
@@ -236,6 +244,17 @@ public sealed class ScriptedHttpMessageHandler : HttpMessageHandler
     /// <inheritdoc />
     protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         => SendAsync(request, cancellationToken).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// Marks the handler disposed: a later send throws <see cref="ObjectDisposedException"/>, as a
+    /// real handler's does. <see cref="Requests"/> stays readable.
+    /// </summary>
+    /// <param name="disposing">Whether the call comes from <see cref="HttpMessageHandler.Dispose()"/>.</param>
+    protected override void Dispose(bool disposing)
+    {
+        disposed = true;
+        base.Dispose(disposing);
+    }
 
     private ScriptedHttpMessageHandler Add(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> step)
     {

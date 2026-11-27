@@ -65,7 +65,7 @@ public sealed class ThrowawayCertificateAuthority : IDisposable
         this.timeProvider = timeProvider;
 
         key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var request = new CertificateRequest(new X500DistinguishedName("CN=" + commonName), key, HashAlgorithmName.SHA256);
+        var request = new CertificateRequest(CommonName(commonName), key, HashAlgorithmName.SHA256);
         request.CertificateExtensions.Add(new X509BasicConstraintsExtension(
             certificateAuthority: true, hasPathLengthConstraint: true, pathLengthConstraint: 0, critical: true));
         request.CertificateExtensions.Add(new X509KeyUsageExtension(
@@ -94,7 +94,10 @@ public sealed class ThrowawayCertificateAuthority : IDisposable
     /// <param name="names">DNS names or IP address literals (<c>localhost</c>, <c>127.0.0.1</c>, <c>::1</c>, <c>service.example.test</c>); at least one.</param>
     /// <returns>The certificate with its private key; the caller disposes it.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="names"/> is null.</exception>
-    /// <exception cref="ArgumentException"><paramref name="names"/> is empty or holds a null, empty or whitespace name.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="names"/> is empty or holds a null, empty or whitespace name, or a name that is
+    /// neither an IP address literal nor a valid DNS name.
+    /// </exception>
     /// <exception cref="InvalidOperationException">Now is outside the authority's validity: it expired, or the clock was set back before it.</exception>
     /// <exception cref="ObjectDisposedException">The authority was disposed.</exception>
     public IssuedCertificate IssueServerCertificate(params string[] names)
@@ -108,18 +111,25 @@ public sealed class ThrowawayCertificateAuthority : IDisposable
         var alternativeNames = new SubjectAlternativeNameBuilder();
         foreach (string name in names)
         {
-            if (IPAddress.TryParse(name, out IPAddress? address))
+            // Classified as a URI host, the form a client connects to: an IP literal or a DNS name.
+            switch (Uri.CheckHostName(name))
             {
-                alternativeNames.AddIpAddress(address);
-            }
-            else
-            {
-                alternativeNames.AddDnsName(name);
+                case UriHostNameType.IPv4:
+                case UriHostNameType.IPv6:
+                    alternativeNames.AddIpAddress(IPAddress.Parse(name));
+                    break;
+
+                case UriHostNameType.Dns:
+                    alternativeNames.AddDnsName(name);
+                    break;
+
+                default:
+                    throw new ArgumentException($"'{name}' is neither an IP address literal nor a DNS name.", nameof(names));
             }
         }
 
         using ECDsa serverKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var request = new CertificateRequest(new X500DistinguishedName("CN=" + names[0]), serverKey, HashAlgorithmName.SHA256);
+        var request = new CertificateRequest(CommonName(names[0]), serverKey, HashAlgorithmName.SHA256);
         request.CertificateExtensions.Add(alternativeNames.Build());
         request.CertificateExtensions.Add(new X509BasicConstraintsExtension(
             certificateAuthority: false, hasPathLengthConstraint: false, pathLengthConstraint: 0, critical: true));
@@ -183,6 +193,13 @@ public sealed class ThrowawayCertificateAuthority : IDisposable
             signer.Dispose();
             key.Dispose();
         }
+    }
+
+    private static X500DistinguishedName CommonName(string name)
+    {
+        var subject = new X500DistinguishedNameBuilder();
+        subject.AddCommonName(name);
+        return subject.Build();
     }
 
     private static DateTimeOffset Max(DateTimeOffset left, DateTimeOffset right) => left > right ? left : right;

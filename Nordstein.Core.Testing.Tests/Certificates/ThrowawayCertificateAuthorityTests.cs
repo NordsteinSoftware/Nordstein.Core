@@ -203,6 +203,36 @@ public sealed class ThrowawayCertificateAuthorityTests
     }
 
     [TestMethod]
+    public void Authority_WithACommonNameThatNeedsEscaping_KeepsItWhole()
+    {
+        using var authority = new ThrowawayCertificateAuthority(TimeProvider.System, "Suite, Example \"A\"");
+
+        authority.Certificate.SubjectName.EnumerateRelativeDistinguishedNames()
+            .Should().ContainSingle().Which.GetSingleElementValue().Should().Be("Suite, Example \"A\"");
+    }
+
+    [TestMethod]
+    public void IssueServerCertificate_WithANameThatIsNeitherDnsNorIp_Throws()
+    {
+        using var authority = new ThrowawayCertificateAuthority(TimeProvider.System);
+
+        Action act = () => authority.IssueServerCertificate("not a host name!");
+
+        act.Should().Throw<ArgumentException>().WithParameterName("names").WithMessage("'not a host name!' is neither*");
+    }
+
+    [TestMethod]
+    public void IssueServerCertificate_WithAnIpv4Literal_AddsAnIpAddressName()
+    {
+        using var authority = new ThrowawayCertificateAuthority(TimeProvider.System);
+
+        using IssuedCertificate issued = authority.IssueServerCertificate("192.0.2.10");
+
+        issued.Certificate.Extensions.OfType<X509SubjectAlternativeNameExtension>().Single()
+            .EnumerateIPAddresses().Should().Equal(IPAddress.Parse("192.0.2.10"));
+    }
+
+    [TestMethod]
     public void IssueServerCertificate_WithoutNames_Throws()
     {
         using var authority = new ThrowawayCertificateAuthority(TimeProvider.System);

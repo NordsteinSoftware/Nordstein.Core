@@ -108,7 +108,7 @@ project's `Module`, one per container), never in a field.
 
 | Fake | Namespace | Use it for |
 |---|---|---|
-| `ManualClock` | `Testing.Time` | "Now" and timers. One instance is both `IClock` and `TimeProvider`: `builder.RegisterInstance(clock).As<IClock>().As<TimeProvider>()` (register it before `Nordstein.Core.Common.Module`, whose `TimeProvider.System` yields to an earlier registration). |
+| `ManualClock` | `Testing.Time` | "Now" and timers. One instance is both `IClock` and `TimeProvider`: `builder.RegisterInstance(clock).As<IClock>().As<TimeProvider>()`, registered after `Nordstein.Core.Common.Module` (in `GetServices(builder => …)`, or after the module in the test project's `Module`), so it wins over the module's `SystemClock` and `TimeProvider.System`. |
 | `ScriptedHttpMessageHandler` | `Testing.Http` | An `HttpClient` that answers from a script: `Respond(status, body)`, `Respond(factory)`, `Throw(exception)`, `TimeOut()`, `Hang()`, `RepeatLast()`; `Requests` and `RemainingSteps` to assert on. |
 | `NoNetworkHttpMessageHandler` | `Testing.Http` | Proving code makes **no** outbound call: every send throws `InvalidOperationException` (which transport-failure handling does not catch) and lands in `Attempts`. |
 | `RecordingLoggerProvider`, `RecordingLogger<T>` | `Testing.Logging` | Proving what a log line carries, and what it never carries: category, level, event id, rendered message, exception and the structured properties of every entry. |

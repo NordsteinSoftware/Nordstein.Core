@@ -36,10 +36,12 @@ namespace Nordstein.Core.Testing.Time;
 /// never run under the clock's internal lock, so a callback may read the clock or wait for a
 /// thread that does. Concurrent advances add up (two threads each advancing one second move the
 /// clock two seconds) and every due timer fires exactly once, on one of the advancing threads; the
-/// due order holds per advancing thread.
+/// due order holds per advancing thread. As with <see cref="System.Threading.Timer"/>, a callback
+/// an advance already picked may still run after a concurrent <c>Dispose</c> of its timer returns.
 /// </para>
 /// <para>
-/// Register one instance as both seams: <c>builder.RegisterInstance(clock).As&lt;IClock&gt;().As&lt;TimeProvider&gt;()</c>.
+/// Register one instance as both seams, after <c>Nordstein.Core.Common.Module</c> so it wins over
+/// the module's system clock: <c>builder.RegisterInstance(clock).As&lt;IClock&gt;().As&lt;TimeProvider&gt;()</c>.
 /// </para>
 /// </remarks>
 public sealed class ManualClock : TimeProvider, IClock
@@ -221,8 +223,9 @@ public sealed class ManualClock : TimeProvider, IClock
     /// <param name="value">The instant to read from now on; any offset, kept at offset zero.</param>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Moving forward to <paramref name="value"/> would overflow the monotonic timestamp (only
-    /// after the wall clock was set back across most of the representable range more than once);
-    /// the clock does not move.
+    /// after the wall clock was set back across most of the representable range more than once),
+    /// or, while an advance is in progress, setting it back would read before
+    /// <see cref="DateTimeOffset.MinValue"/>; the clock does not move.
     /// </exception>
     public void SetUtcNow(DateTimeOffset value)
     {
@@ -232,6 +235,14 @@ public sealed class ManualClock : TimeProvider, IClock
             long difference = value.UtcTicks - wallTicks - pending;
             if (difference < 0)
             {
+                if (value.UtcTicks < pending)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(value),
+                        value,
+                        "Setting the clock back this far while an advance is in progress would move it before DateTimeOffset.MinValue.");
+                }
+
                 wallTicks += difference;
                 return;
             }

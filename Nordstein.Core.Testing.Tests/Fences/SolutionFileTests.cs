@@ -88,6 +88,18 @@ public sealed class SolutionFileTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public void Slnx_WithAnXmlNamespace_StillListsItsProjects()
+    {
+        using ITempDirectory root = GetServices().GetTempDirectory();
+        WriteSolution(
+            root.Path,
+            "Example.slnx",
+            "<Solution xmlns=\"urn:example:solution\"><Project Path=\"src/Example.Service/Example.Service.csproj\" /></Solution>");
+
+        new SolutionFile("Example.slnx", root.Path).Projects.Select(project => project.Name).Should().Equal("Example.Service");
+    }
+
+    [TestMethod]
     public void Constructor_WalksUpFromTheStartDirectory()
     {
         using ITempDirectory root = GetServices().GetTempDirectory();
