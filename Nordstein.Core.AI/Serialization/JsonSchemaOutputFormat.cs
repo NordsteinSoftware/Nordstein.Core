@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Nordstein.Core.AI.Clients;
 using Nordstein.Core.AI.Serialization.Internal;
+using Nordstein.Core.Common.Text;
 
 namespace Nordstein.Core.AI.Serialization;
 
@@ -58,9 +59,6 @@ public sealed class JsonSchemaOutputFormat : IOutputFormat
     private const string LanguageTagCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-+.";
 
     private readonly JsonSchemaValidator validator;
-
-    // Throws on an unpaired surrogate instead of silently writing U+FFFD into the document.
-    private readonly UTF8Encoding utf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     /// <summary>
     /// Initializes the format and compiles <paramref name="schema"/>.
@@ -177,7 +175,8 @@ public sealed class JsonSchemaOutputFormat : IOutputFormat
         byte[] bytes;
         try
         {
-            bytes = utf8.GetBytes(text);
+            // Strict: throws on an unpaired surrogate instead of silently writing U+FFFD into the document.
+            bytes = StrictEncoding.Utf8.GetBytes(text);
         }
         catch (EncoderFallbackException)
         {
