@@ -18,6 +18,7 @@ to and indexes these pages by task.
 | [`licensing.md`](licensing.md) | `Nordstein.Core.Licensing` — the generic license engine (JWT verification, snapshot, server check) and the product seams (`ILicenseTierPolicy`, `LicensingConfiguration`). |
 | [`ai.md`](ai.md) | `Nordstein.Core.AI` — the AI/agent foundation: messages, tools, prompts, completions, the versionless `IAgent` and `IModelClient` contracts, structured output parsing, and the product seams. |
 | [`workflows.md`](workflows.md) | `Nordstein.Core.Workflows` — the workflow kernel: a DAG of typed nodes with data references, the validator, and the deterministic interpreter with its step journal, suspend and resume. |
+| [`adr/`](adr/) | Architecture decision records: one numbered file per decision, with context, decision, alternatives and consequences. Start with [`0001`](adr/0001-port-generic-code-from-nordstein-dms.md), how code from nordstein-dms is ported into Core. |
 | [`testing.md`](testing.md) | The coverage bar for Core, the `BaseTest<TModule>` harness and its stateless-container principles, substitution patterns, container-backed tests, and the care required when changing the harness itself. |
 | [`product-playbook.md`](product-playbook.md) | The transferable practices for building a *consuming product*: docs-as-part-of-change, the VitePress user manual (+ automated screenshots), scoped test running, Playwright e2e over the real Docker stack, i18n, perf budgets, CI shape, releasing. |
 
