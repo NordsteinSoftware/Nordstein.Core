@@ -8,8 +8,8 @@ background consumer on top) and nothing about who subscribes.
 ## The one rule this area lives by
 
 Core never decides who may see an event. Every subscriber passes a filter, `Func<TEvent, bool>`, that
-answers that question for the principal it serves; the product builds it from its own access model (a
-user's groups, a tenant, a role) and replaces it with `ReplaceFilter` when that model changes. The hub only
+answers that question for the principal it serves; the product builds it from its own access model (the
+principal's groups or roles) and replaces it with `ReplaceFilter` when that model changes. The hub only
 evaluates it, live and in replay.
 
 ```csharp
