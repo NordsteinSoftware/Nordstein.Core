@@ -1,4 +1,4 @@
-# Text — normalization, chunking and rendering with exact offsets
+# Text — normalization, chunking, rendering and quoting with exact offsets
 
 `Nordstein.Core.Common.Text` holds the text helpers that keep offsets exact: `CodePointText` (a
 string indexed in code points), `OffsetMappedText` and its builder (a transformed text that maps
@@ -117,3 +117,21 @@ blank, one line) labels page breaks.
 
 A product whose markers count UTF-16 units (raw extractor output) maps them to code points first,
 for instance through `ITextNormalizer`'s map or by counting with `CodePointText`.
+
+## Quotes — `FoldForQuote` and `FindExactlyOnce`
+
+Pure extension methods for checking that a quotation (typed by a person or a model) cites exactly
+one place of a text.
+
+- `text.FoldForQuote()` → `OffsetMappedText`: `Rune.ToLowerInvariant` per code point (not full case
+  folding: `ß` stays); U+00AD dropped; a whitespace run becomes one space mapped to the character
+  after the run, none at the edges; `‘ ’ ‚ ‛ ′` → `'`, `“ ” „ ‟ ″ « »` → `"`, U+2010–U+2015 and `−` →
+  `-`, `…` → `...` (all three dots map to it). Nothing else: compose both sides with
+  `ITextNormalizer` first when decomposed text may meet composed text.
+- `text.FindExactlyOnce(quote)` → `QuoteMatch(Occurrences, OriginalRange)`: both folded alike; an
+  ordinal code-point search, overlapping occurrences counted (`aa` twice in `aaa`); `OriginalRange`
+  (code points of the text's original, via `ToOriginalRange`, so characters removed inside the match
+  are covered) is set exactly when `Occurrences` is 1. An empty quote throws `ArgumentException`.
+
+What a product makes of zero or several occurrences (a minimum quote length, a wider window, an
+error to the caller) is its own; Core reports the count.
