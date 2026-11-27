@@ -50,6 +50,16 @@ python3 tools/coverage_gate.py --reports artifacts/coverage --floors tools/cover
 - `python3 tools/docs_check.py --root .`: every relative link in every Markdown file resolves (the
   file part; anchors are not checked; links in code are not links), and every `docs/*.md` page but
   `docs/README.md` has a row in the `CLAUDE.md` index table. One line per problem, exit 1 on any.
+- `.claude/hooks/guards.py edit`, wired in `.claude/settings.json` as a `PreToolUse` hook on
+  `Edit|Write|MultiEdit`: denies (exit 2, the reason on stderr) a C# edit that adds a
+  `#pragma warning disable`, `#nullable disable`, `[SuppressMessage]` or `[ExcludeFromCodeCoverage]`
+  without a `// WHY:` on its line or in the comment block directly above, or that adds a
+  null-forgiving `!`, with no exemption. Only what an edit adds counts. It lexes the file, so a `!`
+  in a string, a character, a comment, a directive (`#if !DEBUG`), a negation or `!=` is no alarm,
+  while the holes of an interpolated string are code; its test runs it over every C# file of the
+  repository as a positive control (it must find `Validation.Success`) and a false-alarm check. A
+  malformed event exits 1 and never blocks. It catches accidents; review and CI are the backstop.
+- `.claude/agents/reviewer.md`: the adversarial reviewer for Standard of Care 3, read-only.
 
 ## Core principles (non-negotiable, shared across all Nordstein repos)
 
