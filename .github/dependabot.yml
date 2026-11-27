@@ -1,6 +1,9 @@
 # Weekly dependency updates. Minor + patch are grouped into one PR per ecosystem to
 # keep the noise down; majors arrive as individual PRs so each can be evaluated on its
-# own. Every PR runs the full CI + CodeQL gates.
+# own. Every PR runs the full CI + CodeQL gates. A version is proposed 7 days after its
+# release at the earliest (cooldown), so a compromised or broken release is usually
+# pulled before it reaches us; security updates are not delayed. The policy, and the bar
+# a new package meets: docs/dependencies.md.
 #
 # `ignore:` blocks (one so far, on the nuget entry) are where updates we have evaluated and rejected live.
 # Prefer them over the `@dependabot ignore ...` comment command: the command is not
@@ -15,6 +18,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       nuget-minor-patch:
         update-types:
@@ -33,12 +38,15 @@ updates:
       - dependency-name: "System.Memory.Data"
         update-types: ["version-update:semver-major"]
 
-  # The actions pinned in .github/workflows. Kept current so the pipeline never drifts
-  # onto an unmaintained action version — which is also what CodeQL's `actions` pack flags.
+  # The actions pinned in .github/workflows, each by commit SHA with its version as a comment;
+  # Dependabot updates both. Kept current so the pipeline never drifts onto an unmaintained
+  # action version — which is also what CodeQL's `actions` pack flags.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       actions-minor-patch:
         update-types:

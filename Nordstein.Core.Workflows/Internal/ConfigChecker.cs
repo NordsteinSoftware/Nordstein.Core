@@ -87,9 +87,10 @@ internal sealed class ConfigChecker
         {
             foreach (JsonElement name in required.EnumerateArray())
             {
-                if (name.GetString() is { } property && !value.TryGetProperty(property, out _))
+                // A name that is no string is malformed schema, ignored like every keyword of an unexpected form.
+                if (name.ValueKind == JsonValueKind.String && !value.TryGetProperty(name.ToString(), out _))
                 {
-                    errors.Add($"{location}.{property} is required.");
+                    errors.Add($"{location}.{name} is required.");
                 }
             }
         }

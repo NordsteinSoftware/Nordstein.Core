@@ -17,6 +17,50 @@ the only safety net the foundation has.
   seconds; scoped runs are for iterating only, and a scoped green run is never reported as "all
   tests pass".
 
+### The coverage gate (CI)
+
+The owner's floor is **90 % line and 90 % branch coverage for every shipped assembly**, the
+test harness `Nordstein.Core.Testing` included. CI's `build` job enforces it after the one test run:
+
+```bash
+dotnet test Nordstein.Core.sln --settings tools/coverage.runsettings --collect "XPlat Code Coverage" --results-directory artifacts/coverage
+python3 tools/coverage_gate.py --reports artifacts/coverage --floors tools/coverage-floors.json
+```
+
+- `tools/coverage.runsettings` instruments `[Nordstein.Core.*]*` except `[*.Tests]*`, and skips
+  generated code (`GeneratedCodeAttribute`, `CompilerGeneratedAttribute`) and auto-properties.
+- `tools/coverage_gate.py` merges every `coverage.cobertura.xml` under `--reports` per line (an
+  assembly appears in the report of every test project that loads it: hits add up, each branch
+  condition keeps its best coverage), truncates each percentage to one decimal (89.99 % is 89.9 %)
+  and compares it with `tools/coverage-floors.json` (`{"<assembly>": {"line": 90.0, "branch": 90.0}}`).
+- It prints `coverage gate: PASS — line N %, branch N %` (or `FAIL`) and one `BELOW`, `NO FLOOR` or
+  `NO DATA` line per failure, writes `coverage.json` next to the reports, and exits 0 or 1.
+- **Never green on a missing result.** No report file, an unreadable or empty report, unreadable
+  floors, a measured assembly without a floor and a floor without coverage all fail.
+- A new shipped assembly gets its floor (at least 90.0 for both) in the same change;
+  `tools/tests/test_coverage_config.py` fails on a shipped assembly the settings do not measure, on
+  a test project they do, and on a missing floor or one below 90. Lowering a floor needs the owner.
+- The gate's own tests run in CI's `tooling` job: `python3 -m unittest discover -s tools/tests`.
+  Python standard library only.
+
+### Repository checks (CI `tooling` job)
+
+- `python3 -m unittest discover -s tools/tests`: the tests of everything under `tools/` and
+  `.claude/hooks/`, including one that runs each check against the live repository.
+- `python3 tools/docs_check.py --root .`: every relative link in every Markdown file resolves (the
+  file part; anchors are not checked; links in code are not links), and every `docs/*.md` page but
+  `docs/README.md` has a row in the `CLAUDE.md` index table. One line per problem, exit 1 on any.
+- `.claude/hooks/guards.py edit`, wired in `.claude/settings.json` as a `PreToolUse` hook on
+  `Edit|Write|MultiEdit`: denies (exit 2, the reason on stderr) a C# edit that adds a
+  `#pragma warning disable`, `#nullable disable`, `[SuppressMessage]` or `[ExcludeFromCodeCoverage]`
+  without a `// WHY:` on its line or in the comment block directly above, or that adds a
+  null-forgiving `!`, with no exemption. Only what an edit adds counts. It lexes the file, so a `!`
+  in a string, a character, a comment, a directive (`#if !DEBUG`), a negation or `!=` is no alarm,
+  while the holes of an interpolated string are code; its test runs it over every C# file of the
+  repository as a positive control (it must find `Validation.Success`) and a false-alarm check. A
+  malformed event exits 1 and never blocks. It catches accidents; review and CI are the backstop.
+- `.claude/agents/reviewer.md`: the adversarial reviewer for Standard of Care 3, read-only.
+
 ## Core principles (non-negotiable, shared across all Nordstein repos)
 
 1. **No shared state between tests.** No system-under-test, fakes, fixtures, or seeded entities
@@ -139,6 +183,43 @@ start the real service in a throwaway container (Testcontainers):
 
 Default to a mock; a container test is a targeted supplement for what a mock structurally cannot
 cover, and it costs seconds, not milliseconds.
+
+## Lessons from the products
+
+Rules a consuming product's suite learned the hard way; they hold for Core's tests too.
+
+- **Never `Assert.Inconclusive` inside an exception filter.** The runtime swallows an exception
+  thrown while a `catch (…) when (…)` filter runs: the filter counts as false, the original
+  exception propagates, and a test meant to be skipped fails instead. Catch in the body, decide
+  there, and rethrow with a bare `throw;` (which keeps the stack trace):
+
+  ```csharp
+  catch (Exception exception)
+  {
+      SkipOrRethrow(exception); // returns only when the runtime is required; else Assert.Inconclusive
+      throw;
+  }
+  ```
+- **Gate opt-in suites with an environment variable, never a runsettings filter.** VSTest ANDs a
+  runsettings `TestCaseFilter` with the command line's `--filter`, so a filter that excludes perf
+  tests silently drops the very tests a `--filter` asks for. Gate in the suite's base class
+  `[TestInitialize]`: every test is `Inconclusive` unless `<PRODUCT>_RUN_PERF_TESTS=1`. Never gate
+  inside a test body, and load budgets lazily, behind the gate.
+- **An inconclusive result is not a pass.** A local green run whose container tests were skipped
+  proves nothing about them; CI sets the require flag ([Container-backed tests](#container-backed-tests-rare-deliberate))
+  so a skip is red there.
+- **Triage before touching code.** Classify a red test from its evidence (the TRX, the logs):
+  - a product bug: the behaviour is wrong. Fix the code, keep the test;
+  - infrastructure: a registry rate limit, a daemon gone, the network denied. Fix the environment
+    and re-run once; never change a test for it;
+  - a test bug: it asserts the wrong thing, races, or depends on order or shared state. Fix the
+    test and the pattern it copied, and say so in the change.
+
+  Never skip, disable, retry until green, or quarantine a test.
+- **Every guard test carries a positive control.** A fence, scan or guard that inspects code (all
+  types in `Internal/`, no static state, no suppression) also runs against a planted violation, or
+  asserts that it finds a known instance, so a scan that silently matches nothing fails. Never
+  delete the planted violation.
 
 ## Changing the harness itself
 
