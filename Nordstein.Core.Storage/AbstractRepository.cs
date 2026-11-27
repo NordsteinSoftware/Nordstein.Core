@@ -377,7 +377,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
     /// <inheritdoc />
     public virtual async Task<TDomainEntity> AddAsync(TDomainEntity entity, CancellationToken cancellationToken = default)
     {
-        TDomainEntity result = await transaction.InvokeAsync(() => AddCoreAsync(entity, cancellationToken));
+        TDomainEntity result = await transaction.InvokeAsync(() => AddCoreAsync(entity, cancellationToken), cancellationToken);
         Notify(result.Id, EntityChangeType.Added);
         return result;
     }
@@ -448,7 +448,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
 
             context.Set<TStoredEntity>().AddRange(stored);
             await context.SaveChangesAsync(cancellationToken);
-        });
+        }, cancellationToken);
 
         foreach (TDomainEntity entity in entities)
         {
@@ -469,7 +469,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
             return existing is null
                 ? (await AddCoreAsync(entity, cancellationToken), EntityChangeType.Added)
                 : (await UpdateCoreAsync(entity, cancellationToken), EntityChangeType.Updated);
-        });
+        }, cancellationToken);
 
         Notify(result.Id, change);
         return result;
@@ -478,7 +478,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
     /// <inheritdoc />
     public async Task<TDomainEntity> UpdateAsync(TDomainEntity entity, CancellationToken cancellationToken = default)
     {
-        TDomainEntity result = await transaction.InvokeAsync(() => UpdateCoreAsync(entity, cancellationToken));
+        TDomainEntity result = await transaction.InvokeAsync(() => UpdateCoreAsync(entity, cancellationToken), cancellationToken);
         Notify(result.Id, EntityChangeType.Updated);
         return result;
     }
@@ -576,7 +576,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
             }
             InvalidateCacheEntry(id);
             return true;
-        });
+        }, cancellationToken);
 
         if (removed)
         {
@@ -624,7 +624,7 @@ public abstract class AbstractRepository<TDomainEntity, TStoredEntity> : IReposi
 
             InvalidateCache();
             return ids;
-        });
+        }, cancellationToken);
 
         foreach (Guid id in removedIds)
         {

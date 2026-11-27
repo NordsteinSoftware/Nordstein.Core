@@ -10,6 +10,10 @@
 > (`IDExxxx`) that Core's own [`.editorconfig`](../.editorconfig) raises to warning or error fail
 > the build as well: braces always, file-scoped namespaces, modifier order, `readonly` fields. That
 > file is `root = true`, so a consuming product's `.editorconfig` never reaches Core projects.
+>
+> The same file raises **`CA2016`** to an error: a call that has a cancellable overload forwards the
+> caller's `CancellationToken`. Where a token must deliberately not be forwarded (a commit, for
+> example), pass `CancellationToken.None` explicitly and say why in a comment.
 
 These rules are shared across all Nordstein backends; Core is where they are held most strictly.
 
