@@ -7,9 +7,14 @@ using NSubstitute;
 using Nordstein.Core.Common.DependencyInjection;
 using Nordstein.Core.Common.Lifecycle;
 
-namespace Nordstein.Core.Testing;
+namespace Nordstein.Core.Testing.Internal;
 
-internal class Module : Autofac.Module
+/// <summary>
+/// The harness's own registrations, stacked under every test container before the module under
+/// test: the <see cref="IServiceProvider"/> façade, a substitute <see cref="IHostEnvironment"/> rooted
+/// in a temporary directory, logging, and an ephemeral Data Protection key ring.
+/// </summary>
+internal sealed class Module : Autofac.Module
 {
     protected override void Load(ContainerBuilder builder)
     {
@@ -28,10 +33,9 @@ internal class Module : Autofac.Module
 
         builder.RegisterServiceCollection(sc => sc.AddLogging());
 
-        // Entity mappers and stores that protect secrets at rest (ModelProviderConfig,
-        // EmailSettingsStore) depend on ISecretProtector -> IDataProtectionProvider, which the
-        // mapper resolves eagerly whenever a StorageDbContext model is built. Register an ephemeral
-        // (non-persisted) Data Protection key ring so every test container can construct it.
+        // A product's ISecretProtector (Nordstein.Core.Common.Security) is typically built on
+        // IDataProtectionProvider, and code that protects secrets at rest resolves it eagerly. Register
+        // an ephemeral (non-persisted) Data Protection key ring so every test container can construct it.
         builder.RegisterServiceCollection(sc => sc.AddDataProtection());
     }
 }

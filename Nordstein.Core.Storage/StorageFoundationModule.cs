@@ -2,6 +2,7 @@ using System.Reflection;
 using Autofac;
 using Microsoft.EntityFrameworkCore;
 using Nordstein.Core.Domain;
+using Nordstein.Core.Storage.Internal;
 
 namespace Nordstein.Core.Storage;
 

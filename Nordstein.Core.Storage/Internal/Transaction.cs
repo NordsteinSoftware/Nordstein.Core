@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Nordstein.Core.Domain;
 
-namespace Nordstein.Core.Storage;
+namespace Nordstein.Core.Storage.Internal;
 
 /// <inheritdoc />
 internal sealed class Transaction : ITransaction

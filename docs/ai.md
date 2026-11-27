@@ -12,7 +12,7 @@ Microsoft-owned `System.Memory.Data` for `BinaryData` content payloads).
 |-----------|----------|
 | `Nordstein.Core.AI.Agents` | `IAgent` — the versionless agent contract: `Name`, `SystemPrompt`, `Tools`, `ModelParameters`, `CreateSystemMessage`; `IAgentLoop` with `IToolInvoker`, `AgentLoopOptions`, `AgentLoopResult`, `AgentLoopOutcome` (see [The agent loop](#the-agent-loop)) |
 | `Nordstein.Core.AI.Messages` | `Message` hierarchy (`SystemMessage`, `UserMessage`, `AssistantMessage`, `ToolMessage`), `Conversation`, `Content`/`ContentKind`/`Role`, `ToolRequest`/`ToolResponse`, `ToolRequestMatch` (canonical-JSON tool-call comparison) |
-| `Nordstein.Core.AI.Tools` | `ToolSpecification`, `ToolArguments` (JSON-schema generation), `IToolArgument`/`JsonToolArgument` |
+| `Nordstein.Core.AI.Tools` | `ToolSpecification`, `ToolArguments` (JSON-schema generation), `IToolArgument` (its JSON-schema implementation is the internal `Tools.Internal.JsonToolArgument`) |
 | `Nordstein.Core.AI.Prompts` | `IPromptTemplate`/`IPrompt` — `{variable}` templates and their rendered form. Persistence (a template repository) is deliberately absent — products own storage |
 | `Nordstein.Core.AI.Completions` | `ICompletion`, `TokenUsage`, `TypedCompletion<TOutput>`, `IModelParameters` |
 | `Nordstein.Core.AI.Embeddings` | `IEmbeddingClient`: `ModelId` (keys the output space), `Dimension`, `EmbedAsync` (one vector per input, in order; empty inputs, no call) |

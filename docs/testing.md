@@ -63,7 +63,7 @@ public sealed class MyTests : BaseTest<Module>
 How it works, and why it is stateless:
 
 - `GetServices(action)` builds a **brand-new Autofac container every call**: it registers
-  `Nordstein.Core.Testing.Module`, then your `TModule`, then the class-level
+  the harness's own module (`Nordstein.Core.Testing.Internal.Module`), then your `TModule`, then the class-level
   `ConfigureContainer(ContainerBuilder)` override, then the per-call `action`.
 - Containers are recorded in `TestContext.Properties` and disposed in `[TestCleanup]` — never
   manage container lifetime yourself. `BuildContainer` (static, not auto-disposed) exists as a
@@ -131,6 +131,48 @@ Routing the container's loggers into a `RecordingLoggerProvider`
 (`builder.RegisterInstance(provider).As<ILoggerProvider>()`) goes through the container's logger
 factory, whose default minimum level is `Information`; for `Debug` and `Trace`, hand the class under
 test a `RecordingLogger<T>` instead.
+
+## Architecture fences
+
+A fence is a test that fails the build when a structural rule is broken: a type takes a dependency
+it must not, a static helper appears, an internal type sits outside `Internal/`, an assembly calls a
+member it must not. `Nordstein.Core.Testing.Fences` holds the generic kit; each product writes its
+own fences on top of it.
+
+| Kit member | Scans |
+|---|---|
+| `assembly.InjectedParameters()`, `assembly.ParametersMentioning(isFenced)`, `type.Mentions(isFenced)` | Every constructor and method parameter, compiler-generated types included, and whether its type reaches a fenced type: through an interface or base type, an element type, a generic argument, a constraint or a delegate signature. |
+| `assembly.StaticMembers(isExempt)` | Static members the "no statics" rule forbids: non-private methods and properties (extension methods, operators and accessors allowed), mutable static fields and events, private settable static auto-properties. |
+| `assembly.InternalTypesOutsideInternalNamespaces(isExempt)` | Top-level internal types whose namespace does not end in `.Internal`. |
+| `assembly.ReferencedMemberNames()`, `assembly.ReferencedTypeNames()` | The metadata reference tables (`Type::Member`, full type names), so a call made only inside an async state machine or a type named only in a `typeof` is found. |
+| `SolutionFile`, `SolutionProject` | The projects a `.sln` or `.slnx` lists, their assembly names, `IsTestProject` (name ends in `Tests`) and `LoadAssembly()`, which fails with the remedy when the test project does not reference the project. |
+
+How to write one that can be trusted:
+
+- **Derive the scope from the solution**, never from a hand-kept list: scan
+  `new SolutionFile("X.sln", AppContext.BaseDirectory).Projects`, filtered to production projects.
+  Pair it with a test that loads each of them (`LoadAssembly`), so a new project the fence's test
+  project does not reference fails instead of going unscanned, and one that compares the project
+  files on disk with the solution's list.
+- **Assert equality with an allowlist**, not "nothing outside it": every scan returns sorted,
+  distinct lines, so `Should().Equal(allowlist)` fails on a new offender and on a stale entry.
+- **Plant a positive control**: a deliberately violating fixture type in the fence's own test
+  project, one per branch of the scan, and a test that the scan of that assembly reports each. A
+  scan that silently stopped finding anything fails there first. Name them `Planted…` and never
+  delete them; `Nordstein.Core.Testing.Tests/Fences/` holds the kit's own.
+
+### Core's own fence: internal types live in `Internal/`
+
+`Nordstein.Core.Testing.Tests/Fences/InternalNamespaceFenceTests` enforces on every shipped package
+(every project of `Nordstein.Core.sln` not named `…Tests`, the harness included) that each
+internal type lives in an `Internal/` folder with the matching `.Internal` namespace. Two checks
+make the rule: the compiled assemblies keep every top-level internal type in a namespace ending in
+`.Internal` (nested types live in their declaring type's file; compiler-generated and file-local
+types have no folder of their own), and every source file declares the namespace of its folder
+(project name plus folder path). The namespace check is reliable through reflection; the folder
+check reads the sources, which is exact in Core because Core declares file-scoped namespaces only.
+Together they place every internal type in an `Internal/` folder. A new shipped project fails the
+fence until `Nordstein.Core.Testing.Tests` references it.
 
 ## Naming
 

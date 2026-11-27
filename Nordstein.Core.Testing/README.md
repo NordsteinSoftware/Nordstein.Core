@@ -5,7 +5,7 @@ Shared MSTest harness for Nordstein applications.
 ## `BaseTest<TModule>`
 
 Derive from it and every test gets a fresh Autofac container, built from
-`Nordstein.Core.Testing.Module` plus the module under test, and disposed automatically:
+the harness's own module plus the module under test, and disposed automatically:
 
 ```csharp
 [TestClass]
@@ -44,3 +44,12 @@ project does not reference them itself.
 
 All are safe for concurrent use; the XML docs state each contract. See `docs/testing.md` in the
 repository for how to wire them.
+
+## Architecture fences (`Fences`)
+
+The reflection and metadata toolkit for fence tests: `InjectedParameters`, `ParametersMentioning`
+and `Mentions` (the parameter walk), `StaticMembers` (the static-member scan),
+`InternalTypesOutsideInternalNamespaces`, `ReferencedMemberNames` and `ReferencedTypeNames` (the
+metadata reference scan), and `SolutionFile` / `SolutionProject` (the solution-derived assembly
+list). Every scan returns sorted, distinct lines to compare with an allowlist; prove each fence can
+fail with a planted violating type in its own test project.
