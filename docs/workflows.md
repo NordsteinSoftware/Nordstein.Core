@@ -18,7 +18,8 @@ persistence and scheduling are the product's.
 | `IStepJournal`, `WorkflowFailure`, `WorkflowFailureKind` | The product's record of a run, step by step; `StepPinnedAsync` has a default that records a pinned step as completed, `StepRecoveredAsync` one that records a failed node taking its error edge as completed on `error`, `StepRetryingAsync` one that records nothing, and the `StepStartedAsync` overload with an `iteration` one that records the start without it. |
 | `ReservedBranches` | The branch names the kernel reserves: `Error` (`error`) and its fixed output schema `ErrorOutputSchema` (`{ message, nodeType }`). |
 | `INodeTrial`, `NodeTrialResult`, `OutputProblem`, `IterationStub` | Tries one node against supplied upstream outputs, without a run, and checks its output against its output schema; a body node takes its item and index from an `IterationStub`. |
-| `Module` | Registers the validator, the interpreter and the node trial as stateless singletons. |
+| `IConditionNodeType`, `IForEachNodeType` | The kernel's own node types, `condition@1` and `for-each@1`, for a product to put in its catalogue. See [Kernel node types](#kernel-node-types). |
+| `Module` | Registers the validator, the interpreter, the node trial and the two kernel node types as stateless singletons; a kernel node type is registered as itself, never as `INodeType`. |
 
 ## Node majors
 
@@ -90,12 +91,14 @@ output exists), a path its output schema has (the fixed error output for a node 
   graph's order with `{{item}}` and `{{index}}` resolved, each a journaled step (`StepStartedAsync` with the
   iteration) counted against `MaxSteps`, the body's outputs forgotten after each iteration; a body step that fails
   without an error edge fails the loop's step with `iteration <n>, step '<id>': <reason>` (the loop's error edge may
-  take it), a body budget failure fails the loop with its kind. The loop completes on `done` with
+  take it), a body budget failure fails the loop with its kind, and a cancellation in the body journals `Cancelled` on the
+  body step, then on the loop's step, before the `OperationCanceledException` propagates. The loop completes on `done` with
   `Collect(context, results)`, `results` the last executed body node's output per item. A pinned loop completes with its
   pin and runs no body; a pinned body node is pinned per iteration. A replay names the loop's collected step, never body
   steps.
 - **Retries.** A node with a `Retry` runs up to `Attempts` times: a try ending in `Failed` (an exception included) short of
-  the last is journaled through `StepRetryingAsync`, the `Backoff` is awaited on the run's token, and the node runs again
+  the last is journaled through `StepRetryingAsync`, the `Backoff` is awaited on the run's token (one longer than a timer
+  holds, about 49 days, is awaited in parts, never skipped), and the node runs again
   with the same input; the last try's result is the step's, so the error branch and the run failure apply after it. One
   step, one `StepStarted`. A cancellation during a try or a backoff never retries: `Cancelled`, then the exception. A pinned
   node and a node trial execute once, whatever the policy.
@@ -136,3 +139,44 @@ try a node against stubbed upstream data.
 - **Output check.** A `Completed` output is checked against `GetOutputSchema(config)`; every mismatch
   is an `OutputProblem` with its JSON path (`$.items[1].name`). A mismatch is a finding, not a
   failure.
+
+## Kernel node types
+
+The kernel ships two node types, resolved from the container as `IConditionNodeType` and `IForEachNodeType`. A product
+adds them to its catalogue itself (`[.. productTypes, conditionType, forEachType]`); the module never registers them as
+`INodeType`, so a product's own catalogue never changes behind its back. Both are stateless singletons, and their
+interfaces carry the names as constants (`IConditionNodeType.TypeName`, `IForEachNodeType.TypeName`).
+
+### `condition@1`
+
+- **Configuration.** Exactly one of `all` (every rule holds) and `any` (one rule holds): a non-empty array of rules
+  `{ "left", "op", "right" }` with no other keys. `all`, `any`, each rule and each `op` are literal; `left` and `right` may
+  be or hold data references.
+- **Output.** `{ "result": true | false }`; the node completes on the branch `true` or `false`. It is `ReadOnly`.
+- **Evaluation.** In order, stopping at the first rule that decides (a false one under `all`, a true one under `any`).
+- **Values.** A number is a JSON number that fits a `decimal`, or a string that parses as one in invariant notation
+  (sign, `.` and exponent; never a thousands separator, so `"1,50"` stays text). A value's text: a string's own text,
+  nothing for `null`, `true` or `false`, the JSON text otherwise. A missing value resolves to `null`.
+- **Operators.** `eq` and `neq`: numbers numerically (`"5"` equals `5.0`); otherwise, when either side is an object or
+  an array, by JSON content; otherwise by text, ignoring case ordinally (culture-independent). `contains`: on an array
+  `left`, whether an item equals `right`; otherwise text containment, ignoring case. `gt` and `lt`: numbers only, else
+  false. `in`: `right` an array holding `left`, else false. `matches`: `right` a .NET regular expression
+  (culture-invariant, one second per match) matching `left`'s text; a `right` that is not a string is false.
+- **Validation.** `ValidateConfig` refuses neither or both of `all` and `any`, no rule, a reference in a literal place, a
+  literal pattern that does not compile, and a literal `in` right side that is not an array (a whole-string reference is
+  accepted). A pattern from data that does not compile, and a match beyond one second, fail the step:
+  `config.all[0].right is not a regular expression.` Wrongly typed data never fails a step; it compares false.
+
+### `for-each@1`
+
+- **Configuration.** `items` (required): the array, as a rule a whole-string reference; a literal array is allowed.
+  `maxItems` (optional): a literal whole number from 1 to 100, default 20 (`IForEachNodeType.DefaultMaxItems`,
+  `MaxItemsLimit`). `MaxItems` throws `ArgumentException` for a configuration `ValidateConfig` refuses.
+- **Run.** The kernel runs the loop ([Execution](#execution), Loops); `ExecuteAsync` only reports a failure. An `items`
+  that is not an array once resolved (a missing value included) or longer than `maxItems` fails the step.
+- **Output.** `{ "count", "results" }`, `results` the body's last executed node's output per item (`null` for an
+  iteration whose body reached no node). Not `ReadOnly`: a read-only graph cannot loop (a later version may allow it; the
+  reverse would break graphs).
+- **Nesting and waiting.** The validator refuses a loop in a loop's body and a suspending node in it. A suspending node
+  before or after the loop suspends and resumes as anywhere else; a resume replays the loop's collected output and never
+  the body.

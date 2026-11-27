@@ -15,5 +15,8 @@ Product-agnostic workflow kernel for Nordstein applications.
   product's `IStepJournal`, with a step budget, cancellation, dry runs, and suspend and resume.
 - **Trial** — `INodeTrial`: one node against supplied upstream outputs, without a run, its output
   checked against its output schema.
+- **Kernel node types** — `IConditionNodeType` (`condition@1`: rules over data, branches `true` and
+  `false`) and `IForEachNodeType` (`for-each@1`: a loop over an array), for a product to put in its
+  catalogue.
 
 Register `Nordstein.Core.Workflows.Module`; see [`docs/workflows.md`](../docs/workflows.md).

@@ -5,6 +5,9 @@ namespace Nordstein.Core.Workflows.Internal;
 /// <inheritdoc />
 internal sealed class WorkflowInterpreter : IWorkflowInterpreter
 {
+    // The longest wait one Task.Delay accepts is uint.MaxValue - 1 milliseconds; a day less keeps clear of it.
+    private static readonly TimeSpan MaxTimerWait = TimeSpan.FromDays(48);
+
     private readonly IWorkflowValidator validator;
     private readonly ReferenceResolver resolver;
 
@@ -241,7 +244,23 @@ internal sealed class WorkflowInterpreter : IWorkflowInterpreter
                     continue;
                 }
 
-                if (await BodyStepAsync(run, member, index, cancellationToken) is { } failed)
+                WorkflowOutcome.Failed? failed;
+                try
+                {
+                    failed = await BodyStepAsync(run, member, index, cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // The body step closed itself (InvokeAsync); the loop's own step is still open and the journal
+                    // contract promises it an end too, on CancellationToken.None for the same reason.
+                    run.Loop = null;
+                    ForgetBody(run, body);
+                    await execution.Journal.StepFailedAsync(
+                        node.Id, new WorkflowFailure(WorkflowFailureKind.Cancelled, "The run was cancelled while this loop ran."), CancellationToken.None);
+                    throw;
+                }
+
+                if (failed is not null)
                 {
                     run.Loop = null;
                     ForgetBody(run, body);
@@ -329,10 +348,24 @@ internal sealed class WorkflowInterpreter : IWorkflowInterpreter
             await run.Prepared.Execution.Journal.StepRetryingAsync(node.Id, attempt, new WorkflowFailure(WorkflowFailureKind.NodeFailed, failed.Reason), cancellationToken);
             await InvokeAsync(run, node.Id, async () =>
             {
-                await Task.Delay(retry.Backoff, cancellationToken);
+                await WaitAsync(retry.Backoff, cancellationToken);
                 return new NodeResult.Completed(context.Input);
             }, cancellationToken);
         }
+    }
+
+    // Task.Delay refuses a wait longer than one timer can hold (about 49 days) with an ArgumentOutOfRangeException, which
+    // InvokeAsync would turn into a skipped backoff; a RetryPolicy allows any non-negative backoff, so it is waited in parts.
+    private static async Task WaitAsync(TimeSpan backoff, CancellationToken cancellationToken)
+    {
+        TimeSpan remaining = backoff;
+        while (remaining > MaxTimerWait)
+        {
+            await Task.Delay(MaxTimerWait, cancellationToken);
+            remaining -= MaxTimerWait;
+        }
+
+        await Task.Delay(remaining, cancellationToken);
     }
 
     private static async Task<NodeResult> InvokeAsync(Run run, string nodeId, Func<Task<NodeResult>> invoke, CancellationToken cancellationToken)
