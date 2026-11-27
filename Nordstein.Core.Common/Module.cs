@@ -4,6 +4,8 @@ using Nordstein.Core.Common.Conversion;
 using Nordstein.Core.Common.Conversion.Internal;
 using Nordstein.Core.Common.Cryptography;
 using Nordstein.Core.Common.Cryptography.Internal;
+using Nordstein.Core.Common.Events;
+using Nordstein.Core.Common.Events.Internal;
 using Nordstein.Core.Common.Hosting;
 using Nordstein.Core.Common.Hosting.Internal;
 using Nordstein.Core.Common.Io;
@@ -100,6 +102,11 @@ public class Module : Autofac.Module
         builder.RegisterType<SecretFileLoader>().As<ISecretFileLoader>().SingleInstance();
 
         builder.RegisterType<PathContainment>().As<IPathContainment>().SingleInstance();
+
+        // One event hub per event type for the container's lifetime; the bounds are defaults unless the host
+        // registered its own first.
+        builder.RegisterInstance(new EventHubOptions()).IfNotRegistered(typeof(EventHubOptions));
+        builder.RegisterGeneric(typeof(EventHub<>)).As(typeof(IEventHub<>)).SingleInstance();
 
         builder.RegisterType<CsvReader>().As<ICsvReader>().SingleInstance();
 
