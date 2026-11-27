@@ -23,7 +23,7 @@ Product-agnostic building blocks shared across Nordstein applications.
 | `Serialization` | `ISerializer` and a `System.Text.Json` implementation; `CanonicalJson` (sorted, compact JSON for stable hashes) |
 | `Settings` | `[Setting]`, `[Protected]`, `[Sink]` on configuration records; `ISettingRegistry`, built from the registered `SettingRoot`s and the one `SettingNaming`, lists, finds and names settings in three scopes — see [`docs/settings.md`](../docs/settings.md) |
 | `Tabular` | `ICsvReader` (dialect detection: encoding and delimiter; lenient RFC 4180 records), `ICsvRowWriter` (RFC 4180 rows), `CsvDialect`, `SpreadsheetNumberFormatExtensions` (spreadsheet built-in number formats, locale tags) — see [`docs/tabular.md`](../docs/tabular.md) |
-| `Text` | `LogSafeExtensions`, `SlugExtensions` |
+| `Text` | `LogSafeExtensions`, `SlugExtensions`; `ITextNormalizer` (removal, ligatures, NFC, whitespace collapse, each switchable, with a map from every raw position to the normalized text) — see [`docs/text.md`](../docs/text.md) |
 
 ## Registration
 

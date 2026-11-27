@@ -20,6 +20,8 @@ using Nordstein.Core.Common.Settings;
 using Nordstein.Core.Common.Settings.Internal;
 using Nordstein.Core.Common.Tabular;
 using Nordstein.Core.Common.Tabular.Internal;
+using Nordstein.Core.Common.Text;
+using Nordstein.Core.Common.Text.Internal;
 using Nordstein.Core.Common.Time;
 using Nordstein.Core.Common.Time.Internal;
 
@@ -90,6 +92,8 @@ public class Module : Autofac.Module
         builder.RegisterType<CsvReader>().As<ICsvReader>().SingleInstance();
 
         builder.RegisterType<CsvRowWriter>().As<ICsvRowWriter>().SingleInstance();
+
+        builder.RegisterType<TextNormalizer>().As<ITextNormalizer>().SingleInstance();
 
         // Built once from every registered SettingRoot and the product's one SettingNaming; it
         // resolves only in a container that registered a SettingNaming.
