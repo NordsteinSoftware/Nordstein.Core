@@ -5,16 +5,17 @@ using NSubstitute;
 using Nordstein.Core.Common.Time;
 using Nordstein.Core.Licensing.Internal;
 using Nordstein.Core.Testing;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Licensing.Tests;
 
 [TestClass]
 public sealed class LicenseCheckServiceTests : BaseTest<Module>
 {
-    private (LicenseCheckService Service, LicenseService License, ILicenseServerClient Server, ILicenseCacheStore Cache, MutableClock Clock)
+    private (LicenseCheckService Service, LicenseService License, ILicenseServerClient Server, ILicenseCacheStore Cache, ManualClock Clock)
         Build(LicenseCacheEntry? cached = null, string? jwt = null)
     {
-        var clock = new MutableClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var clock = new ManualClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var server = Substitute.For<ILicenseServerClient>();
         var cache = Substitute.For<ILicenseCacheStore>();
         cache.Load().Returns(cached);
@@ -159,7 +160,7 @@ public sealed class LicenseCheckServiceTests : BaseTest<Module>
     {
         // Boot without any license: the loop must idle (no jti to check) but react to a
         // license activated later at runtime (e.g. a stored license applied by the product).
-        var clock = new MutableClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var clock = new ManualClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var server = Substitute.For<ILicenseServerClient>();
         var cache = Substitute.For<ILicenseCacheStore>();
         cache.Load().Returns((LicenseCacheEntry?)null);
@@ -245,7 +246,7 @@ public sealed class LicenseCheckServiceTests : BaseTest<Module>
             offline: true,
             expires: DateTimeOffset.UtcNow.AddMinutes(5));
 
-        var clock = new MutableClock(DateTimeOffset.UtcNow.AddDays(10));
+        var clock = new ManualClock(DateTimeOffset.UtcNow.AddDays(10));
         var server = Substitute.For<ILicenseServerClient>();
         var cache = Substitute.For<ILicenseCacheStore>();
 
@@ -276,7 +277,7 @@ public sealed class LicenseCheckServiceTests : BaseTest<Module>
         // path: an offline key must make the background loop skip the server entirely. Run the
         // actual loop (StartAsync) and assert zero server calls. (A normal key would contact the
         // server immediately on the first iteration — see ExecuteAsync_LicenseActivatedAtRuntime.)
-        var clock = new MutableClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var clock = new ManualClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var server = Substitute.For<ILicenseServerClient>();
         var cache = Substitute.For<ILicenseCacheStore>();
         cache.Load().Returns((LicenseCacheEntry?)null);

@@ -99,6 +99,39 @@ fixtures.
 - Private **static** helper methods taking a `ContainerBuilder` (or building a value object) are
   fine — the rule is *no shared state*, not *no helper methods*.
 
+## Shared fakes
+
+`Nordstein.Core.Testing` ships the fakes every suite otherwise writes again. Use them instead of a
+private copy; each is thread-safe where a real test uses it from several threads, and documents
+how in its XML docs. Like any fixture, build them **inside the test method** (or in the test
+project's `Module`, one per container), never in a field.
+
+| Fake | Namespace | Use it for |
+|---|---|---|
+| `ManualClock` | `Testing.Time` | "Now" and timers. One instance is both `IClock` and `TimeProvider`: `builder.RegisterInstance(clock).As<IClock>().As<TimeProvider>()` (register it before `Nordstein.Core.Common.Module`, whose `TimeProvider.System` yields to an earlier registration). |
+| `ScriptedHttpMessageHandler` | `Testing.Http` | An `HttpClient` that answers from a script: `Respond(status, body)`, `Respond(factory)`, `Throw(exception)`, `TimeOut()`, `Hang()`, `RepeatLast()`; `Requests` and `RemainingSteps` to assert on. |
+| `NoNetworkHttpMessageHandler` | `Testing.Http` | Proving code makes **no** outbound call: every send throws `InvalidOperationException` (which transport-failure handling does not catch) and lands in `Attempts`. |
+| `RecordingLoggerProvider`, `RecordingLogger<T>` | `Testing.Logging` | Proving what a log line carries, and what it never carries: category, level, event id, rendered message, exception and the structured properties of every entry. |
+| `ThrowawayCertificateAuthority` | `Testing.Certificates` | A real TLS server in a test: an in-memory CA that issues short-lived server certificates (`IssueServerCertificate("localhost", "127.0.0.1")`) as `X509Certificate2` and PEM. |
+
+`ManualClock` semantics worth knowing before writing a test with it:
+
+- `Advance(delta)` moves the wall clock and the monotonic timestamp together and fires every timer
+  that falls due, **synchronously on the advancing thread**, earliest first; a callback reads the
+  instant it was due. `SetUtcNow` forward is the same; backward it is a wall-clock correction that
+  leaves timestamps and timers alone, as `TimeProvider.System` does when the system clock is set
+  back. Use it to test clock skew.
+- Timers fire only inside an advance, never while being created: a zero due time fires on the next
+  `Advance(TimeSpan.Zero)`. `Task.Delay(…, clock)`, `CancellationTokenSource(…, clock)` and
+  `PeriodicTimer(…, clock)` all run on it.
+- A background loop the test does not drive directly: `await clock.WaitForPendingTimerAsync(CancellationToken)`
+  to learn it reached its next wait, then `Advance`. Never sleep.
+
+Routing the container's loggers into a `RecordingLoggerProvider`
+(`builder.RegisterInstance(provider).As<ILoggerProvider>()`) goes through the container's logger
+factory, whose default minimum level is `Information`; for `Debug` and `Trace`, hand the class under
+test a `RecordingLogger<T>` instead.
+
 ## Naming
 
 ```

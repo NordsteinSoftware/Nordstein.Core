@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Nordstein.Core.Domain;
 using Nordstein.Core.Testing;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Storage.Tests;
 
@@ -48,9 +49,9 @@ public sealed class ArchivableRepositoryTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<ITestDocRepository>();
-        MutableClock clock = services.GetRequiredService<MutableClock>();
+        ManualClock clock = services.GetRequiredService<ManualClock>();
         ITestDoc doc = await repository.AddAsync(NewDoc("stamped"), CancellationToken);
-        clock.UtcNow = new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        clock.SetUtcNow(new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero));
 
         await repository.ArchiveAsync(doc.Id, CancellationToken);
 
@@ -63,10 +64,10 @@ public sealed class ArchivableRepositoryTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         var repository = services.GetRequiredService<ITestDocRepository>();
-        MutableClock clock = services.GetRequiredService<MutableClock>();
+        ManualClock clock = services.GetRequiredService<ManualClock>();
         ITestDoc doc = await repository.AddAsync(NewDoc("restamped"), CancellationToken);
         await repository.ArchiveAsync(doc.Id, CancellationToken);
-        clock.UtcNow = new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        clock.SetUtcNow(new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero));
 
         await repository.Unarchive(doc.Id, CancellationToken);
 
