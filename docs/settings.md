@@ -2,8 +2,9 @@
 
 `Nordstein.Core.Common.Settings` describes a product's settings: which configuration keys exist,
 who they apply to, what they hold, and which are secret or name where data goes. It holds no
-values. Reading, storing and checking values is the product's; Core gives it one catalogue to
-list, find and name settings by.
+values. Reading and storing values is the product's; Core gives it one catalogue to list, find and
+name settings by, the check of a typed value's form, and the expansion of templates against the
+configuration's keys.
 
 ## Marking settings
 
@@ -102,10 +103,49 @@ once more in an `InvalidOperationException` carrying Autofac's text, which
 `Find(null)`, `NameOf(…, null)` and null `Instantiate` arguments throw `ArgumentNullException`;
 `NameOf` with an undefined scope throws `ArgumentOutOfRangeException`.
 
+## Value kinds and checks
+
+`SettingValueExtensions` (pure extension methods on `SettingDescriptor`):
+
+- `ValueKind()` → `SettingValueKind`: `Text` (`string`), `Choice` (an enum), `Boolean`, `Integer`
+  (`int`, `long`), `Number` (`double`), `Duration` (`TimeSpan`), `Url` (`Uri`), `List`
+  (`IReadOnlyList<string>`). Stable numeric values; a product maps them to its wire spelling.
+- `CheckValue(value)` → `ValidationResult?`: `null` when the type can hold the text, read
+  culture-invariantly as configuration binds it: `bool.TryParse`; `NumberStyles.Integer` within the
+  type's range (no hex, no separators); `NumberStyles.Float` (`NaN`, `Infinity` pass);
+  `TimeSpan.TryParse` invariant; a `Uri` absolute and starting with its own scheme (`/var/data`, an
+  implicit file URI on Unix, and surrounding whitespace fail); an enum member's name, ignoring case
+  (no numbers, no flag combinations); a list as a JSON array of strings or `null`s, the
+  `DefaultValue` form. Every `DefaultValue` the registry produces passes.
+- A failure reads `{Path} must be {form}.` with `MemberNames` `[Path]`, never the value (it may be a
+  secret typed into the wrong field). Lengths, `U+0000`, ranges and cross-setting rules are the
+  product's.
+- An unsupported `Type` (a descriptor built outside the registry) throws `InvalidOperationException`.
+
+## Resolving templates against the configuration
+
+`ISettingResolver` (registered per dependency; resolves only where the product registers its one
+`ISettingCollections`) asks the configuration which elements exist:
+
+- `ISettingCollections.KeysOf(collectionPath)`: the product's seam; the keys configured under the
+  path in front of a template's wildcard (`Feeds` for `Feeds:*:Url`; `""` for a root `*`). Null, or a
+  null key, throws `InvalidOperationException`.
+- `Resolve(name)`: a concrete setting as `Find` returns it, never asking the configuration; a
+  template's instance only when `KeysOf` holds its segment, ignoring case, then spelled as configured
+  (`$APP__Feeds__news__Url` → `Feeds:News:Url`); otherwise `null`.
+- `Expand(scopes)`: every concrete setting of the scopes in `All` order; a run of templates of one
+  collection is listed once per key, all of one element's settings together. Only the requested
+  scopes' collections are asked, once per run. Keys that break the segment rule are left out; keys
+  equal ignoring case are listed once (first spelling). An undefined scope throws
+  `ArgumentOutOfRangeException`.
+- Check permissions between `Find` and `Resolve`: a caller without the permission for a scope then
+  learns nothing about which elements are configured.
+
 ## Thread-safety
 
 The registry is immutable after construction; every member is safe for concurrent callers.
-Descriptors are immutable records.
+Descriptors are immutable records. The value checks are pure; the resolver is stateless and as
+thread-safe as the product's `ISettingCollections`.
 
 ## Related
 

@@ -103,6 +103,10 @@ public class Module : Autofac.Module
         // resolves only in a container that registered a SettingNaming.
         builder.RegisterType<SettingRegistry>().As<ISettingRegistry>().SingleInstance();
 
+        // Per dependency, so it never outlives the product's ISettingCollections, whatever its lifetime;
+        // it resolves only in a container that registered one.
+        builder.RegisterType<SettingResolver>().As<ISettingResolver>();
+
         // The wall clock for scheduling. A host or test that registered its own TimeProvider first
         // keeps it; IClock stays the seam for "what time is it" in feature code.
         builder.RegisterInstance(TimeProvider.System).As<TimeProvider>().IfNotRegistered(typeof(TimeProvider));

@@ -77,7 +77,7 @@ area — do not rely on this file alone:
 | [`docs/values.md`](docs/values.md) | Touching `CulturalValueParser` or `CanonicalJson` in `Nordstein.Core.Common`, or parsing culture-formatted values or hashing JSON anywhere |
 | [`docs/tabular.md`](docs/tabular.md) | Touching `Nordstein.Core.Common.Tabular` — CSV reading, dialect detection, the RFC 4180 row writer, spreadsheet number formats |
 | [`docs/text.md`](docs/text.md) | Touching `Nordstein.Core.Common.Text` — the text normalizer and its offset maps, structure markers, the chunker and the Markdown renderer, quote folding and exact-once matching |
-| [`docs/settings.md`](docs/settings.md) | Touching `Nordstein.Core.Common.Settings` — setting attributes, the registry, naming |
+| [`docs/settings.md`](docs/settings.md) | Touching `Nordstein.Core.Common.Settings` — setting attributes, the registry, naming, value checks, template resolution |
 | [`docs/domain.md`](docs/domain.md) | Touching the domain foundation (`Nordstein.Core.Domain`) — entity/object contracts, factory delegates, generators, repositories, archiving |
 | [`docs/storage.md`](docs/storage.md) | Touching `Nordstein.Core.Storage` — `NordsteinDbContext`, generic repositories, the transaction seam, the cache |
 | [`docs/validation.md`](docs/validation.md) | Touching validation helpers, or adding validation to anything |
