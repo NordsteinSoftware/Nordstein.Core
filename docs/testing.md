@@ -43,6 +43,14 @@ python3 tools/coverage_gate.py --reports artifacts/coverage --floors tools/cover
 - The gate's own tests run in CI's `tooling` job: `python3 -m unittest discover -s tools/tests`.
   Python standard library only.
 
+### Repository checks (CI `tooling` job)
+
+- `python3 -m unittest discover -s tools/tests`: the tests of everything under `tools/` and
+  `.claude/hooks/`, including one that runs each check against the live repository.
+- `python3 tools/docs_check.py --root .`: every relative link in every Markdown file resolves (the
+  file part; anchors are not checked; links in code are not links), and every `docs/*.md` page but
+  `docs/README.md` has a row in the `CLAUDE.md` index table. One line per problem, exit 1 on any.
+
 ## Core principles (non-negotiable, shared across all Nordstein repos)
 
 1. **No shared state between tests.** No system-under-test, fakes, fixtures, or seeded entities

@@ -97,6 +97,10 @@ jobs:
       - name: Tooling tests
         run: python3 -m unittest discover --start-directory tools/tests --verbose
 
+      # Every relative Markdown link resolves and every docs/ page has its CLAUDE.md index row.
+      - name: Docs check
+        run: python3 tools/docs_check.py --root .
+
   # Packs the NuGet packages and uploads them. Everyday builds resolve project references,
   # which hide two things a package consumer would hit: a type that is public in source but
   # never made it onto the package's surface, and a missing pack input (LICENSE, README,
