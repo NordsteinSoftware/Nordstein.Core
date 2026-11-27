@@ -111,9 +111,10 @@ stores the two fields however it likes.
   iterations for each of two output blocks). The 16-byte floor keeps a short output from matching
   a wrong password by chance.
 - **Comparison.** `CryptographicOperations.FixedTimeEquals` over the full output.
-- **Policy stays with the caller.** Minimum length, normalization (NFKC, if wanted), rate limiting,
-  lockout and a bound on the request size belong to the product. The hasher hashes the empty string
-  like any other value.
+- **Policy stays out of the hasher.** The hasher hashes the empty string like any other value and
+  normalizes nothing. Core's opt-in credential primitives (`IPasswordPolicy` with NFKC
+  normalization, `ILoginLockout`, `IDummyPasswordVerifier`) are separate services, described in
+  [`security.md`](security.md); rate limiting and a bound on the request size stay with the product.
 
 ## Review focus (Standard of Care #3)
 

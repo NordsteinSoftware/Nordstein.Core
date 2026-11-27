@@ -75,7 +75,10 @@ area — do not rely on this file alone:
 | [`docs/architecture.md`](docs/architecture.md) | Touching package structure, layering, Autofac modules/discovery, or hosting helpers |
 | [`docs/code-style.md`](docs/code-style.md) | Writing any C# — style rules + key conventions |
 | [`docs/cryptography.md`](docs/cryptography.md) | Touching `Common/Cryptography` or `Common/Security` — AEAD, key wrap, password hashing, CSPRNG rule |
+| [`docs/security.md`](docs/security.md) | Touching the credential primitives or the master key ring in `Common/Security` — login lockout, secret token format, password policy, dummy verify, password generator, key file custody, canary, fail-closed load |
 | [`docs/io.md`](docs/io.md) | Touching `Common/Io` — durable publishing, secret-file custody |
+| [`docs/events.md`](docs/events.md) | Touching `Nordstein.Core.Common.Events` — the in-process event hub, its filters, bounded replay and slow-subscriber policy |
+| [`docs/diagnostics.md`](docs/diagnostics.md) | Touching `Nordstein.Core.Common.Diagnostics` — the request-timing accumulator and its names; its EF Core feed is in `docs/storage.md` |
 | [`docs/values.md`](docs/values.md) | Touching `CulturalValueParser` or `CanonicalJson` in `Nordstein.Core.Common`, or parsing culture-formatted values or hashing JSON anywhere |
 | [`docs/tabular.md`](docs/tabular.md) | Touching `Nordstein.Core.Common.Tabular` — CSV reading, dialect detection, the RFC 4180 row writer, spreadsheet number formats |
 | [`docs/text.md`](docs/text.md) | Touching `Nordstein.Core.Common.Text` — the text normalizer and its offset maps, structure markers, the chunker and the Markdown renderer, quote folding and exact-once matching, storable text, the strict UTF-8 encoding |
