@@ -22,3 +22,6 @@ artifacts/
 # OS
 .DS_Store
 Thumbs.db
+
+# Python bytecode of the repository tooling (tools/, .claude/hooks/)
+__pycache__/

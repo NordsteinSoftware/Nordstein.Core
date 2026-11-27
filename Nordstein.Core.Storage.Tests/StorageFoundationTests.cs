@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Nordstein.Core.Domain;
 using Nordstein.Core.Domain.Exceptions;
 using Nordstein.Core.Testing;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Storage.Tests;
 
@@ -58,6 +59,8 @@ public sealed class StorageFoundationTests : BaseTest<Module>
         IServiceProvider services = GetServices();
         IRepository<ITestThing> repository = services.GetRequiredService<IRepository<ITestThing>>();
         ITestThing added = await repository.AddAsync(NewThing("before"), CancellationToken);
+        ManualClock clock = services.GetRequiredService<ManualClock>();
+        clock.SetUtcNow(added.UpdatedAt.AddSeconds(1));
 
         var renamed = new TestThing
         {
@@ -69,7 +72,7 @@ public sealed class StorageFoundationTests : BaseTest<Module>
         ITestThing updated = await repository.UpdateAsync(renamed, CancellationToken);
 
         updated.Name.Should().Be("after");
-        updated.UpdatedAt.Should().BeOnOrAfter(added.UpdatedAt);
+        updated.UpdatedAt.Should().Be(added.UpdatedAt.AddSeconds(1));
 
         ITestThing? reloaded = await repository.FindAsync(added.Id, CancellationToken);
         Assert.IsNotNull(reloaded);
@@ -98,9 +101,9 @@ public sealed class StorageFoundationTests : BaseTest<Module>
     {
         IServiceProvider services = GetServices();
         IRepository<ITestThing> repository = services.GetRequiredService<IRepository<ITestThing>>();
-        MutableClock clock = services.GetRequiredService<MutableClock>();
+        ManualClock clock = services.GetRequiredService<ManualClock>();
         ITestThing added = await repository.AddAsync(NewThing("before"), CancellationToken);
-        clock.UtcNow = new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        clock.SetUtcNow(new DateTimeOffset(2031, 3, 4, 5, 6, 7, TimeSpan.Zero));
 
         var renamed = new TestThing { Id = added.Id, CreatedAt = added.CreatedAt, UpdatedAt = added.UpdatedAt, Name = "after" };
         await repository.UpdateAsync(renamed, CancellationToken);

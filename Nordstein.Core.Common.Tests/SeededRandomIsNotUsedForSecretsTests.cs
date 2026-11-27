@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Nordstein.Core.Common.Random;
 using Nordstein.Core.Domain;
+using Nordstein.Core.Testing.Fences;
 
 namespace Nordstein.Core.Common.Tests;
 
@@ -18,7 +18,7 @@ namespace Nordstein.Core.Common.Tests;
 /// <see cref="IRandom"/> implementations themselves (<c>SeededRandom</c>).
 /// </remarks>
 [TestClass]
-public sealed partial class SeededRandomIsNotUsedForSecretsTests
+public sealed class SeededRandomIsNotUsedForSecretsTests
 {
     private const string SolutionFileName = "Nordstein.Core.sln";
 
@@ -143,63 +143,19 @@ public sealed partial class SeededRandomIsNotUsedForSecretsTests
     }
 
     /// <summary>
-    /// Loads every production project of the solution, so a newly added package cannot escape the
-    /// guard: until this test project references it, the guard fails.
+    /// Loads every production project of the solution (every project but the <c>*.Tests</c>
+    /// projects and the <c>Nordstein.Core.Testing</c> harness, which are test code), so a newly
+    /// added package cannot escape the guard: until this test project references it, the guard fails.
     /// </summary>
-    private static IReadOnlyList<Assembly> LoadProductionAssemblies() =>
-        ReadProductionProjectNames().Select(LoadProductionAssembly).ToList();
-
-    private static Assembly LoadProductionAssembly(string name)
+    private static IReadOnlyList<Assembly> LoadProductionAssemblies()
     {
-        try
-        {
-            return Assembly.Load(new AssemblyName(name));
-        }
-        catch (FileNotFoundException exception)
-        {
-            throw new AssertFailedException(
-                $"{name} is in {SolutionFileName} but Nordstein.Core.Common.Tests does not reference it, "
-                + "so the IRandom guard cannot scan it. Add a ProjectReference.",
-                exception);
-        }
+        SolutionProject[] production = [.. new SolutionFile(SolutionFileName, AppContext.BaseDirectory).Projects
+            .Where(project => !project.IsTestProject
+                && !string.Equals(project.Name, "Nordstein.Core.Testing", StringComparison.Ordinal))];
+
+        production.Should().NotBeEmpty($"{SolutionFileName} must list the production projects");
+        return [.. production.Select(project => project.LoadAssembly())];
     }
-
-    /// <summary>
-    /// Every project in the solution except the <c>*.Tests</c> projects and the
-    /// <c>Nordstein.Core.Testing</c> harness, which are test code.
-    /// </summary>
-    private static IReadOnlyList<string> ReadProductionProjectNames()
-    {
-        string solution = File.ReadAllText(FindSolutionFile());
-
-        List<string> names = ProjectLine()
-            .Matches(solution)
-            .Select(match => match.Groups["name"].Value)
-            .Where(name => !name.EndsWith(".Tests", StringComparison.Ordinal)
-                && !string.Equals(name, "Nordstein.Core.Testing", StringComparison.Ordinal))
-            .ToList();
-
-        names.Should().NotBeEmpty($"{SolutionFileName} must list the production projects");
-        return names;
-    }
-
-    private static string FindSolutionFile()
-    {
-        for (DirectoryInfo? directory = new(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            string candidate = Path.Combine(directory.FullName, SolutionFileName);
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new FileNotFoundException(
-            $"{SolutionFileName} was not found above {AppContext.BaseDirectory}.", SolutionFileName);
-    }
-
-    [GeneratedRegex(@"^Project\(""\{[^}]+\}""\)\s*=\s*""(?<name>[^""]+)"",\s*""[^""]+\.csproj""", RegexOptions.Multiline)]
-    private static partial Regex ProjectLine();
 
     private sealed class TakesRandom(IRandom random)
     {

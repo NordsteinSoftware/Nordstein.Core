@@ -73,8 +73,10 @@ internal sealed class NodeTrial : INodeTrial
         });
         var context = new NodeContext(node.Id, node.Type, input, triggerOutput, dryRun);
         // A loop node is run by the kernel, never executed (IIteratingNodeType): a try reports an empty collection.
+        // Its Collect goes through the invoker like ExecuteAsync, so a hook that throws is a failed try, not a throw.
         NodeResult result = type is IIteratingNodeType loop
-            ? new NodeResult.Completed(loop.Collect(context, []), LoopBranches.Done)
+            ? await NodeInvoker.InvokeAsync(
+                () => Task.FromResult<NodeResult>(new NodeResult.Completed(loop.Collect(context, []), LoopBranches.Done)), cancellationToken)
             : await NodeInvoker.InvokeAsync(() => type.ExecuteAsync(context, cancellationToken), cancellationToken);
         if (result is NodeResult.Suspended suspended && answer is { } resume && type is ISuspendingNodeType suspending)
         {

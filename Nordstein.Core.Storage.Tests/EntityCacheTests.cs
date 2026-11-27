@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Storage.Tests;
 
@@ -52,12 +53,12 @@ public sealed class EntityCacheTests
     [TestMethod]
     public void TryGet_AfterTtlElapses_ReturnsNull()
     {
-        var clock = new TestClock { UtcNow = DateTimeOffset.UnixEpoch };
+        var clock = new ManualClock(DateTimeOffset.UnixEpoch);
         var cache = new EntityCache<ITestThing>(new EntityCacheVersions<ITestThing>(), clock, TimeSpan.FromMinutes(1));
         ITestThing thing = Thing(Guid.NewGuid());
         cache.Set(thing);
 
-        clock.UtcNow = clock.UtcNow.AddMinutes(2);
+        clock.Advance(TimeSpan.FromMinutes(2));
 
         cache.TryGet(thing.Id).Should().BeNull();
     }
@@ -93,11 +94,11 @@ public sealed class EntityCacheTests
     [TestMethod]
     public void TryGetAll_AfterTtlElapses_ReturnsNull()
     {
-        var clock = new TestClock { UtcNow = DateTimeOffset.UnixEpoch };
+        var clock = new ManualClock(DateTimeOffset.UnixEpoch);
         var cache = new EntityCache<ITestThing>(new EntityCacheVersions<ITestThing>(), clock, TimeSpan.FromMinutes(1));
         cache.SetAll([Thing(Guid.NewGuid())]);
 
-        clock.UtcNow = clock.UtcNow.AddMinutes(2);
+        clock.Advance(TimeSpan.FromMinutes(2));
 
         cache.TryGetAll().Should().BeNull();
     }
@@ -118,11 +119,5 @@ public sealed class EntityCacheTests
 
         // A forgotten id reads back as 0 — a guaranteed miss, never a stale hit.
         versions.VersionOf(tracked).Should().Be(0);
-    }
-
-    private sealed class TestClock : TimeProvider
-    {
-        public DateTimeOffset UtcNow { get; set; }
-        public override DateTimeOffset GetUtcNow() => UtcNow;
     }
 }

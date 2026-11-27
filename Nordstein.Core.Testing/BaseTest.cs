@@ -85,7 +85,7 @@ public abstract class BaseTest<TModule> where TModule : Autofac.Module, new()
     protected static IContainer BuildContainer(Action<ContainerBuilder>? action = null)
     {
         ContainerBuilder builder = new ContainerBuilder();
-        builder.RegisterModule<Module>();
+        builder.RegisterModule<Internal.Module>();
         builder.RegisterModule<TModule>();
         action?.Invoke(builder);
         return builder.Build();

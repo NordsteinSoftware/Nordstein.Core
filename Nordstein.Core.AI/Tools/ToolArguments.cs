@@ -1,6 +1,7 @@
 using System.Collections;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using Nordstein.Core.AI.Tools.Internal;
 using Nordstein.Core.Common.Validation;
 
 namespace Nordstein.Core.AI.Tools;

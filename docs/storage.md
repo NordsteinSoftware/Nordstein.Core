@@ -24,6 +24,7 @@ PostgreSQL.
 | `IEntityCache<T>`, `EntityCache<T>`, `EntityCacheVersions<T>`, `CacheableAttribute` | In-memory cache for slow-changing reference data, scope-local with process-wide invalidation. |
 | `AbstractEntityConfiguration<T>`, `IModelConfiguration` | The per-entity EF configuration seam applied by `NordsteinDbContext`. |
 | `LikePattern`, `ArchivableQueryExtensions.ExcludeArchived`, `ConcurrencyTokenExtensions` | Query/token helpers. |
+| `IRequestTimingSource`, `RequestTimingOptionsExtensions.AddRequestTimings` | Opt-in command timing into the unit of work's `IRequestTimings` — see [Request timings](#request-timings). |
 | `StorageFoundationModule<TContext>` | Autofac module that wires the seam above and discovers a product assembly's entities, configurations, repositories and caches. |
 
 ## Architecture
@@ -128,6 +129,38 @@ stored `… : Entity` record with `[StoredDomainEntity(typeof(IThing))]`, an
   in `UpdateRelationsAsync`.
 - **Search patterns.** Build `LIKE` right-hand sides with `LikePattern.Contains` (it lowercases and
   escapes wildcards); lower the column in the query too.
+
+## Request timings
+
+A product opts its context in to command timing, so the database time of a unit of work lands in that unit's
+`IRequestTimings` ([diagnostics.md](diagnostics.md)) under `RequestTimingNames.Database` (`db`):
+
+```csharp
+internal sealed class StorageDbContext : NordsteinDbContext, IRequestTimingSource
+{
+    public StorageDbContext(IEnumerable<IModelConfiguration> configurations,
+        DbContextOptions<StorageDbContext> options, IRequestTimings? timings = null)
+        : base(configurations, options)
+    {
+        RequestTimings = timings;
+    }
+
+    public IRequestTimings? RequestTimings { get; }
+}
+
+options.UseNpgsql(connectionString).AddRequestTimings();
+```
+
+- `AddRequestTimings()` (`Nordstein.Core.Storage.Diagnostics`) adds one stateless `DbCommandInterceptor` to the
+  options; calling it again adds nothing. Each executed, failed or cancelled command adds its duration and one
+  count; each data reader adds its reading time (from creation until disposal), so a large result counts in
+  full. No command text or parameter is recorded.
+- The context hands over the accumulator through `IRequestTimingSource`, resolved with the context from the
+  same lifetime scope; a context without the interface, or with no accumulator (design time, a migration
+  tool), is skipped. `NordsteinDbContext` itself is unchanged, so opting in breaks no existing context.
+- Hand-written ADO.NET commands on the context's connection bypass EF Core and are not timed; a product that
+  runs them times them itself under the same name. The in-memory provider runs no command, so in-memory tests
+  record no database time; the interceptor's own tests call its overrides directly.
 
 ## Tests
 

@@ -43,6 +43,9 @@ dotnet_style_qualification_for_event = false:suggestion
 csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:error
 dotnet_style_readonly_field = true:warning
 
+# A cancellable overload exists: forward the token (CA2016 is a suggestion by default).
+dotnet_diagnostic.CA2016.severity = error
+
 [*.{csproj,props,targets}]
 indent_size = 2
 

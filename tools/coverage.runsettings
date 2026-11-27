@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Coverage for CI and tools/coverage_gate.py: every shipped Nordstein.Core.* assembly, Nordstein.Core.Testing included
+     (it is a shipped package), never a *.Tests project. Generated code (the regular expression source generator) is not
+     ours to cover. Passed to dotnet test as its settings file together with the XPlat Code Coverage collector; the
+     command is in docs/testing.md and .github/workflows/ci.yml. -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[Nordstein.Core.*]*</Include>
+          <Exclude>[*.Tests]*</Exclude>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

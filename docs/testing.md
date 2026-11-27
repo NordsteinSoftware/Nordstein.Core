@@ -17,6 +17,50 @@ the only safety net the foundation has.
   seconds; scoped runs are for iterating only, and a scoped green run is never reported as "all
   tests pass".
 
+### The coverage gate (CI)
+
+The owner's floor is **90 % line and 90 % branch coverage for every shipped assembly**, the
+test harness `Nordstein.Core.Testing` included. CI's `build` job enforces it after the one test run:
+
+```bash
+dotnet test Nordstein.Core.sln --settings tools/coverage.runsettings --collect "XPlat Code Coverage" --results-directory artifacts/coverage
+python3 tools/coverage_gate.py --reports artifacts/coverage --floors tools/coverage-floors.json
+```
+
+- `tools/coverage.runsettings` instruments `[Nordstein.Core.*]*` except `[*.Tests]*`, and skips
+  generated code (`GeneratedCodeAttribute`, `CompilerGeneratedAttribute`) and auto-properties.
+- `tools/coverage_gate.py` merges every `coverage.cobertura.xml` under `--reports` per line (an
+  assembly appears in the report of every test project that loads it: hits add up, each branch
+  condition keeps its best coverage), truncates each percentage to one decimal (89.99 % is 89.9 %)
+  and compares it with `tools/coverage-floors.json` (`{"<assembly>": {"line": 90.0, "branch": 90.0}}`).
+- It prints `coverage gate: PASS — line N %, branch N %` (or `FAIL`) and one `BELOW`, `NO FLOOR` or
+  `NO DATA` line per failure, writes `coverage.json` next to the reports, and exits 0 or 1.
+- **Never green on a missing result.** No report file, an unreadable or empty report, unreadable
+  floors, a measured assembly without a floor and a floor without coverage all fail.
+- A new shipped assembly gets its floor (at least 90.0 for both) in the same change;
+  `tools/tests/test_coverage_config.py` fails on a shipped assembly the settings do not measure, on
+  a test project they do, and on a missing floor or one below 90. Lowering a floor needs the owner.
+- The gate's own tests run in CI's `tooling` job: `python3 -m unittest discover -s tools/tests`.
+  Python standard library only.
+
+### Repository checks (CI `tooling` job)
+
+- `python3 -m unittest discover -s tools/tests`: the tests of everything under `tools/` and
+  `.claude/hooks/`, including one that runs each check against the live repository.
+- `python3 tools/docs_check.py --root .`: every relative link in every Markdown file resolves (the
+  file part; anchors are not checked; links in code are not links), and every `docs/*.md` page but
+  `docs/README.md` has a row in the `CLAUDE.md` index table. One line per problem, exit 1 on any.
+- `.claude/hooks/guards.py edit`, wired in `.claude/settings.json` as a `PreToolUse` hook on
+  `Edit|Write|MultiEdit`: denies (exit 2, the reason on stderr) a C# edit that adds a
+  `#pragma warning disable`, `#nullable disable`, `[SuppressMessage]` or `[ExcludeFromCodeCoverage]`
+  without a `// WHY:` on its line or in the comment block directly above, or that adds a
+  null-forgiving `!`, with no exemption. Only what an edit adds counts. It lexes the file, so a `!`
+  in a string, a character, a comment, a directive (`#if !DEBUG`), a negation or `!=` is no alarm,
+  while the holes of an interpolated string are code; its test runs it over every C# file of the
+  repository as a positive control (it must find `Validation.Success`) and a false-alarm check. A
+  malformed event exits 1 and never blocks. It catches accidents; review and CI are the backstop.
+- `.claude/agents/reviewer.md`: the adversarial reviewer for Standard of Care 3, read-only.
+
 ## Core principles (non-negotiable, shared across all Nordstein repos)
 
 1. **No shared state between tests.** No system-under-test, fakes, fixtures, or seeded entities
@@ -63,7 +107,7 @@ public sealed class MyTests : BaseTest<Module>
 How it works, and why it is stateless:
 
 - `GetServices(action)` builds a **brand-new Autofac container every call**: it registers
-  `Nordstein.Core.Testing.Module`, then your `TModule`, then the class-level
+  the harness's own module (`Nordstein.Core.Testing.Internal.Module`), then your `TModule`, then the class-level
   `ConfigureContainer(ContainerBuilder)` override, then the per-call `action`.
 - Containers are recorded in `TestContext.Properties` and disposed in `[TestCleanup]` — never
   manage container lifetime yourself. `BuildContainer` (static, not auto-disposed) exists as a
@@ -98,6 +142,103 @@ fixtures.
   predicates are expression trees, so `x is not null` is illegal — use `x != null && …`.
 - Private **static** helper methods taking a `ContainerBuilder` (or building a value object) are
   fine — the rule is *no shared state*, not *no helper methods*.
+
+## Shared fakes
+
+`Nordstein.Core.Testing` ships the fakes every suite otherwise writes again. Use them instead of a
+private copy; each is thread-safe where a real test uses it from several threads, and documents
+how in its XML docs. Like any fixture, build them **inside the test method** (or in the test
+project's `Module`, one per container), never in a field.
+
+| Fake | Namespace | Use it for |
+|---|---|---|
+| `ManualClock` | `Testing.Time` | "Now" and timers. One instance is both `IClock` and `TimeProvider`: `builder.RegisterInstance(clock).As<IClock>().As<TimeProvider>()`, registered after `Nordstein.Core.Common.Module` (in `GetServices(builder => …)`, or after the module in the test project's `Module`), so it wins over the module's `SystemClock` and `TimeProvider.System`. |
+| `ScriptedHttpMessageHandler` | `Testing.Http` | An `HttpClient` that answers from a script: `Respond(status, body)`, `Respond(factory)`, `Throw(exception)`, `TimeOut()`, `Hang()`, `RepeatLast()`; `Requests` and `RemainingSteps` to assert on. |
+| `NoNetworkHttpMessageHandler` | `Testing.Http` | Proving code makes **no** outbound call: every send throws `InvalidOperationException` (which transport-failure handling does not catch) and lands in `Attempts`. |
+| `RecordingLoggerProvider`, `RecordingLogger<T>` | `Testing.Logging` | Proving what a log line carries, and what it never carries: category, level, event id, rendered message, exception and the structured properties of every entry. |
+| `ThrowawayCertificateAuthority` | `Testing.Certificates` | A real TLS server in a test: an in-memory CA that issues short-lived server certificates (`IssueServerCertificate("localhost", "127.0.0.1")`) as `X509Certificate2` and PEM. |
+
+`ManualClock` semantics worth knowing before writing a test with it:
+
+- `Advance(delta)` moves the wall clock and the monotonic timestamp together and fires every timer
+  that falls due, **synchronously on the advancing thread**, earliest first; a callback reads the
+  instant it was due. `SetUtcNow` forward is the same; backward it is a wall-clock correction that
+  leaves timestamps and timers alone, as `TimeProvider.System` does when the system clock is set
+  back. Use it to test clock skew.
+- Timers fire only inside an advance, never while being created: a zero due time fires on the next
+  `Advance(TimeSpan.Zero)`. `Task.Delay(…, clock)`, `CancellationTokenSource(…, clock)` and
+  `PeriodicTimer(…, clock)` all run on it.
+- A background loop the test does not drive directly: `await clock.WaitForPendingTimerAsync(CancellationToken)`
+  to learn it reached its next wait, then `Advance`. Never sleep.
+
+Routing the container's loggers into a `RecordingLoggerProvider`
+(`builder.RegisterInstance(provider).As<ILoggerProvider>()`) goes through the container's logger
+factory, whose default minimum level is `Information`; for `Debug` and `Trace`, hand the class under
+test a `RecordingLogger<T>` instead.
+
+## Architecture fences
+
+A fence is a test that fails the build when a structural rule is broken: a type takes a dependency
+it must not, a static helper appears, an internal type sits outside `Internal/`, an assembly calls a
+member it must not. `Nordstein.Core.Testing.Fences` holds the generic kit; each product writes its
+own fences on top of it.
+
+| Kit member | Scans |
+|---|---|
+| `assembly.InjectedParameters()`, `assembly.ParametersMentioning(isFenced)`, `type.Mentions(isFenced)` | Every constructor and method parameter, compiler-generated types included, and whether its type reaches a fenced type: through an interface or base type, an element type, a generic argument, a constraint or a delegate signature. |
+| `assembly.StaticMembers(isExempt)` | Static members the "no statics" rule forbids: non-private methods and properties (extension methods, operators and accessors allowed), mutable static fields and events, private settable static auto-properties. |
+| `assembly.InternalTypesOutsideInternalNamespaces(isExempt)` | Top-level internal types whose namespace does not end in `.Internal`. |
+| `assembly.ReferencedMemberNames()`, `assembly.ReferencedTypeNames()` | The metadata reference tables (`Type::Member`, full type names), so a call made only inside an async state machine or a type named only in a `typeof` is found. |
+| `SolutionFile`, `SolutionProject` | The projects a `.sln` or `.slnx` lists, their assembly names, `IsTestProject` (name ends in `Tests`) and `LoadAssembly()`, which fails with the remedy when the test project does not reference the project. |
+
+How to write one that can be trusted:
+
+- **Derive the scope from the solution**, never from a hand-kept list: scan
+  `new SolutionFile("X.sln", AppContext.BaseDirectory).Projects`, filtered to production projects.
+  Pair it with a test that loads each of them (`LoadAssembly`), so a new project the fence's test
+  project does not reference fails instead of going unscanned, and one that compares the project
+  files on disk with the solution's list.
+- **Assert equality with an allowlist**, not "nothing outside it": every scan returns sorted,
+  distinct lines, so `Should().Equal(allowlist)` fails on a new offender and on a stale entry.
+- **Plant a positive control**: a deliberately violating fixture type in the fence's own test
+  project, one per branch of the scan, and a test that the scan of that assembly reports each. A
+  scan that silently stopped finding anything fails there first. Name them `Planted…` and never
+  delete them; `Nordstein.Core.Testing.Tests/Fences/` holds the kit's own.
+
+### Core's own fence: internal types live in `Internal/`
+
+`Nordstein.Core.Testing.Tests/Fences/InternalNamespaceFenceTests` enforces on every shipped package
+(every project of `Nordstein.Core.sln` not named `…Tests`, the harness included) that each
+internal type lives in an `Internal/` folder with the matching `.Internal` namespace. Two checks
+make the rule: the compiled assemblies keep every top-level internal type in a namespace ending in
+`.Internal` (nested types live in their declaring type's file; compiler-generated and file-local
+types have no folder of their own), and every source file declares the namespace of its folder
+(project name plus folder path). The namespace check is reliable through reflection; the folder
+check reads the sources, which is exact in Core because Core declares file-scoped namespaces only.
+Together they place every internal type in an `Internal/` folder. A new shipped project fails the
+fence until `Nordstein.Core.Testing.Tests` references it.
+
+## Performance budgets
+
+`Nordstein.Core.Testing.Performance` is the dependency-free half of a product's perf suite (the
+database, container and query-plan half stays in the product):
+
+- `PerfTestBase<TModule>` — the base of a scenario. Override `OptInVariable` (the product's
+  `…_RUN_PERF_TESTS`); its `[TestInitialize]` ends every scenario inconclusive (skipped) unless that
+  variable is `1`, so a solution-wide `dotnet test` never runs, and never passes, a perf test.
+  Unset, empty or `0` skip; any other value fails the test, so a misspelt opt-in is loud. Never
+  gate in a test body: one forgotten call puts a large seed back into every run.
+- `Measurement` — the latencies of one scenario (`TimeAsync`, `Record`) and nearest-rank `P50Ms`,
+  `P95Ms`, `MaxMs`, `MeanMs`, `Percentile(q)`. A measurement with no samples throws instead of
+  reporting zero. Pass a `ManualClock` to its constructor to test timing code deterministically.
+- `PerfBudgets` — the committed `perf-budgets.json` (comments allowed, nested groups flattened to
+  dotted keys). `ShouldBeAtMostBudget(key, measured, unit)` / `ShouldBeAtLeastBudget` on the base
+  class log `BUDGET [key] …` and fail past the budget with a message naming the key, both numbers
+  and the file; a key with no budget logs `MEASURE-ONLY` and passes, so a new scenario lands first
+  and gets its budget from measured numbers. A malformed file (a string, boolean, null, array,
+  negative or non-finite budget, a dotted or empty name, a duplicate key) fails loudly. The base
+  class reads the file lazily, behind the gate.
+- `OptInGate` — the gate on its own, for any other opt-in suite.
 
 ## Naming
 
@@ -139,6 +280,43 @@ start the real service in a throwaway container (Testcontainers):
 
 Default to a mock; a container test is a targeted supplement for what a mock structurally cannot
 cover, and it costs seconds, not milliseconds.
+
+## Lessons from the products
+
+Rules a consuming product's suite learned the hard way; they hold for Core's tests too.
+
+- **Never `Assert.Inconclusive` inside an exception filter.** The runtime swallows an exception
+  thrown while a `catch (…) when (…)` filter runs: the filter counts as false, the original
+  exception propagates, and a test meant to be skipped fails instead. Catch in the body, decide
+  there, and rethrow with a bare `throw;` (which keeps the stack trace):
+
+  ```csharp
+  catch (Exception exception)
+  {
+      SkipOrRethrow(exception); // returns only when the runtime is required; else Assert.Inconclusive
+      throw;
+  }
+  ```
+- **Gate opt-in suites with an environment variable, never a runsettings filter.** VSTest ANDs a
+  runsettings `TestCaseFilter` with the command line's `--filter`, so a filter that excludes perf
+  tests silently drops the very tests a `--filter` asks for. Gate in the suite's base class
+  `[TestInitialize]`: every test is `Inconclusive` unless `<PRODUCT>_RUN_PERF_TESTS=1`. Never gate
+  inside a test body, and load budgets lazily, behind the gate.
+- **An inconclusive result is not a pass.** A local green run whose container tests were skipped
+  proves nothing about them; CI sets the require flag ([Container-backed tests](#container-backed-tests-rare-deliberate))
+  so a skip is red there.
+- **Triage before touching code.** Classify a red test from its evidence (the TRX, the logs):
+  - a product bug: the behaviour is wrong. Fix the code, keep the test;
+  - infrastructure: a registry rate limit, a daemon gone, the network denied. Fix the environment
+    and re-run once; never change a test for it;
+  - a test bug: it asserts the wrong thing, races, or depends on order or shared state. Fix the
+    test and the pattern it copied, and say so in the change.
+
+  Never skip, disable, retry until green, or quarantine a test.
+- **Every guard test carries a positive control.** A fence, scan or guard that inspects code (all
+  types in `Internal/`, no static state, no suppression) also runs against a planted violation, or
+  asserts that it finds a known instance, so a scan that silently matches nothing fails. Never
+  delete the planted violation.
 
 ## Changing the harness itself
 

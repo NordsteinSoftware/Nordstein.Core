@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using Nordstein.Core.Common.Text;
 
 namespace Nordstein.Core.Common.Tabular.Internal;
 
@@ -105,7 +106,7 @@ internal sealed class CsvReader : ICsvReader
     // The whole payload must decode as UTF-8; the decoder keeps a sequence split across reads.
     private static async Task<Encoding> DetectEncodingAsync(Stream payload, CancellationToken cancellationToken)
     {
-        var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        UTF8Encoding utf8 = StrictEncoding.Utf8;
         Decoder decoder = utf8.GetDecoder();
         byte[] bytes = new byte[ByteBufferSize];
         char[] chars = new char[utf8.GetMaxCharCount(ByteBufferSize)];

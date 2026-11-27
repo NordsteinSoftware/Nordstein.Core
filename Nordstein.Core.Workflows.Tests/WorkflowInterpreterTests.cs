@@ -275,6 +275,47 @@ public sealed class WorkflowInterpreterTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public async Task Interpreter_ForEach_MaxItemsThrows_FailsTheLoopStepLikeAThrowingNode()
+    {
+        var journal = new RecordingJournal();
+        var loop = new TestLoopNode { MaxItemsFailure = new InvalidOperationException("no limit") };
+        WorkflowGraph graph = LoopGraph(Node("b", "step@1"));
+
+        WorkflowOutcome outcome = await Run(graph, journal, Catalog(loop), triggerInput: """{"tags":[1,2]}""");
+
+        outcome.Should().Be(new WorkflowOutcome.Failed("each", new WorkflowFailure(WorkflowFailureKind.NodeFailed, "InvalidOperationException: no limit")));
+        journal.Entries.Should().Equal("started t", "completed t", "started each", "failed each NodeFailed");
+    }
+
+    [TestMethod]
+    public async Task Interpreter_ForEach_CollectThrows_FailsTheLoopStepAfterTheBodyRan()
+    {
+        var journal = new RecordingJournal();
+        var loop = new TestLoopNode { CollectFailure = new InvalidOperationException("no sum") };
+        WorkflowGraph graph = LoopGraph(Node("b", "step@1"));
+
+        WorkflowOutcome outcome = await Run(graph, journal, Catalog(loop), triggerInput: """{"tags":[1]}""");
+
+        outcome.Should().Be(new WorkflowOutcome.Failed("each", new WorkflowFailure(WorkflowFailureKind.NodeFailed, "InvalidOperationException: no sum")));
+        journal.Entries.Should().Equal("started t", "completed t", "started each", "started b #0", "completed b", "failed each NodeFailed");
+    }
+
+    [TestMethod]
+    public async Task Interpreter_ForEach_CollectThrowsWithLoopErrorEdge_RecoversOnTheLoop()
+    {
+        var journal = new RecordingJournal();
+        var loop = new TestLoopNode { CollectFailure = new InvalidOperationException("no sum") };
+        WorkflowGraph graph = Graph(
+            [Node("t", "trigger@1"), Node("each", "each@1", """{"items":"{{trigger.tags}}"}"""), Node("b", "step@1"), Node("onError", "step@1")],
+            Edge("t", "each"), Edge("each", "b", LoopBranches.Body), Edge("each", "onError", ReservedBranches.Error));
+
+        WorkflowOutcome outcome = await Run(graph, journal, Catalog(loop), triggerInput: """{"tags":[1]}""");
+
+        outcome.Should().Be(new WorkflowOutcome.Completed());
+        journal.Entries.Should().Equal("started t", "completed t", "started each", "started b #0", "completed b", "recovered each", "started onError", "completed onError");
+    }
+
+    [TestMethod]
     public async Task Interpreter_ForEach_BodyStepFails_FailsTheLoopNamingIterationAndStep()
     {
         var journal = new RecordingJournal();

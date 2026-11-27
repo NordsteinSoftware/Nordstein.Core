@@ -2,6 +2,8 @@ using System.Net;
 using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nordstein.Core.Licensing.Internal;
+using Nordstein.Core.Testing.Http;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Licensing.Tests;
 
@@ -10,9 +12,9 @@ public sealed class LicenseServerClientTests
 {
     public required TestContext TestContext { get; init; }
 
-    private readonly MutableClock clock = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+    private readonly ManualClock clock = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
 
-    private LicenseServerClient Create(StubHttpMessageHandler handler)
+    private LicenseServerClient Create(HttpMessageHandler handler)
     {
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://license.example.com/") };
         return new LicenseServerClient(httpClient, clock, NullLogger<LicenseServerClient>.Instance);
@@ -21,7 +23,7 @@ public sealed class LicenseServerClientTests
     [TestMethod]
     public async Task CheckAsync_ValidResponse_ParsesStatusAndRawNames()
     {
-        var handler = new StubHttpMessageHandler(
+        var handler = new ScriptedHttpMessageHandler().Respond(
             HttpStatusCode.OK,
             "{\"status\":\"valid\",\"updatedTier\":\"Premium\",\"updatedLimits\":{\"MaxUsers\":42}}");
 
@@ -31,14 +33,13 @@ public sealed class LicenseServerClientTests
         result.UpdatedTier.Should().Be("Premium");
         result.UpdatedLimits.Should().ContainKey("MaxUsers");
         result.UpdatedLimits["MaxUsers"].Should().Be(42);
-        handler.LastRequestUri.Should().NotBeNull();
-        handler.LastRequestUri.AbsolutePath.Should().Be("/licenses/check");
+        handler.Requests.Should().ContainSingle().Which.RequestUri?.AbsolutePath.Should().Be("/licenses/check");
     }
 
     [TestMethod]
     public async Task CheckAsync_RevokedResponse_ParsesRevoked()
     {
-        var handler = new StubHttpMessageHandler(HttpStatusCode.OK, "{\"status\":\"revoked\"}");
+        var handler = new ScriptedHttpMessageHandler().Respond(HttpStatusCode.OK, "{\"status\":\"revoked\"}");
 
         var result = await Create(handler).CheckAsync("jti-1", "1.0.0", TestContext.CancellationToken);
 
@@ -48,7 +49,7 @@ public sealed class LicenseServerClientTests
     [TestMethod]
     public async Task CheckAsync_ServerError_ReturnsUnknownTransient()
     {
-        var handler = new StubHttpMessageHandler(HttpStatusCode.InternalServerError, "{}");
+        var handler = new ScriptedHttpMessageHandler().Respond(HttpStatusCode.InternalServerError, "{}");
 
         var result = await Create(handler).CheckAsync("jti-1", "1.0.0", TestContext.CancellationToken);
 
@@ -58,7 +59,7 @@ public sealed class LicenseServerClientTests
     [TestMethod]
     public async Task CheckAsync_TransportFailure_ReturnsUnknownTransient()
     {
-        var result = await Create(StubHttpMessageHandler.Faulting())
+        var result = await Create(new ScriptedHttpMessageHandler().Throw(new HttpRequestException("simulated transport failure")))
             .CheckAsync("jti-1", "1.0.0", TestContext.CancellationToken);
 
         result.Status.Should().Be(LicenseCheckResult.Unknown);
@@ -70,7 +71,7 @@ public sealed class LicenseServerClientTests
         // HttpClient.Timeout surfaces as TaskCanceledException without anyone cancelling. A hung
         // license server must read as transient — an escaping exception here would bubble out of
         // the background loop and stop the consuming host.
-        var result = await Create(StubHttpMessageHandler.TimingOut())
+        var result = await Create(new ScriptedHttpMessageHandler().TimeOut())
             .CheckAsync("jti-1", "1.0.0", TestContext.CancellationToken);
 
         result.Status.Should().Be(LicenseCheckResult.Unknown);
@@ -83,7 +84,7 @@ public sealed class LicenseServerClientTests
         await cts.CancelAsync();
 
         await FluentActions
-            .Invoking(() => Create(new StubHttpMessageHandler(HttpStatusCode.OK, "{}"))
+            .Invoking(() => Create(new ScriptedHttpMessageHandler().Respond(HttpStatusCode.OK, "{}"))
                 .CheckAsync("jti-1", "1.0.0", cts.Token))
             .Should().ThrowAsync<OperationCanceledException>();
     }

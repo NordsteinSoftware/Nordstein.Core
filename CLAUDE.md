@@ -27,7 +27,9 @@ Every change to this repository — however small — meets all of the following
    of non-trivial logic gets a test; every bug fix starts with a failing regression test
    (test-driven — write the red test first, then the fix). A change that reduces effective
    coverage is incomplete. The whole suite runs in seconds — there is no excuse for an untested
-   path. See [`docs/testing.md`](docs/testing.md).
+   path. CI fails any shipped assembly below **90 % line or 90 % branch coverage**
+   (`tools/coverage_gate.py`, floors in `tools/coverage-floors.json`). See
+   [`docs/testing.md`](docs/testing.md).
 3. **Adversarial review, every time.** Before declaring any change complete, run a genuine
    adversarial review pass — as a reviewer subagent where available, otherwise as an explicit
    separate pass — whose stated goal is to **break the change**: hunt for race conditions, API
@@ -73,16 +75,21 @@ area — do not rely on this file alone:
 | [`docs/architecture.md`](docs/architecture.md) | Touching package structure, layering, Autofac modules/discovery, or hosting helpers |
 | [`docs/code-style.md`](docs/code-style.md) | Writing any C# — style rules + key conventions |
 | [`docs/cryptography.md`](docs/cryptography.md) | Touching `Common/Cryptography` or `Common/Security` — AEAD, key wrap, password hashing, CSPRNG rule |
+| [`docs/security.md`](docs/security.md) | Touching the credential primitives or the master key ring in `Common/Security` — login lockout, secret token format, password policy, dummy verify, password generator, key file custody, canary, fail-closed load |
 | [`docs/io.md`](docs/io.md) | Touching `Common/Io` — durable publishing, secret-file custody |
+| [`docs/events.md`](docs/events.md) | Touching `Nordstein.Core.Common.Events` — the in-process event hub, its filters, bounded replay and slow-subscriber policy |
+| [`docs/diagnostics.md`](docs/diagnostics.md) | Touching `Nordstein.Core.Common.Diagnostics` — the request-timing accumulator and its names; its EF Core feed is in `docs/storage.md` |
 | [`docs/values.md`](docs/values.md) | Touching `CulturalValueParser` or `CanonicalJson` in `Nordstein.Core.Common`, or parsing culture-formatted values or hashing JSON anywhere |
 | [`docs/tabular.md`](docs/tabular.md) | Touching `Nordstein.Core.Common.Tabular` — CSV reading, dialect detection, the RFC 4180 row writer, spreadsheet number formats |
-| [`docs/settings.md`](docs/settings.md) | Touching `Nordstein.Core.Common.Settings` — setting attributes, the registry, naming |
+| [`docs/text.md`](docs/text.md) | Touching `Nordstein.Core.Common.Text` — the text normalizer and its offset maps, structure markers, the chunker and the Markdown renderer, quote folding and exact-once matching, storable text, the strict UTF-8 encoding |
+| [`docs/settings.md`](docs/settings.md) | Touching `Nordstein.Core.Common.Settings` — setting attributes, the registry, naming, value checks, template resolution |
 | [`docs/domain.md`](docs/domain.md) | Touching the domain foundation (`Nordstein.Core.Domain`) — entity/object contracts, factory delegates, generators, repositories, archiving |
 | [`docs/storage.md`](docs/storage.md) | Touching `Nordstein.Core.Storage` — `NordsteinDbContext`, generic repositories, the transaction seam, the cache |
 | [`docs/validation.md`](docs/validation.md) | Touching validation helpers, or adding validation to anything |
 | [`docs/licensing.md`](docs/licensing.md) | Touching `Nordstein.Core.Licensing` — the generic license engine and its product seams |
 | [`docs/ai.md`](docs/ai.md) | Touching `Nordstein.Core.AI` — the AI/agent foundation (messages, tools, prompts, completions, the agent/model-client contracts, the agent tool-call loop, output parsing) and its product seams |
 | [`docs/workflows.md`](docs/workflows.md) | Touching `Nordstein.Core.Workflows` — the workflow kernel: graph, node contract, data references, validator, interpreter, step journal, suspend and resume |
+| [`docs/dependencies.md`](docs/dependencies.md) | Adding a package reference or bumping one's major version, Dependabot, or a CI action — the package bar, the update cooldown, actions pinned by commit SHA |
 | [`docs/testing.md`](docs/testing.md) | Writing or modifying **any** test, or touching `Nordstein.Core.Testing` (the harness itself lives here) |
 | [`docs/product-playbook.md`](docs/product-playbook.md) | Advising on or building anything in a **consuming product** — e2e testing, user manual, i18n, CI, perf budgets: the practices proven in Proxytrace |
 | [`PUBLISHING.md`](PUBLISHING.md) | Touching packaging, versioning, or anything publish-related |
@@ -104,7 +111,8 @@ area — do not rely on this file alone:
 - **Every dependency is a liability.** Core's package references become every product's
   transitive dependencies. Adding one requires explicit justification; prefer the BCL. Provider-
   and framework-specific packages (EF providers, ASP.NET, JSON libraries beyond the BCL) stay in
-  the products.
+  the products. A new package reference, or a major-version bump of one, meets the package bar in
+  [`docs/dependencies.md`](docs/dependencies.md) or is not taken.
 - **Breaking changes are announced, never smuggled.** If a test had to change to keep passing,
   the behavior changed — say so and treat it as a contract change, not a test fix.
 - **File issues for stumbles.** When you hit an out-of-scope bug or debt, capture it as a GitHub

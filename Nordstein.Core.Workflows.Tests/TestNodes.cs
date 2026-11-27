@@ -88,10 +88,19 @@ internal sealed class TestLoopNode : TestNode, IIteratingNodeType
 
     public string ItemsProperty => "items";
 
-    public int MaxItems(JsonElement config) => config.TryGetProperty("max", out JsonElement max) ? max.GetInt32() : 20;
+    /// <summary>When set, <see cref="MaxItems"/> throws it: a product's hook that fails.</summary>
+    public Exception? MaxItemsFailure { get; init; }
 
-    public JsonElement Collect(NodeContext context, IReadOnlyList<JsonElement> results) =>
-        JsonSerializer.SerializeToElement(new { count = results.Count, results });
+    /// <summary>When set, <see cref="Collect"/> throws it: a product's hook that fails.</summary>
+    public Exception? CollectFailure { get; init; }
+
+    public int MaxItems(JsonElement config) => MaxItemsFailure is null
+        ? config.TryGetProperty("max", out JsonElement max) ? max.GetInt32() : 20
+        : throw MaxItemsFailure;
+
+    public JsonElement Collect(NodeContext context, IReadOnlyList<JsonElement> results) => CollectFailure is null
+        ? JsonSerializer.SerializeToElement(new { count = results.Count, results })
+        : throw CollectFailure;
 }
 
 /// <summary>

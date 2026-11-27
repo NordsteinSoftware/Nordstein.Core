@@ -222,6 +222,17 @@ public sealed class NodeTrialTests : BaseTest<Module>
     }
 
     [TestMethod]
+    public async Task NodeTrial_LoopNodeWhoseCollectThrows_FailsLikeAThrowingNode()
+    {
+        var loop = new TestLoopNode { CollectFailure = new InvalidOperationException("no sum") };
+        WorkflowGraph graph = Graph([Node("t", "trigger@1"), Node("each", "each@1", """{"items":"{{trigger.tags}}"}""")], Edge("t", "each"));
+
+        NodeTrialResult result = await Try(graph, [.. Catalog(), loop], "each", triggerOutput: """{"tags":["a"]}""");
+
+        result.Result.Should().BeOfType<NodeResult.Failed>().Which.Reason.Should().Be("InvalidOperationException: no sum");
+    }
+
+    [TestMethod]
     public async Task Try_NodeThrows_Fails()
     {
         var broken = new TestNode("broken") { Execute = (_, _) => throw new InvalidOperationException("boom") };

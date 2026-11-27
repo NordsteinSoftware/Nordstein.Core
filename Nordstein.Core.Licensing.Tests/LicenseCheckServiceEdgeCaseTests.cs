@@ -5,6 +5,7 @@ using NSubstitute;
 using Nordstein.Core.Common.Time;
 using Nordstein.Core.Licensing.Internal;
 using Nordstein.Core.Testing;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Licensing.Tests;
 
@@ -19,7 +20,7 @@ public sealed class LicenseCheckServiceEdgeCaseTests : BaseTest<Module>
 {
     private (IServiceProvider Services, ILicenseServerClient Server, ILicenseCacheStore Cache) Compose(
         LicensingConfiguration config,
-        MutableClock clock,
+        ManualClock clock,
         LicenseCacheEntry? cached = null)
     {
         var server = Substitute.For<ILicenseServerClient>();
@@ -37,7 +38,7 @@ public sealed class LicenseCheckServiceEdgeCaseTests : BaseTest<Module>
         return (services, server, cache);
     }
 
-    private static MutableClock Clock() => new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+    private static ManualClock Clock() => new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
 
     private static LicenseCheckResult Valid(IClock clock) => new(LicenseCheckResult.Valid, null, null, clock.UtcNow);
 

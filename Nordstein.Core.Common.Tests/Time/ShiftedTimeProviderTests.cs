@@ -1,6 +1,6 @@
 using AwesomeAssertions;
-using Nordstein.Core.Common.Tests.Hosting.Internal;
 using Nordstein.Core.Common.Time;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Common.Tests.Time;
 
@@ -17,7 +17,7 @@ public sealed class ShiftedTimeProviderTests
     [TestMethod]
     public void GetUtcNow_IsTheInnerInstantPlusTheOffset()
     {
-        var inner = new ManualTimeProvider();
+        var inner = new ManualClock();
 
         var shifted = new ShiftedTimeProvider(inner, Ahead);
 
@@ -27,7 +27,7 @@ public sealed class ShiftedTimeProviderTests
     [TestMethod]
     public void GetUtcNow_AfterTheInnerProviderAdvances_AdvancesByTheSameSpan()
     {
-        var inner = new ManualTimeProvider();
+        var inner = new ManualClock();
         var shifted = new ShiftedTimeProvider(inner, Ahead);
         DateTimeOffset before = shifted.GetUtcNow();
 
@@ -39,7 +39,7 @@ public sealed class ShiftedTimeProviderTests
     [TestMethod]
     public void GetUtcNow_NegativeOffset_ReadsThePast()
     {
-        var inner = new ManualTimeProvider();
+        var inner = new ManualClock();
 
         var shifted = new ShiftedTimeProvider(inner, TimeSpan.FromDays(-2));
 
@@ -50,7 +50,7 @@ public sealed class ShiftedTimeProviderTests
     public void GetUtcNow_TwoProvidersWithTheSameOffset_AgreeOnTheSameInnerInstant()
     {
         // Two processes sharing one offset (a server and the CLI beside it) read the same shifted time.
-        var inner = new ManualTimeProvider();
+        var inner = new ManualClock();
 
         var first = new ShiftedTimeProvider(inner, Ahead);
         inner.Advance(TimeSpan.FromSeconds(10));
@@ -62,7 +62,7 @@ public sealed class ShiftedTimeProviderTests
     [TestMethod]
     public void UtcNow_ReadsTheSameInstantAsGetUtcNow()
     {
-        var inner = new ManualTimeProvider();
+        var inner = new ManualClock();
         var shifted = new ShiftedTimeProvider(inner, Ahead);
         inner.Advance(TimeSpan.FromMinutes(5));
 
@@ -94,7 +94,7 @@ public sealed class ShiftedTimeProviderTests
     [TestMethod]
     public void Offset_ReturnsTheConstructedShift()
     {
-        var shifted = new ShiftedTimeProvider(new ManualTimeProvider(), Ahead);
+        var shifted = new ShiftedTimeProvider(new ManualClock(), Ahead);
 
         shifted.Offset.Should().Be(Ahead);
     }
@@ -111,7 +111,7 @@ public sealed class ShiftedTimeProviderTests
     [TestMethod]
     public void TimestampFrequency_DelegatesToTheInnerProvider()
     {
-        var inner = new ManualTimeProvider();
+        var inner = new ManualClock();
 
         var shifted = new ShiftedTimeProvider(inner, Ahead);
 
@@ -121,7 +121,7 @@ public sealed class ShiftedTimeProviderTests
     [TestMethod]
     public void GetTimestamp_AfterTheInnerProviderAdvances_AdvancesWithIt()
     {
-        var inner = new ManualTimeProvider();
+        var inner = new ManualClock();
         var shifted = new ShiftedTimeProvider(inner, Ahead);
         long before = shifted.GetTimestamp();
 
@@ -133,7 +133,7 @@ public sealed class ShiftedTimeProviderTests
     [TestMethod]
     public void LocalTimeZone_DelegatesToTheInnerProvider()
     {
-        var inner = new ManualTimeProvider();
+        var inner = new ManualClock();
 
         var shifted = new ShiftedTimeProvider(inner, Ahead);
 
@@ -143,7 +143,7 @@ public sealed class ShiftedTimeProviderTests
     [TestMethod]
     public async Task CreateTimer_RunsOnTheInnerProvider()
     {
-        var inner = new ManualTimeProvider();
+        var inner = new ManualClock();
         var shifted = new ShiftedTimeProvider(inner, Ahead);
         var fired = new TaskCompletionSource();
 

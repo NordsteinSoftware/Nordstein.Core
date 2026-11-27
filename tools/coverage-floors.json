@@ -1,0 +1,30 @@
+{
+  "Nordstein.Core.AI": {
+    "branch": 90.0,
+    "line": 90.0
+  },
+  "Nordstein.Core.Common": {
+    "branch": 90.0,
+    "line": 90.0
+  },
+  "Nordstein.Core.Domain": {
+    "branch": 90.0,
+    "line": 90.0
+  },
+  "Nordstein.Core.Licensing": {
+    "branch": 90.0,
+    "line": 90.0
+  },
+  "Nordstein.Core.Storage": {
+    "branch": 90.0,
+    "line": 90.0
+  },
+  "Nordstein.Core.Testing": {
+    "branch": 90.0,
+    "line": 90.0
+  },
+  "Nordstein.Core.Workflows": {
+    "branch": 90.0,
+    "line": 90.0
+  }
+}

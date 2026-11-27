@@ -8,14 +8,14 @@ using Microsoft.Extensions.Logging;
 using Nordstein.Core.Common.DependencyInjection;
 using Nordstein.Core.Common.Hosting;
 using Nordstein.Core.Common.Hosting.Internal;
-using Nordstein.Core.Common.Tests.Hosting.Internal;
 using Nordstein.Core.Testing;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Common.Tests.Hosting;
 
 /// <summary>
 /// Covers <see cref="IPeriodicJob"/> scheduling end to end through the container: every test
-/// drives a <see cref="ManualTimeProvider"/>, so no test waits for real time. Waits on the code
+/// drives a <see cref="ManualClock"/>, so no test waits for real time. Waits on the code
 /// under test use the manual clock's "a timer is armed" signal, never a sleep.
 /// </summary>
 [TestClass]
@@ -30,7 +30,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task RunAtStart_True_RunsBeforeTheFirstInterval()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         IServiceProvider services = GetServices(builder =>
             Register(builder, time, passes, new CapturedLogs(), Schedule(runAtStart: true)));
@@ -50,7 +50,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task RunAtStart_False_WaitsOneIntervalFirst()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         IServiceProvider services = GetServices(builder =>
             Register(builder, time, passes, new CapturedLogs(), Schedule(runAtStart: false)));
@@ -74,7 +74,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task JobReportsMoreWork_RunsAgainWithoutWaiting()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         passes.Script(_ => Task.FromResult(true));
         passes.Script(_ => Task.FromResult(false));
@@ -96,7 +96,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task JobThrows_LogsErrorAndRunsAfterTheInterval()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         var logs = new CapturedLogs();
         var failure = new InvalidOperationException("boom");
@@ -125,7 +125,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task JobThrowsOperationCanceled_WithoutStopping_IsLoggedAndTheLoopContinues()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         var logs = new CapturedLogs();
         passes.Script(_ => throw new OperationCanceledException("the job's own timeout"));
@@ -150,7 +150,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task EachPass_GetsItsOwnLifetimeScope()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         IServiceProvider services = GetServices(builder =>
             Register(builder, time, passes, new CapturedLogs(), Schedule(runAtStart: true)));
@@ -175,7 +175,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task StoppingToken_EndsTheLoop()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         IServiceProvider services = GetServices(builder =>
             Register(builder, time, passes, new CapturedLogs(), Schedule(runAtStart: true)));
@@ -196,7 +196,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task StoppingToken_CancelsARunningPass_EndsTheLoopWithoutLoggingAnError()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         var logs = new CapturedLogs();
         var running = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -260,7 +260,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task RegisterPeriodicJob_ScheduleFactory_ReadsTheContainer()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         IServiceProvider services = GetServices(builder =>
         {
@@ -292,7 +292,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public async Task RegisterPeriodicJob_TwoJobTypes_RunIndependently()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var passes = new PassLog();
         IServiceProvider services = GetServices(builder =>
         {
@@ -347,7 +347,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
     [Timeout(GuardMilliseconds)]
     public void CommonModule_KeepsATimeProviderRegisteredBeforeIt()
     {
-        var time = new ManualTimeProvider();
+        var time = new ManualClock();
         var builder = new ContainerBuilder();
         builder.RegisterInstance(time).As<TimeProvider>();
         builder.RegisterModule<Common.Module>();
@@ -364,7 +364,7 @@ public sealed class PeriodicJobServiceTests : BaseTest<Module>
 
     private static void Register(
         ContainerBuilder builder,
-        ManualTimeProvider time,
+        ManualClock time,
         PassLog passes,
         CapturedLogs logs,
         PeriodicJobSchedule schedule)
