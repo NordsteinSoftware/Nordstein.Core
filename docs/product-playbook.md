@@ -91,6 +91,10 @@ the hot paths against **absolute budgets** in a checked-in `perf-budgets.json`:
 - Budgets are recalibrated to real measured p95 so the suite runs all-green — any red is a
   regression to chase, not noise to shrug at. The suite is manual-trigger only in CI; it never
   gates a push.
+- The dependency-free half of that suite ships in `Nordstein.Core.Testing.Performance`: the budget
+  file (`PerfBudgets`), percentiles over samples (`Measurement`), the opt-in gate (`OptInGate`) and
+  `PerfTestBase<TModule>`. See [Performance budgets](testing.md#performance-budgets). Seeding and
+  the database stay in the product.
 
 ## CI shape
 
