@@ -119,7 +119,8 @@ once more in an `InvalidOperationException` carrying Autofac's text, which
   `DefaultValue` form. Every `DefaultValue` the registry produces passes.
 - A failure reads `{Path} must be {form}.` with `MemberNames` `[Path]`, never the value (it may be a
   secret typed into the wrong field). Lengths, `U+0000`, ranges and cross-setting rules are the
-  product's.
+  product's (`RequireStorable` in `Nordstein.Core.Common.Text` refuses what a text column cannot
+  store).
 - An unsupported `Type` (a descriptor built outside the registry) throws `InvalidOperationException`.
 
 ## Resolving templates against the configuration

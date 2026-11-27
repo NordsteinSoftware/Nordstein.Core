@@ -587,6 +587,29 @@ public static class Validation
             : Success;
 
     /// <summary>
+    /// Validates that <paramref name="value"/> is an absolute <c>https</c> URL without user
+    /// information, query or fragment: the base URL of a remote API that paths are appended to,
+    /// which must not carry a credential or parameters into every request or log line.
+    /// </summary>
+    /// <param name="value">The URL to check; <c>null</c> fails.</param>
+    /// <param name="memberName">
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="value"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
+    /// </param>
+    /// <returns>
+    /// <see cref="ValidationResult.Success"/> when <paramref name="value"/> is absolute, its scheme is
+    /// <c>https</c> and it has no user information, no query and no fragment (an empty <c>?</c> or
+    /// <c>#</c> counts as one); otherwise a <see cref="ValidationResult"/> describing the failure,
+    /// which never contains the URL.
+    /// </returns>
+    public static ValidationResult HttpsBaseUrl(Uri? value, [CallerArgumentExpression(nameof(value))] string memberName = "")
+        => value is { IsAbsoluteUri: true } && value.Scheme == Uri.UriSchemeHttps
+           && value.UserInfo.Length == 0 && value.Query.Length == 0 && value.Fragment.Length == 0
+            ? Success
+            : new ValidationResult($"{memberName} must be an absolute https URL without user information, query or fragment", [memberName]);
+
+    /// <summary>
     /// Validates that <paramref name="value"/> is a defined constant of the enum type <typeparamref name="TEnum"/>.
     /// </summary>
     /// <typeparam name="TEnum">The enum type. Must be a struct and an <see cref="Enum"/>.</typeparam>

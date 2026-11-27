@@ -1,4 +1,4 @@
-# Text — normalization, chunking, rendering and quoting with exact offsets
+# Text — exact offsets, storable text and the strict encoding
 
 `Nordstein.Core.Common.Text` holds the text helpers that keep offsets exact: `CodePointText` (a
 string indexed in code points), `OffsetMappedText` and its builder (a transformed text that maps
@@ -135,3 +135,15 @@ one place of a text.
 
 What a product makes of zero or several occurrences (a minimum quote length, a wider window, an
 error to the caller) is its own; Core reports the count.
+
+## Storable text and the strict UTF-8 encoding
+
+- `text.RequireStorable(maxLength)` returns `text` when a text column can store it, else throws
+  `ArgumentException` naming the parameter (the argument's expression by default): over `maxLength`
+  UTF-16 units, U+0000 (PostgreSQL text and JSON refuse it), or a lone surrogate (no UTF-8 form). The
+  message names lengths or the kind of character, never the text. A negative `maxLength` throws
+  `ArgumentOutOfRangeException`.
+- `StrictEncoding.Utf8`: the one strict `UTF8Encoding` (no byte-order mark; invalid bytes throw
+  `DecoderFallbackException`, a lone surrogate `EncoderFallbackException`). Read-only: setting a
+  fallback throws, so nobody loosens it for everyone; `Clone()` gives a writable copy. Use it instead
+  of `new UTF8Encoding(false, true)`.
