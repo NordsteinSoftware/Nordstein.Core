@@ -95,6 +95,10 @@ public class Module : Autofac.Module
 
         builder.RegisterType<TextNormalizer>().As<ITextNormalizer>().SingleInstance();
 
+        builder.RegisterType<TextChunker>().As<ITextChunker>().SingleInstance();
+
+        builder.RegisterType<MarkdownRenderer>().As<IMarkdownRenderer>().SingleInstance();
+
         // Built once from every registered SettingRoot and the product's one SettingNaming; it
         // resolves only in a container that registered a SettingNaming.
         builder.RegisterType<SettingRegistry>().As<ISettingRegistry>().SingleInstance();
