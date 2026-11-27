@@ -85,6 +85,7 @@ area — do not rely on this file alone:
 | [`docs/licensing.md`](docs/licensing.md) | Touching `Nordstein.Core.Licensing` — the generic license engine and its product seams |
 | [`docs/ai.md`](docs/ai.md) | Touching `Nordstein.Core.AI` — the AI/agent foundation (messages, tools, prompts, completions, the agent/model-client contracts, the agent tool-call loop, output parsing) and its product seams |
 | [`docs/workflows.md`](docs/workflows.md) | Touching `Nordstein.Core.Workflows` — the workflow kernel: graph, node contract, data references, validator, interpreter, step journal, suspend and resume |
+| [`docs/dependencies.md`](docs/dependencies.md) | Adding a package reference or bumping one's major version, Dependabot, or a CI action — the package bar, the update cooldown, actions pinned by commit SHA |
 | [`docs/testing.md`](docs/testing.md) | Writing or modifying **any** test, or touching `Nordstein.Core.Testing` (the harness itself lives here) |
 | [`docs/product-playbook.md`](docs/product-playbook.md) | Advising on or building anything in a **consuming product** — e2e testing, user manual, i18n, CI, perf budgets: the practices proven in Proxytrace |
 | [`PUBLISHING.md`](PUBLISHING.md) | Touching packaging, versioning, or anything publish-related |
@@ -106,7 +107,8 @@ area — do not rely on this file alone:
 - **Every dependency is a liability.** Core's package references become every product's
   transitive dependencies. Adding one requires explicit justification; prefer the BCL. Provider-
   and framework-specific packages (EF providers, ASP.NET, JSON libraries beyond the BCL) stay in
-  the products.
+  the products. A new package reference, or a major-version bump of one, meets the package bar in
+  [`docs/dependencies.md`](docs/dependencies.md) or is not taken.
 - **Breaking changes are announced, never smuggled.** If a test had to change to keep passing,
   the behavior changed — say so and treat it as a contract change, not a test fix.
 - **File issues for stumbles.** When you hit an out-of-scope bug or debt, capture it as a GitHub
