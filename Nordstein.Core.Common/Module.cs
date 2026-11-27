@@ -4,6 +4,8 @@ using Nordstein.Core.Common.Conversion;
 using Nordstein.Core.Common.Conversion.Internal;
 using Nordstein.Core.Common.Cryptography;
 using Nordstein.Core.Common.Cryptography.Internal;
+using Nordstein.Core.Common.Diagnostics;
+using Nordstein.Core.Common.Diagnostics.Internal;
 using Nordstein.Core.Common.Events;
 using Nordstein.Core.Common.Events.Internal;
 using Nordstein.Core.Common.Hosting;
@@ -55,6 +57,9 @@ public class Module : Autofac.Module
         builder.RegisterType<SystemClock>().As<IClock>().SingleInstance();
 
         builder.RegisterType<AppVersion>().As<IAppVersion>().SingleInstance();
+
+        // One timing accumulator per unit of work (lifetime scope).
+        builder.RegisterType<RequestTimings>().As<IRequestTimings>().InstancePerLifetimeScope();
 
         builder.RegisterType<NullHostedService>().AsSelf();
 
