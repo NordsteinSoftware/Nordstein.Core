@@ -13,22 +13,10 @@ namespace Nordstein.Core.Licensing.Tests;
 [TestClass]
 public sealed class LicenseSnapshotComparisonTests
 {
-    private static readonly LicenseSnapshot Baseline = LicenseSnapshot.Fallback(new TestTierPolicy()) with
-    {
-        Features = new HashSet<string> { "A" },
-        Limits = new Dictionary<string, long> { ["L"] = 1 },
-    };
-
     [TestMethod]
     public void ApplySnapshot_EqualByValue_RaisesNothing()
     {
-        LicenseSnapshot rebuilt = Baseline with
-        {
-            Features = new HashSet<string> { "A" },
-            Limits = new Dictionary<string, long> { ["L"] = 1 },
-        };
-
-        RaisedAfter(rebuilt).Should().Be(0);
+        RaisedAfter(Baseline(), Baseline()).Should().Be(0);
     }
 
     [TestMethod]
@@ -36,47 +24,55 @@ public sealed class LicenseSnapshotComparisonTests
     {
         LicenseSnapshot[] changes =
         [
-            Baseline with { Tier = TestTierPolicy.Premium },
-            Baseline with { Status = LicenseStatus.Grace },
-            Baseline with { ExpiresAt = DateTimeOffset.UnixEpoch },
-            Baseline with { GracePeriodEndsAt = DateTimeOffset.UnixEpoch },
-            Baseline with { CustomerEmail = "someone@example.com" },
-            Baseline with { Jti = "another" },
-            Baseline with { Source = LicenseSource.Stored },
-            Baseline with { InvalidReason = "revoked" },
-            Baseline with { Offline = true },
-            Baseline with { Features = new HashSet<string> { "B" } },
-            Baseline with { Features = new HashSet<string> { "A", "B" } },
-            Baseline with { Limits = new Dictionary<string, long> { ["L"] = 2 } },
-            Baseline with { Limits = new Dictionary<string, long> { ["M"] = 1 } },
+            Baseline() with { Tier = TestTierPolicy.Premium },
+            Baseline() with { Status = LicenseStatus.Grace },
+            Baseline() with { ExpiresAt = DateTimeOffset.UnixEpoch },
+            Baseline() with { GracePeriodEndsAt = DateTimeOffset.UnixEpoch },
+            Baseline() with { CustomerEmail = "someone@example.com" },
+            Baseline() with { Jti = "another" },
+            Baseline() with { Source = LicenseSource.Stored },
+            Baseline() with { InvalidReason = "revoked" },
+            Baseline() with { Offline = true },
+            Baseline() with { Features = new HashSet<string> { "B" } },
+            Baseline() with { Features = new HashSet<string> { "A", "B" } },
+            Baseline() with { Limits = new Dictionary<string, long> { ["L"] = 2 } },
+            Baseline() with { Limits = new Dictionary<string, long> { ["M"] = 1 } },
         ];
 
-        changes.Select(RaisedAfter).Should().AllBeEquivalentTo(1);
+        changes.Select(change => RaisedAfter(Baseline(), change)).Should().AllBeEquivalentTo(1);
     }
 
     [TestMethod]
     public void ApplySnapshot_NullCollectionAgainstAFilledOne_RaisesChanged()
     {
-        LicenseSnapshot noFeatures = Baseline with { Features = NullOf<IReadOnlySet<string>>() };
-        LicenseSnapshot noLimits = Baseline with { Limits = NullOf<IReadOnlyDictionary<string, long>>() };
+        LicenseSnapshot noFeatures = Baseline() with { Features = NullOf<IReadOnlySet<string>>() };
+        LicenseSnapshot noLimits = Baseline() with { Limits = NullOf<IReadOnlyDictionary<string, long>>() };
 
-        RaisedAfter(noFeatures).Should().Be(1);
-        RaisedAfter(noLimits).Should().Be(1);
+        RaisedAfter(Baseline(), noFeatures).Should().Be(1);
+        RaisedAfter(Baseline(), noLimits).Should().Be(1);
     }
 
     [TestMethod]
     public void ApplySnapshot_SameCollectionInstances_RaisesNothing()
     {
-        LicenseSnapshot same = Baseline with { Features = Baseline.Features, Limits = Baseline.Limits };
+        LicenseSnapshot first = Baseline();
+        LicenseSnapshot same = first with { Features = first.Features, Limits = first.Limits };
 
-        RaisedAfter(same).Should().Be(0);
+        RaisedAfter(first, same).Should().Be(0);
     }
 
-    // Applies the baseline, then the snapshot, and counts the Changed events the second apply raised.
-    private static int RaisedAfter(LicenseSnapshot snapshot)
+    // A snapshot with one feature and one limit, built fresh for every use.
+    private static LicenseSnapshot Baseline() => LicenseSnapshot.Fallback(new TestTierPolicy()) with
+    {
+        Features = new HashSet<string> { "A" },
+        Limits = new Dictionary<string, long> { ["L"] = 1 },
+    };
+
+    // Applies `first`, then `snapshot`, and counts the Changed events the second apply raised.
+    private static int RaisedAfter(LicenseSnapshot first, LicenseSnapshot snapshot)
     {
         LicenseService service = CreateService();
-        service.ApplySnapshot(Baseline);
+        service.ApplySnapshot(first);
         int raised = 0;
         service.Changed += () => raised++;
         service.ApplySnapshot(snapshot);
