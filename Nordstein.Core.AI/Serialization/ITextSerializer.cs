@@ -1,4 +1,4 @@
-﻿namespace Nordstein.Core.AI.Serialization;
+namespace Nordstein.Core.AI.Serialization;
 
 /// <summary>
 /// The serializer interface

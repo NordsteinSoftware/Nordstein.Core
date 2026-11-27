@@ -7,7 +7,9 @@ namespace Nordstein.Core.Storage;
 /// <summary>
 /// Base implementation of <see cref="IEntity"/>. Every persisted entity derives from this and so
 /// carries the identity/timestamp trio the generic repositories and the
-/// <c>UpdatedAt</c> optimistic-concurrency convention depend on.
+/// <c>UpdatedAt</c> optimistic-concurrency convention depend on. A stored entity has no clock, so
+/// it checks only that its timestamps are set and ordered; the domain entity, which has one,
+/// checks that they are not in its future.
 /// </summary>
 public abstract record Entity : IEntity
 {
@@ -25,8 +27,7 @@ public abstract record Entity : IEntity
     {
         yield return Validation.NotDefault(Id);
         yield return Validation.NotDefault(CreatedAt);
-        yield return Validation.InPast(CreatedAt);
         yield return Validation.NotDefault(UpdatedAt);
-        yield return Validation.InPast(UpdatedAt);
+        yield return Validation.NotBefore(UpdatedAt, CreatedAt);
     }
 }

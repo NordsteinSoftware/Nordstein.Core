@@ -52,16 +52,22 @@ public sealed class AsyncLockTests
             var contender = Task.Run(() =>
             {
                 using var inner = asyncLock.Lock("key");
-                lock (log) log.Add("contender-acquired");
+                lock (log)
+                {
+                    log.Add("contender-acquired");
+                }
             });
 
             // Contender must not have acquired the lock yet
             contender.Wait(50).Should().BeFalse("lock should still be held");
-            lock (log) log.Add("owner-releasing");
+            lock (log)
+            {
+                log.Add("owner-releasing");
+            }
         } // releases here
 
         // Now contender should finish acquiring the released lock
-        SpinWait.SpinUntil(() => { lock (log) return log.Contains("contender-acquired"); },
+        SpinWait.SpinUntil(() => { lock (log) { return log.Contains("contender-acquired"); } },
             TimeSpan.FromSeconds(2)).Should().BeTrue();
 
         log[0].Should().Be("owner-releasing");
@@ -113,13 +119,19 @@ public sealed class AsyncLockTests
             var contender = Task.Run(async () =>
             {
                 using var inner = await asyncLock.LockAsync("key");
-                lock (log) log.Add("contender-acquired");
+                lock (log)
+                {
+                    log.Add("contender-acquired");
+                }
             });
 
             await Task.Delay(50);
             (await Task.WhenAny(contender, Task.Delay(50)) == contender).Should().BeFalse(
                 "lock should still be held");
-            lock (log) log.Add("owner-releasing");
+            lock (log)
+            {
+                log.Add("owner-releasing");
+            }
         }
 
         await Task.Delay(100);
@@ -177,7 +189,11 @@ public sealed class AsyncLockTests
             using var _ = await asyncLock.LockAsync("counter");
             var snapshot = counter;
             await Task.Yield(); // force a context switch mid-critical-section
-            if (counter != snapshot) Interlocked.Increment(ref violations);
+            if (counter != snapshot)
+            {
+                Interlocked.Increment(ref violations);
+            }
+
             counter++;
         }
 

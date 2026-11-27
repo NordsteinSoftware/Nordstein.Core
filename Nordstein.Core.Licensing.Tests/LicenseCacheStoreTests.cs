@@ -15,7 +15,9 @@ public sealed class LicenseCacheStoreTests
     public void Teardown()
     {
         if (Directory.Exists(root))
+        {
             Directory.Delete(root, recursive: true);
+        }
     }
 
     private LicenseCacheStore Create(string filePath)

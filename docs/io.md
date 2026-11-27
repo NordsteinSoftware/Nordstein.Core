@@ -1,8 +1,8 @@
 # IO
 
-`Nordstein.Core.Common.Io` provides two product-agnostic filesystem primitives: durable atomic file
-publishing and mode-checked secret-file loading. Both are registered as singletons in
-`Nordstein.Core.Common.Module`.
+`Nordstein.Core.Common.Io` provides product-agnostic filesystem primitives: durable atomic file
+publishing, directory flushing, exclusive lock files, filesystem capability probing, owner-only spooling, mode-checked secret-file loading and real-path containment. All are registered as
+singletons in `Nordstein.Core.Common.Module`.
 
 ## `IDurableFilePublisher` — stage, flush, atomic publish
 
@@ -17,18 +17,30 @@ torn one:
 3. `PublishAsync(destinationPath)` flushes the content to disk (`FileStream.Flush(flushToDisk: true)`),
    then atomically publishes with create-without-replace (`File.Move` without overwrite, which throws
    if the destination exists — surfaced as `DestinationAlreadyExistsException`).
-   `PublishReplacingAsync` is the same but replaces an existing destination.
+   `PublishReplacingAsync` is the same but replaces an existing destination. After the move, both
+   flush the destination's directory through `IDirectorySync`.
 4. Disposing the handle without publishing aborts the write and deletes the staging file
    (best-effort); a leaked staging file is recoverable and never a final artifact.
 
-### Durability scope (the file, not the directory entry)
+### Durability scope (the file and its directory entry)
 
-The publisher flushes the **file's own data** to disk before the rename, so a crash never yields a
-half-written file. It does **not** flush the containing *directory*, so on a crash immediately after
-the rename the new directory entry can still be lost (the data is durable, but at the old name or no
-name). Flushing a directory has no BCL API and would require native interop; Core stays pure-managed,
-so directory durability is left to the platform/filesystem and to the consuming product if it needs
-a stronger guarantee. This is a deliberate scope decision, not an oversight.
+The publisher flushes the **file's own data** before the rename, so a crash never yields a
+half-written file, and flushes the **containing directory** after the rename, so the new entry
+survives a crash too. If that directory flush fails, the publish throws `IOException`, but the file
+is already in place under its final name. On a filesystem that cannot sync directories, or off
+Linux, the flush reports `Unsupported` and the publish still succeeds: the entry is then as durable
+as the platform makes it.
+
+## `IDirectorySync` — flush a directory
+
+`Flush(directory)` makes created, renamed or removed entries in a directory durable. There is no
+BCL API for it, so on Linux it calls `open(O_RDONLY | O_DIRECTORY | O_CLOEXEC)`, `fsync` and
+`close` through `[LibraryImport("libc")]` (`O_DIRECTORY` is 0200000 on x86 and x86-64 and the
+asm-generic 040000 everywhere else, chosen by process architecture). `EINVAL` from `fsync` means
+the filesystem cannot sync directories and returns `DirectorySyncResult.Unsupported`; any other
+errno throws `IOException` naming the path and the errno. On other operating systems it does
+nothing and returns `Unsupported`. Callers that create directories (a product's day directories,
+for example) flush each new directory's parent.
 
 ### Known residual: create-no-replace is not race-free
 
@@ -37,6 +49,45 @@ overwrites atomically on POSIX, so the no-replace guarantee rests on the check a
 concurrent creator of the destination (a TOCTOU). Publishers are expected to have one writer per
 destination path (unique-per-object paths), under which this cannot bite. A genuinely race-free
 `link()`-based publish is a possible later hardening.
+
+## `IExclusiveFileLock` — one holder per lock file
+
+`TryAcquire(path)` opens the file with `FileMode.OpenOrCreate` and `FileShare.None` and returns the open
+stream as an `IAsyncDisposable` lease, or `null` when the file is held. On Unix .NET backs `FileShare.None`
+with `flock(LOCK_EX | LOCK_NB)`; a held lock surfaces as a plain `IOException` whose `HResult` is the raw
+`EWOULDBLOCK` (11 on Linux, 35 on macOS and FreeBSD), on Windows as a sharing or lock violation. Only that
+case becomes `null`: a missing directory, a directory at `path` or a permission failure throws. The lock
+belongs to the open file description, so a second `TryAcquire` in the same process is refused too, and the
+kernel drops it with the process. The file is never written or deleted. Advisory on Unix,
+`DOTNET_SYSTEM_IO_DISABLEFILELOCKING` switches it off, and an NFS or SMB server may not enforce it between
+hosts.
+
+## `IFilesystemProbe` — what does this directory guarantee?
+
+`Probe(directory)` returns `FilesystemCapabilities`:
+
+- `FilesystemType`: the directory is resolved with `realpath(3)` (links included), then the longest
+  whole-segment mount point in `/proc/self/mountinfo` names the type; of two mounts on one point the later
+  wins, `\040`-style escapes are decoded. Off Linux, or if the table cannot be read, `unknown`.
+- `RefusesReplacingRename`: two scratch files, `File.Move` without overwrite from one onto the other; true
+  when the move failed and both files are intact (the same call `IDurableFilePublisher` relies on).
+- `DirectorySync`: the result of `IDirectorySync.Flush(directory)`; any other failure throws.
+- `RefusesSecondExclusiveOpen`: a second `IExclusiveFileLock.TryAcquire` on a scratch file is refused
+  while the first lease is held.
+
+Scratch files are named `.{guid}.probe-*` and deleted on every path. One host cannot see whether another
+host honours its lock, so a caller treats network and FUSE types (`nfs*`, `cifs`, `smb3`, `fuse.*`) as
+unguaranteed whatever the results say.
+
+## `IPrivateFileSpool` — owner-only spool with hash and cap
+
+`SpoolAsync(source, path, maxBytes, ct)` copies a stream into a new file and returns `SpooledContent` (SHA-256 and
+length, both computed during the one copy). On Unix a missing directory is created `0700` by the `mkdir` itself and the
+file `0600` through `UnixCreateMode`, so neither is ever open to others; an existing directory keeps its mode. The file is
+`FileMode.CreateNew`: an entry already at the path throws `DestinationAlreadyExistsException` and is never touched. The
+cap is checked per read: the read that crosses it throws `SpoolLimitExceededException`, nothing more is read or written.
+Any failure after the create (cap, I/O, source, cancellation) deletes the partial file, best effort, before it
+surfaces. The spool is not flushed to disk; a durable file goes through `IDurableFilePublisher`.
 
 ## `ISecretFileLoader` — mode-checked secret loading
 
@@ -60,9 +111,53 @@ would require reading the file owner via `stat`, whose struct layout differs acr
 (x86-64 vs arm64) and is not worth an unportable interop when mode `0600` already restricts reads to
 the owner. It remains a possible later addition, guarded behind the same platform checks.
 
+## `IPathContainment` — may this path be inside that root?
+
+`MayBeWithin(path, root)` answers whether `path` may be `root` or lie below it, for guards of the form "this
+must never live under that" (a secret outside a directory that is backed up or served). It errs towards
+"within" on purpose; the name says so, and it never answers an allow decision.
+
+- **Two readings, either counts.** Each path is resolved twice: the way the operating system walks it
+  (made absolute against the current directory, `.` dropped, an existing or dangling symbolic link or
+  Windows junction replaced by its target via `FileSystemInfo.LinkTarget`, relative targets from the
+  link's directory, `..` applied to what is resolved so far, so `link/..` is the parent of the link's
+  *target*), and the way .NET file APIs open it (`Path.GetFullPath` first, which collapses `..` as text
+  and normalizes Windows forms such as `C:keys` or a trailing dot, then the links in what remains). A
+  `File.ReadAllBytes(<root>/esc/../keys/k)` opens `<root>/keys/k` even when `esc` links out, while a
+  shell or backup tool walks the link: the check is `true` if any pairing of the two readings of `path`
+  and of `root` is within. Below a segment that does not exist the tail is kept as written. Nothing is
+  created or written.
+- **Whole segments.** `/x/data2` is not inside `/x/data`; a trailing separator on `root` changes nothing.
+- **Case and normalization ignored everywhere** (NFC, then `OrdinalIgnoreCase`). NTFS, SMB and a NAS share
+  mounted on Linux alias `/x/Data` and `/x/data`; APFS and some SMB or ZFS servers alias a composed and a
+  decomposed `ä`. The check cannot know which filesystem a not-yet-created path lands on, so on a
+  case-sensitive one it reports containment for two directories that differ only in case or form.
+- **Failures fail closed.** `LinkTarget` answers "not a link" for every `readlink` error, `EACCES`
+  included, so each non-link segment is also `stat`ed: a directory that cannot be searched is an
+  `UnauthorizedAccessException` (a hidden link behind it would otherwise pass), more than 40 links for one
+  path (a loop) an `IOException`, a U+0000 an `ArgumentException`. A guard catches them and refuses.
+- **Not detected.** A link inside `root` pointing out (a tool that follows links, `tar -h` or `rsync -L`,
+  copies its target), bind mounts, hard links, Windows 8.3 short names.
+- **Point in time.** A link created or swapped after the call is not seen; the caller re-checks where it
+  matters (after a write, on each load).
+
+## `PortableSegment` — is this path segment portable?
+
+`segment.PortableSegmentViolation(maxLength)` returns the first broken `PortableSegmentRule` or `null`: `Length` (empty or
+over the cap), `DotSegment` (`.`, `..`), `Charset` (outside `[a-z0-9_-]`), `ReservedName` (`con`, `nul`, `aux`, `prn`,
+`com1`-`com9`, `lpt1`-`lpt9`). A pure extension: callers composing paths from operator input check each literal segment.
+
+## `StreamTextExtensions` — bounded text read
+
+`stream.ReadAllTextAsync(maxCharacters, leaveOpen, ct)`: UTF-8 (a BOM picks its encoding, stripped), `\r\n` and `\r` to
+`\n` (also across reads), `TextLimitExceededException` once the normalized text would pass the cap, unread rest.
+
 ## Review focus (Standard of Care #3)
 
 When changing this area: confirm staging always lands on the destination's volume; confirm every
-error and abort path deletes the staging file; confirm `flushToDisk` and the directory flush both
-run before a publish is reported successful; and, for the loader, confirm bytes are never returned
-for a file that failed any check.
+error and abort path deletes the staging file; confirm `flushToDisk` runs before the move and the
+directory flush after it, both before a publish is reported successful; and, for the loader, confirm bytes are never returned
+for a file that failed any check. For `IPrivateFileSpool`, confirm a file found at the path is never deleted, every failure after the create deletes the partial file, and no byte past the cap is written. For `IExclusiveFileLock`, confirm only a held lock maps to `null` and the file is never deleted; for
+`IFilesystemProbe`, confirm every scratch file is deleted on every path. For `IPathContainment`, confirm no path through a link, a `..` after a link (both readings), a
+case or normalization variant, a common-prefix sibling or an unsearchable directory turns a "within" into
+`false`, and that resolution never writes.

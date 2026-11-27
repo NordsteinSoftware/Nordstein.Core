@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Nordstein.Core.Common.Random;
+using Nordstein.Core.Common.Time;
 
 namespace Nordstein.Core.Domain.Tests;
 
@@ -7,23 +8,26 @@ internal interface ITestEntity : IArchivable;
 
 internal sealed record TestEntity : DomainEntity<ITestEntity>, ITestEntity
 {
-    public TestEntity(IRepository<ITestEntity> repository) : base(repository)
+    public TestEntity(IRepository<ITestEntity> repository, IClock clock) : base(repository, clock)
     {
     }
 
-    public TestEntity(IDomainEntityData existing, IRepository<ITestEntity> repository) : base(existing, repository)
+    public TestEntity(IDomainEntityData existing, IRepository<ITestEntity> repository, IClock clock) : base(existing, repository, clock)
     {
     }
 }
 
 internal sealed class TestEntityGenerator : DomainEntityGenerator<ITestEntity>
 {
-    public TestEntityGenerator(IRepository<ITestEntity> repository, IRandom random) : base(repository, random)
+    private readonly IClock clock;
+
+    public TestEntityGenerator(IRepository<ITestEntity> repository, IRandom random, IClock clock) : base(repository, random)
     {
+        this.clock = clock;
     }
 
     public override Task<ITestEntity> GenerateAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<ITestEntity>(new TestEntity(repository));
+        => Task.FromResult<ITestEntity>(new TestEntity(repository, clock));
 }
 
 internal sealed class TestEntityRepository : IRepository<ITestEntity>

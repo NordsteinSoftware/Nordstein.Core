@@ -1,4 +1,4 @@
-﻿namespace Nordstein.Core.AI.Messages;
+namespace Nordstein.Core.AI.Messages;
 
 /// <summary>
 /// The role of a message in the conversation

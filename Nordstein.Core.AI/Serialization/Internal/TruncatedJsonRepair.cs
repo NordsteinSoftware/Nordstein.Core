@@ -19,7 +19,9 @@ internal static class TruncatedJsonRepair
     public static IEnumerable<string> Candidates(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
+        {
             yield break;
+        }
 
         var closers = new Stack<char>();
         bool inString = false;
@@ -34,11 +36,18 @@ internal static class TruncatedJsonRepair
             if (inString)
             {
                 if (escaped)
+                {
                     escaped = false;
+                }
                 else if (c == '\\')
+                {
                     escaped = true;
+                }
                 else if (c == '"')
+                {
                     inString = false;
+                }
+
                 continue;
             }
 
@@ -56,7 +65,10 @@ internal static class TruncatedJsonRepair
                 case '}':
                 case ']':
                     if (closers.Count > 0)
+                    {
                         closers.Pop();
+                    }
+
                     break;
                 case ',':
                     // The last point at which the document was structurally complete apart from its
@@ -69,7 +81,9 @@ internal static class TruncatedJsonRepair
         }
 
         if (!inString && closers.Count == 0)
+        {
             yield break;
+        }
 
         // Close what the model left open. Enough whenever the cut fell inside a value — the common
         // case, since the longest field is the one that runs out of room.
@@ -78,18 +92,25 @@ internal static class TruncatedJsonRepair
         {
             // A trailing lone backslash would escape the quote we are about to add.
             if (escaped)
+            {
                 closed.Length--;
+            }
+
             closed.Append('"');
         }
 
         foreach (char closer in closers)
+        {
             closed.Append(closer);
+        }
 
         yield return closed.ToString();
 
         // The cut fell in a place closing cannot rescue (mid-key, after a colon, inside a partial
         // escape sequence). Drop the incomplete member entirely and keep the ones before it.
         if (lastMemberBreak >= 0)
+        {
             yield return json[..lastMemberBreak] + lastMemberBreakClosers;
+        }
     }
 }

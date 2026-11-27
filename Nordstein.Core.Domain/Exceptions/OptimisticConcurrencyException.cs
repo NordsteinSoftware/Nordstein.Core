@@ -18,6 +18,8 @@ public sealed class OptimisticConcurrencyException : Exception
     public OptimisticConcurrencyException(Guid id, Type entityType)
         : base($"The {entityType.Name} with id '{id}' was modified by another process.")
     {
+        EntityId = id;
+        EntityType = entityType;
     }
 
     /// <summary>
@@ -30,5 +32,16 @@ public sealed class OptimisticConcurrencyException : Exception
     public OptimisticConcurrencyException(Guid id, Type entityType, Exception innerException)
         : base($"The {entityType.Name} with id '{id}' was modified by another process.", innerException)
     {
+        EntityId = id;
+        EntityType = entityType;
     }
+
+    /// <summary>The id of the entity whose write lost the race, as passed to the constructor.</summary>
+    public Guid EntityId { get; }
+
+    /// <summary>
+    /// The CLR type passed to the constructor (often the entity's public interface), so a caller can
+    /// map the conflict per entity kind without parsing <see cref="Exception.Message"/>.
+    /// </summary>
+    public Type EntityType { get; }
 }

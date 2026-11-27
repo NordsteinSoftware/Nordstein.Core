@@ -42,7 +42,9 @@ internal sealed class LicenseServerClient : ILicenseServerClient
 
             var body = await response.Content.ReadFromJsonAsync<CheckResponse>(cancellationToken);
             if (body is null)
+            {
                 return Transient();
+            }
 
             return new LicenseCheckResult(
                 body.Status ?? LicenseCheckResult.Unknown,

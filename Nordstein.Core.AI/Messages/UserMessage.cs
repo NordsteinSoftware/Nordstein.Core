@@ -1,4 +1,4 @@
-﻿namespace Nordstein.Core.AI.Messages;
+namespace Nordstein.Core.AI.Messages;
 
 /// <summary>
 /// A message from the user to the agent.

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -78,7 +78,9 @@ internal record JsonOutputFormat : IOutputFormat
     {
         string? cleanedOutput = TrimArtifacts(output);
         if (cleanedOutput is null)
+        {
             return default;
+        }
 
         try
         {
@@ -94,7 +96,9 @@ internal record JsonOutputFormat : IOutputFormat
             // so close what was left open and parse that rather than losing the whole response.
             TOutput? salvaged = await TryParseTruncatedAsync<TOutput>(cleanedOutput, cancellationToken);
             if (salvaged is not null)
+            {
                 return salvaged;
+            }
 
             throw;
         }
@@ -108,7 +112,9 @@ internal record JsonOutputFormat : IOutputFormat
             {
                 var deserialized = await serializer.DeserializeAsync<TOutput>(candidate, cancellationToken);
                 if (deserialized is not null)
+                {
                     return deserialized;
+                }
             }
             catch (Exception) when (!cancellationToken.IsCancellationRequested)
             {
@@ -128,20 +134,20 @@ internal record JsonOutputFormat : IOutputFormat
     private string? TrimArtifacts(string? output)
     {
         if (string.IsNullOrWhiteSpace(output))
-            return null;
-
-        string cleaned = output.Trim();
-
-        if (cleaned.StartsWith("```"))
         {
-            int firstNewline = cleaned.IndexOf('\n');
-            cleaned = firstNewline > 0
-                ? new string(cleaned.Skip(firstNewline + 1).ToArray()).Trim()
-                : new string(cleaned.Skip(3).ToArray()).Trim();
+            return null;
         }
 
-        if (cleaned.EndsWith("```"))
+        string cleaned = output.Trim();
+        bool fenced = cleaned.StartsWith("```", StringComparison.Ordinal);
+        cleaned = cleaned.StripCodeFence().Trim();
+
+        // StripCodeFence already took the closing fence of a fenced reply; an unfenced reply can
+        // still end in a stray one.
+        if (!fenced && cleaned.EndsWith("```", StringComparison.Ordinal))
+        {
             cleaned = cleaned[..^3].Trim();
+        }
 
         string[] commonPrefixes = ["json:", "Output:", "Result:", "Response:"];
         foreach (string prefix in commonPrefixes)

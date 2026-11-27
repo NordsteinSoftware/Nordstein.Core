@@ -1,4 +1,4 @@
-﻿namespace Nordstein.Core.AI.Messages;
+namespace Nordstein.Core.AI.Messages;
 
 /// <summary>
 /// Type of content of a <see cref="Content"/>

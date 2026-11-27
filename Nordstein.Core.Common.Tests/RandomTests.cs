@@ -1,4 +1,4 @@
-﻿using AwesomeAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Nordstein.Core.Common.Random;
 using Nordstein.Core.Testing;

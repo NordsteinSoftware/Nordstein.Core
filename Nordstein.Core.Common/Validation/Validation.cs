@@ -41,7 +41,10 @@ public static class Validation
     /// </summary>
     public static IEnumerable<ValidationResult> AsEnumerable(this ValidationResult? result)
     {
-        if (result is not null) yield return result;
+        if (result is not null)
+        {
+            yield return result;
+        }
     }
 
     /// <summary>
@@ -169,6 +172,49 @@ public static class Validation
     /// </returns>
     public static ValidationResult InFuture(DateTimeOffset value, [CallerArgumentExpression(nameof(value))] string memberName = "")
         => value <= DateTimeOffset.UtcNow
+            ? new ValidationResult($"{memberName} must be in the future", [memberName])
+            : Success;
+
+    /// <summary>
+    /// Validates that <paramref name="value"/> is in the past relative to <paramref name="now"/>, the
+    /// caller's clock (<see cref="Time.IClock.UtcNow"/>). Prefer this over the system-clock overload
+    /// wherever a clock is injected: a host whose clock runs ahead of or behind the machine's then
+    /// judges its own timestamps consistently.
+    /// </summary>
+    /// <param name="value">The date/time to check.</param>
+    /// <param name="now">The instant that counts as "now".</param>
+    /// <param name="memberName">
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="value"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
+    /// </param>
+    /// <returns>
+    /// <see cref="ValidationResult.Success"/> when <paramref name="value"/> is less than or equal to
+    /// <paramref name="now"/>; otherwise a <see cref="ValidationResult"/> describing the failure.
+    /// </returns>
+    public static ValidationResult InPast(DateTimeOffset value, DateTimeOffset now, [CallerArgumentExpression(nameof(value))] string memberName = "")
+        => value > now
+            ? new ValidationResult($"{memberName} must be in the past", [memberName])
+            : Success;
+
+    /// <summary>
+    /// Validates that <paramref name="value"/> is in the future relative to <paramref name="now"/>, the
+    /// caller's clock (<see cref="Time.IClock.UtcNow"/>). Prefer this over the system-clock overload
+    /// wherever a clock is injected.
+    /// </summary>
+    /// <param name="value">The date/time to check.</param>
+    /// <param name="now">The instant that counts as "now".</param>
+    /// <param name="memberName">
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="value"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
+    /// </param>
+    /// <returns>
+    /// <see cref="ValidationResult.Success"/> when <paramref name="value"/> is strictly greater than
+    /// <paramref name="now"/>; otherwise a <see cref="ValidationResult"/> describing the failure.
+    /// </returns>
+    public static ValidationResult InFuture(DateTimeOffset value, DateTimeOffset now, [CallerArgumentExpression(nameof(value))] string memberName = "")
+        => value <= now
             ? new ValidationResult($"{memberName} must be in the future", [memberName])
             : Success;
 
@@ -416,6 +462,74 @@ public static class Validation
         => MinLength(value, 1, memberName);
 
     /// <summary>
+    /// Validates that the nullable value <paramref name="value"/> is neither <c>null</c> nor <c>default(T)</c>: both
+    /// mean "nothing named" for an identifier such as a <see cref="Guid"/>.
+    /// </summary>
+    /// <typeparam name="T">The underlying value type.</typeparam>
+    /// <param name="value">The value to check.</param>
+    /// <param name="memberName">
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="value"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
+    /// </param>
+    /// <returns>
+    /// <see cref="ValidationResult.Success"/> when <paramref name="value"/> has a non-default value; otherwise a
+    /// <see cref="ValidationResult"/> describing the failure.
+    /// </returns>
+    public static ValidationResult NotNullOrDefault<T>(T? value, [CallerArgumentExpression(nameof(value))] string memberName = "")
+        where T : struct
+        => value is not { } present || EqualityComparer<T>.Default.Equals(present, default)
+            ? new ValidationResult($"{memberName} cannot be null or default", [memberName])
+            : Success;
+
+    /// <summary>
+    /// Validates that the collection <paramref name="value"/> is empty.
+    /// </summary>
+    /// <typeparam name="T">The element type of the collection.</typeparam>
+    /// <param name="value">The collection to check.</param>
+    /// <param name="memberName">
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="value"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
+    /// </param>
+    /// <returns>
+    /// <see cref="ValidationResult.Success"/> when the collection has no element; otherwise a
+    /// <see cref="ValidationResult"/> describing the failure.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
+    public static ValidationResult Empty<T>(IReadOnlyCollection<T> value, [CallerArgumentExpression(nameof(value))] string memberName = "")
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value.Count == 0
+            ? Success
+            : new ValidationResult($"{memberName} must be empty", [memberName]);
+    }
+
+    /// <summary>
+    /// Validates that no element of <paramref name="value"/> equals <c>default(T)</c> (<c>null</c> for a reference type,
+    /// <see cref="Guid.Empty"/> for a <see cref="Guid"/>). Enumerates <paramref name="value"/> once, up to the first default.
+    /// </summary>
+    /// <typeparam name="T">The element type of the collection.</typeparam>
+    /// <param name="value">The elements to check.</param>
+    /// <param name="memberName">
+    /// The name used in the failure message and <see cref="ValidationResult.MemberNames"/>.
+    /// Defaults to the source expression of <paramref name="value"/> via
+    /// <see cref="CallerArgumentExpressionAttribute"/>.
+    /// </param>
+    /// <returns>
+    /// <see cref="ValidationResult.Success"/> when no element is the default; otherwise a
+    /// <see cref="ValidationResult"/> describing the failure.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
+    public static ValidationResult NoneDefault<T>(IEnumerable<T> value, [CallerArgumentExpression(nameof(value))] string memberName = "")
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value.Any(element => EqualityComparer<T>.Default.Equals(element, default))
+            ? new ValidationResult($"{memberName} cannot contain a default value", [memberName])
+            : Success;
+    }
+
+    /// <summary>
     /// Validates that the collection <paramref name="value"/> is not empty.
     /// </summary>
     /// <typeparam name="T">The element type of the collection.</typeparam>
@@ -599,4 +713,51 @@ public static class Validation
         => !value
             ? new ValidationResult($"{memberName} must be true", [memberName])
             : Success;
+
+    /// <summary>
+    /// Validates the nested object <paramref name="child"/> and yields its failures reported under the
+    /// parent member <paramref name="memberName"/>, so a failure in a child of a composite options or
+    /// entity type names the full path (<c>Parent:Child</c>) rather than the child member alone.
+    /// </summary>
+    /// <param name="child">
+    /// The nested object. It is validated like <see cref="Validator.TryValidateObject(object, ValidationContext, ICollection{ValidationResult}?, bool)"/>
+    /// with all properties, so its <see cref="IValidatableObject.Validate"/> and its
+    /// <see cref="ValidationAttribute"/>s both run. <c>null</c> yields nothing: required-ness is a
+    /// separate rule (<see cref="NotNull"/>).
+    /// </param>
+    /// <param name="memberName">
+    /// The parent member that holds <paramref name="child"/>. Defaults to the source expression of
+    /// <paramref name="child"/> via <see cref="CallerArgumentExpressionAttribute"/>.
+    /// </param>
+    /// <returns>
+    /// One result per failure of <paramref name="child"/>, in the order the child reported them, each
+    /// with its <see cref="ValidationResult.ErrorMessage"/> prefixed by <c><paramref name="memberName"/>:</c>
+    /// and each member name <c>inner</c> replaced by <c>"{memberName}:{inner}"</c>. A failure that names
+    /// no member is reported with the single member name <paramref name="memberName"/>. The sequence is
+    /// empty when <paramref name="child"/> is <c>null</c> or valid. Nesting composes: a child that
+    /// itself calls <see cref="Nested"/> yields paths such as <c>Outer:Inner:Member</c>.
+    /// </returns>
+    /// <remarks>
+    /// The message prefix mirrors the member-name prefix because <see cref="Validator.ValidateObject(object, ValidationContext, bool)"/>
+    /// reports only the message of the first failure; without it the message would name the inner member
+    /// alone. The result is evaluated eagerly when enumerated, not when called.
+    /// </remarks>
+    public static IEnumerable<ValidationResult> Nested(object? child, [CallerArgumentExpression(nameof(child))] string memberName = "")
+    {
+        if (child is null)
+        {
+            yield break;
+        }
+
+        var failures = new List<ValidationResult>();
+        Validator.TryValidateObject(child, new ValidationContext(child), failures, validateAllProperties: true);
+        foreach (ValidationResult failure in failures)
+        {
+            yield return new ValidationResult(
+                $"{memberName}:{failure.ErrorMessage}",
+                failure.MemberNames.Any()
+                    ? [.. failure.MemberNames.Select(inner => $"{memberName}:{inner}")]
+                    : [memberName]);
+        }
+    }
 }

@@ -9,7 +9,8 @@ namespace Nordstein.Core.AI.Tests;
 /// <summary>
 /// Exercises the public value types in <c>Nordstein.Core.AI.Clients</c> — <see cref="ModelOptions"/>,
 /// the <see cref="ModelStreamUpdate"/> variants, and the request-preview records — for member
-/// exposure, the null branches, and value equality. These carry no provider or network behaviour.
+/// exposure, the null branches, value equality, and the response format a request carries. These carry no
+/// provider or network behaviour.
 /// </summary>
 [TestClass]
 public sealed class ClientsValueTypeTests
@@ -42,6 +43,43 @@ public sealed class ClientsValueTypeTests
 
         new ModelOptions("gpt-4o", tools).Should().Be(new ModelOptions("gpt-4o", tools));
         new ModelOptions("gpt-4o", tools).Should().NotBe(new ModelOptions("o1", tools));
+    }
+
+    [TestMethod]
+    public void ModelOptions_WithoutResponseFormat_IsNull()
+    {
+        var options = new ModelOptions("gpt-4o", []);
+
+        options.ResponseFormat.Should().BeNull();
+    }
+
+    [TestMethod]
+    public void ModelOptions_ResponseFormat_Serialized()
+    {
+        const string schema = """{"type":"object","properties":{"total":{"type":"number"}},"required":["total"],"additionalProperties":false}""";
+        var options = new ModelOptions("gpt-4o", [])
+        {
+            ResponseFormat = new JsonSchemaResponseFormat("invoice_total", schema),
+        };
+
+        string? json = options.ResponseFormat?.ToOpenAiCompatibleJson().ToJsonString();
+
+        json.Should().Be(
+            """{"type":"json_schema","json_schema":{"name":"invoice_total","schema":""" + schema + ""","strict":true}}""");
+    }
+
+    [TestMethod]
+    public void ModelOptions_Equality_ComparesResponseFormatByValue()
+    {
+        IReadOnlyList<ToolSpecification> tools = [];
+        const string schema = """{"type":"object"}""";
+
+        var a = new ModelOptions("gpt-4o", tools) { ResponseFormat = new JsonSchemaResponseFormat("fields", schema) };
+        var b = new ModelOptions("gpt-4o", tools) { ResponseFormat = new JsonSchemaResponseFormat("fields", schema) };
+
+        a.Should().Be(b);
+        a.Should().NotBe(new ModelOptions("gpt-4o", tools));
+        a.Should().NotBe(a with { ResponseFormat = new JsonSchemaResponseFormat("other", schema) });
     }
 
     [TestMethod]

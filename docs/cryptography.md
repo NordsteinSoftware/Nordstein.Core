@@ -85,7 +85,7 @@ stores the two fields however it likes.
 ## Password hashing
 
 `IPasswordHasher` (`Nordstein.Core.Common.Security`) hashes passwords and other human-chosen secrets;
-`ISecretHasher` and `Sha256` stay for high-entropy, verify-only values. It uses the BCL only
+`ISecretHasher` and `Sha256` stay for high-entropy, verify-only values (Core registers an upper-hex SHA-256 `ISecretHasher` by default; a product's own registration replaces it). It uses the BCL only
 (`Rfc2898DeriveBytes.Pbkdf2`) and is registered as a singleton in `Nordstein.Core.Common.Module`.
 
 - **Parameters.** PBKDF2-HMAC-SHA256, 600,000 iterations (OWASP's figure for this PRF), a fresh

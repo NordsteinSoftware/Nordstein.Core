@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using Autofac;
+using Nordstein.Core.AI.Agents;
+using Nordstein.Core.AI.Agents.Internal;
 using Nordstein.Core.AI.Messages.Internal;
 using Nordstein.Core.AI.Serialization;
 using Nordstein.Core.AI.Serialization.Internal;
@@ -10,7 +12,7 @@ namespace Nordstein.Core.AI;
 /// <summary>
 /// Registers the AI foundation: the domain-object generators for messages, tools, prompts and
 /// completions (via assembly discovery), the JSON converters for message content and tool
-/// arguments, the text serializer, and the output formats. Consuming products register this
+/// arguments, the text serializer, the output formats, and the agent loop. Consuming products register this
 /// module alongside their own domain module.
 /// </summary>
 public sealed class Module : Autofac.Module
@@ -29,6 +31,10 @@ public sealed class Module : Autofac.Module
             .As<JsonConverter>()
             .SingleInstance();
 
+        builder.RegisterType<AgentLoop>()
+            .As<IAgentLoop>()
+            .SingleInstance();
+
         builder.RegisterType<JsonTextSerializer>().As<ITextSerializer>();
         builder.RegisterType<JsonOutputFormat>().AsSelf();
         builder.RegisterType<StringOutputFormat>().AsSelf();
@@ -39,7 +45,10 @@ public sealed class Module : Autofac.Module
             return type =>
             {
                 if (type == typeof(string))
+                {
                     return ctx.Resolve<StringOutputFormat>();
+                }
+
                 return ctx.Resolve<JsonOutputFormat>(new TypedParameter(typeof(Type), type));
             };
         }).AsSelf();
