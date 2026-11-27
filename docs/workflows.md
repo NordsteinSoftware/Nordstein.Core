@@ -18,8 +18,9 @@ persistence and scheduling are the product's.
 | `IStepJournal`, `WorkflowFailure`, `WorkflowFailureKind` | The product's record of a run, step by step; `StepPinnedAsync` has a default that records a pinned step as completed, `StepRecoveredAsync` one that records a failed node taking its error edge as completed on `error`, `StepRetryingAsync` one that records nothing, and the `StepStartedAsync` overload with an `iteration` one that records the start without it. |
 | `ReservedBranches` | The branch names the kernel reserves: `Error` (`error`) and its fixed output schema `ErrorOutputSchema` (`{ message, nodeType }`). |
 | `INodeTrial`, `NodeTrialResult`, `OutputProblem`, `IterationStub` | Tries one node against supplied upstream outputs, without a run, and checks its output against its output schema; a body node takes its item and index from an `IterationStub`. |
+| `IWorkflowGraphReader`, `WorkflowGraphFormatException`, `WorkflowGraphFormatError` | Reads a graph from the kernel's graph format (JSON text or a `JsonElement`); every format error with its JSON path. See [Graph format](#graph-format). |
 | `IConditionNodeType`, `IForEachNodeType` | The kernel's own node types, `condition@1` and `for-each@1`, for a product to put in its catalogue. See [Kernel node types](#kernel-node-types). |
-| `Module` | Registers the validator, the interpreter, the node trial and the two kernel node types as stateless singletons; a kernel node type is registered as itself, never as `INodeType`. |
+| `Module` | Registers the validator, the interpreter, the node trial, the graph reader and the two kernel node types as stateless singletons; a kernel node type is registered as itself, never as `INodeType`. |
 
 ## Node majors
 
@@ -139,6 +140,53 @@ try a node against stubbed upstream data.
 - **Output check.** A `Completed` output is checked against `GetOutputSchema(config)`; every mismatch
   is an `OutputProblem` with its JSON path (`$.items[1].name`). A mismatch is a finding, not a
   failure.
+
+## Graph format
+
+`IWorkflowGraphReader.Read(string)` and `Read(JsonElement)` read a graph from the kernel's JSON format. The format is a
+public contract: what it accepts today it accepts in every later version.
+
+```json
+{
+  "nodes": [
+    { "id": "start", "type": "manual@1" },
+    { "id": "check", "type": "condition@1", "config": { "all": [{ "left": "{{trigger.total}}", "op": "gt", "right": 100 }] } },
+    { "id": "fetch", "type": "fetch@2", "config": { "url": "{{trigger.url}}" }, "retry": { "attempts": 3, "backoff": "PT5S" } }
+  ],
+  "edges": [{ "from": "start", "to": "check" }, { "from": "check", "to": "fetch", "branch": "true" }]
+}
+```
+
+- **Keys.** `nodes` (required, an array), `edges` (optional, an array; absent is none). A node: `id` and `type` (required,
+  strings), `config` (optional, any JSON value, `{}` when absent), `retry` (optional, an object). A retry: `attempts`
+  (required, a whole number from 2 to 2147483647 written without fraction or exponent, so `3.0` and `3e0` are refused) and
+  `backoff` (optional, zero when absent). An edge: `from` and `to` (required, strings), `branch` (optional, a string).
+- **Backoff.** An ISO 8601 duration `PnDTnHnMnS`: days, hours, minutes and seconds, each optional but at least one
+  present, digits `0`-`9` only, seconds with up to seven decimals after a `.`. No sign, weeks, months or years (their
+  length is not fixed), no lowercase designators, no `,` decimal sign, at most `TimeSpan.MaxValue` (10675199 days).
+- **Case and order.** Keys match ordinally, so `Nodes` is not `nodes`. Key order does not matter; node and edge order is
+  kept (it breaks the interpreter's ties).
+- **Unknown keys.** A key the format does not define is ignored at every level (the graph, a node, an edge, a retry). It
+  is the product's to read: a canvas layout, a node's test pin, a switch-off flag. A product that needs its own keys reads
+  them from the same document and hands the kernel the element (`Read(JsonElement)`). A misspelled optional key is
+  therefore ignored too; a misspelled required key is reported missing.
+- **Null.** A key whose value is `null` is not absent: `"branch": null` is the wrong type. A `config` of `null` is the
+  JSON value `null`, which the node type's input schema then judges.
+- **Duplicates.** The same property name twice in the graph object, a node, an edge, a retry, or any object inside a
+  `config` is an error at that object. Inside a key the reader ignores, the product judges.
+- **Text.** Every string the reader reads, and every name and string inside a `config`, decodes to valid text: an escaped
+  unpaired surrogate (`"\uD800"`) is an error, so the validator and the interpreter never meet a string they cannot read.
+- **Limits.** The graph nests at most 64 levels deep, the graph object counting as the first. Text is one JSON document
+  under RFC 8259: no comments, no trailing commas, nothing after the document, no byte order mark. The reader sets no limit
+  on length, nodes or edges; the caller bounds the input, and the validator's `maxNodes` bounds a graph it accepts.
+- **Meaning.** The reader never consults a catalogue: any `type` text is read, and an unknown or malformed type, an
+  invalid id, an edge to a missing node and an empty `nodes` array are the validator's to refuse.
+- **Errors.** A text that is not JSON is one `WorkflowGraphFormatError` with the parser's line, byte and message, and the
+  parser's exception as the inner exception. Otherwise every error found, in document order, each with a JSON path from
+  `$` (`$.nodes[2].retry.attempts`, `$.nodes[0].config['odd key']`) and a message naming the place:
+  `$.nodes[0].id is missing; it is a string.`, `$.edges[1].to is a number, not a string.`,
+  `$.nodes[0].config names the property 'k' twice.` `WorkflowGraphFormatException : FormatException` carries them
+  (`Errors`); its message is `The text is not a workflow graph:` followed by every error's message.
 
 ## Kernel node types
 
