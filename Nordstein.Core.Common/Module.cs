@@ -75,6 +75,11 @@ public class Module : Autofac.Module
         builder.RegisterType<LoginLockout>().As<ILoginLockout>().SingleInstance();
         builder.RegisterType<SecretTokenFormat>().As<ISecretTokenFormat>().SingleInstance();
 
+        // The master key ring; it resolves only in a container that registered MasterKeyRingOptions.
+        builder.RegisterType<MasterKeyRingFile>().AsSelf().SingleInstance();
+        builder.RegisterType<FileMasterKeyRing>().As<IMasterKeyRing>().SingleInstance();
+        builder.RegisterType<MasterKeyRingInitializer>().As<IMasterKeyRingInitializer>().SingleInstance();
+
         // The default secret hasher yields to a product's own: a registration made before this
         // module keeps the default slot (and, made after it, wins as the last registration).
         builder.RegisterType<Sha256SecretHasher>()

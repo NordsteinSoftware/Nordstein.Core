@@ -1,15 +1,16 @@
 # Security
 
 `Nordstein.Core.Common.Security` holds the product-agnostic building blocks of sign-in and credential
-handling. The cryptographic primitives they build on (AEAD, key wrap, password hashing) are described in
+handling, and the master key ring that wraps a product's data keys and stored secrets. The cryptographic primitives they build on (AEAD, key wrap, password hashing) are described in
 [`cryptography.md`](cryptography.md), secret-file custody in [`io.md`](io.md). Every service here is a
 singleton registered in `Nordstein.Core.Common.Module`; none holds an entity or touches storage.
 
 ## The one rule this area lives by
 
-Core never knows what an account, a user or a session is. The caller keeps every piece of state
-(failure counts, lock ends, token hashes) beside its own credential and hands Core only values: a count,
-an instant, a prefix, the strings that identify an account. Core decides nothing about persistence.
+Core never knows what an account, a user, a session or a stored record is. The caller keeps every piece of
+state (failure counts, lock ends, token hashes, wrapped values) beside its own records and hands Core only
+values: a count, an instant, a prefix, the strings that identify an account, the bytes that bind a wrapped
+value to its slot. Core decides nothing about persistence except the master key ring's own file.
 
 ## Credentials
 
@@ -84,7 +85,113 @@ returns nothing to act on.
 or `PasswordPolicyOptions.MinLength` when longer, so the length always passes the policy. The policy's
 identity rule can still refuse one (chance 2^-100); a caller that checks draws again.
 
+## Master key ring
+
+`IMasterKeyRing` holds the process's master keys, loaded once from a custody-checked file, and wraps and
+unwraps values (data keys, stored secrets) with them; master-key bytes never cross the interface.
+`IMasterKeyRingInitializer` creates the file once. Both resolve only where the host registered
+`MasterKeyRingOptions`: `KeyDirectory`, `FileName` (`master-key-ring.json`) and `ExcludedRoots`, the
+directories the ring must never be inside (anything backed up, served or shared).
+
+### The file
+
+```json
+{
+  "format": "nordstein-keyring-v1",
+  "ringId": "3f2b…-…",
+  "keys": [
+    { "version": 1, "createdAt": "2026-…+00:00", "status": "active", "key": "<32 bytes, base64>",
+      "canary": { "nonce": "<12 bytes, base64>", "ciphertext": "<base64>" } }
+  ]
+}
+```
+
+The canary is AES-256-GCM of `nordstein-keyring-canary-v1` under the key with empty associated data, so a
+wrong or edited key is detected when the ring loads, not at the first unwrap. No `Wrap` produces empty
+associated data, so a canary never unwraps as a value nor a value as a canary.
+
+### Load: typed and fail-closed
+
+Resolving does no I/O. The first access to any member loads exactly once (also under concurrent first
+accesses) and throws `MasterKeyRingException` with a `MasterKeyRingFailure` from that access and every later
+one; a repaired file is read only by a new process, and there is never a fallback to a new key. Touch
+`RingId` at startup so a bad ring stops the host.
+
+| Failure | When |
+|---|---|
+| `PathInExcludedRoot` | the configured ring path may lie inside an excluded root (`IPathContainment`: links followed in both readings, case and normalization ignored) |
+| `FileRejected` | a path cannot be resolved, or `ISecretFileLoader` refuses (missing, a link, on Unix not `0600` in a `0700` directory), or the read fails; the cause is kept |
+| `Malformed` | not JSON, an unknown or duplicated member, a wrong marker, a ring id that is missing, empty or not a 36-character GUID, a null entry, a version below 1 or used twice, a status other than `active` or `decrypt-only`, missing bytes, not base64, a canary of the wrong shape |
+| `WrongKeyLength` | a key not exactly 32 bytes |
+| `CanaryFailed` | a canary that does not authenticate or decrypts to another text, for any key, active or not |
+| `NoActiveKey`, `MultipleActiveKeys` | not exactly one `active` key |
+
+The file's bytes and every decoded key are zeroed on every path; the loaded keys are copied into pinned
+arrays so the collector never leaves a moved copy.
+
+### Wrap and unwrap
+
+`Wrap(plaintext, associatedData)` is `IAeadKeyWrap` under the active key, fresh nonce; the bound associated
+data is the caller's bytes followed by the key version as a big-endian 32-bit integer, so a record relabelled
+to another version, or moved to another slot, fails. Start the caller's bytes with a constant naming the
+kind of value (`acme-setting-v1`) and then identify the slot. `Unwrap` uses the version the record names,
+active or `decrypt-only`: an unknown version is `UnknownKeyVersion`; a nonce not 12 bytes, a short record, a
+wrong binding or a tampered record are all `UnwrapFailed`, deliberately not told apart. The returned buffer
+is the caller's to zero.
+
+### Initialization: create once, durably
+
+`Precheck()` runs every refusal without writing: an excluded root (`PathInExcludedRoot`, `FileRejected`), a
+file or link at the ring path or a non-empty key directory (`AlreadyInitialized`). `InitializeAsync(ringId)`
+runs it again, then:
+
+1. creates the key directory `0700` when missing (its parent must exist; Core creates one level) and flushes
+   the parent, or sets an existing empty one to `0700`;
+2. draws a 32-byte key from `RandomNumberGenerator` and its canary, and writes the document from a buffer that
+   never grows, through an unbuffered stream opened `CreateNew` (`O_CREAT | O_EXCL`), mode `0600` set on the
+   open handle whatever the umask; a ring that appeared since the check is `AlreadyInitialized` with the
+   open's `IOException` inside and is never touched;
+3. flushes the file to disk, re-runs the excluded-root check (a key directory swapped for a link into an
+   excluded root is refused, and the ring found there deleted only if its ring id is the one just written),
+   and flushes the key directory (`IDirectorySync`).
+
+Any failure after the open deletes the ring this call wrote, and the key directory when this call created it.
+`Remove(created)` undoes a completed call for a host whose later first-run step failed, after checking that
+the file still is that ring (`InvalidOperationException` otherwise, nothing deleted).
+
+Why not `IDurableFilePublisher`: its create-without-replace is a managed check followed by a rename that
+would overwrite a ring published in between (see [`io.md`](io.md)); a replaced ring loses every value wrapped
+under it. `CreateNew` is atomic; the price is that a crash during the write can leave a partial ring under
+the final name, which fails to load and blocks a second initialization until an operator deletes it (nothing
+was ever wrapped under it).
+
+### Non-goals and known limits
+
+- **Rotation is an explicit non-goal.** Core never adds, activates, demotes or retires a key and never
+  re-wraps. The format already holds `decrypt-only` keys beside the active one, so a later Core version can
+  add rotation without a format change. No key-management service or hardware module is supported.
+- **Windows.** Production custody targets Linux and containers. On Windows no mode is set or checked; the file
+  inherits the directory's access control list.
+- **Owner.** The file owner is not compared with the process user ([`io.md`](io.md)); mode `0600` restricts
+  reads to the owner.
+- **Zeroization.** The loaded keys stay in pinned memory until the process ends; a memory dump or swapped
+  page exposes them.
+- **Check then read.** `ISecretFileLoader` checks the file and then reads it; an entry swapped for a link in
+  between is read. The `0700` directory leaves that to the owner alone.
+- **Placement.** Not detected: a link inside an excluded root that points at the key directory (a backup that
+  follows links copies the ring), bind mounts, hard links. The check is point-in-time; it runs at every load
+  and after the initialization write.
+- **One load per process.** A ring edited on disk is seen only by a new process.
+- The ring id is not secret; binding other durable artefacts to it is the host's job.
+
 ## Review focus (Standard of Care #3)
+
+For the master key ring the adversarial pass hunts for: a load path that falls back to a new key or returns
+a partially verified ring; a failure that is not typed or not cached; key bytes in a message, a log line, a
+`ToString`, a string or an unzeroed buffer; a canary that is not checked for every key; a nonce not from the
+CSPRNG or a binding without the version; an initialization that can overwrite, or delete, a ring it did not
+write; a mode applied by path where it must be on the handle; and an excluded-root check run on a normalized
+instead of the configured path.
 
 For the credential primitives the adversarial pass hunts for: a lockout count that can be negative,
 overflow or loop with the count; a lock end from anything but `IClock`; a token secret not from the
