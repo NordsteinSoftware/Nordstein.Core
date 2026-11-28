@@ -1,57 +1,40 @@
-# Nordstein.Core
+<div align="center">
 
-The shared, product-agnostic foundation of all Nordstein Software products: domain and storage
-building blocks, a licensing engine, hosting and utility seams, and the common test harness.
-Nothing in here knows what any one product is; nothing in here may ever learn.
+<h1>Nordstein.Core</h1>
 
-Because every product stands on this code, it is held to a deliberately higher bar than a product
-repository: warnings are errors, every public member is documented and tested, and changes get
-adversarial review. [`CLAUDE.md`](CLAUDE.md) states that standard of care in full;
-[`docs/`](docs/README.md) documents each package.
+<p><b>The shared .NET foundation every Nordstein product is built on.</b><br>
+Domain · Storage · Licensing · AI · Workflows<br>
+Pre-release: all seven packages build, test and pack in CI. None is on a package feed yet.</p>
 
-## Packages
+[![CI](https://img.shields.io/github/actions/workflow/status/NordsteinSoftware/Nordstein.Core/ci.yml?branch=main&label=CI&style=for-the-badge&labelColor=1F2124)](https://github.com/NordsteinSoftware/Nordstein.Core/actions/workflows/ci.yml)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/NordsteinSoftware/Nordstein.Core/codeql.yml?branch=main&label=CodeQL&style=for-the-badge&labelColor=1F2124)](https://github.com/NordsteinSoftware/Nordstein.Core/actions/workflows/codeql.yml)
+[![.NET 10](https://img.shields.io/badge/.NET-10-5A5E63?style=for-the-badge&labelColor=1F2124)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![License: Elastic-2.0](https://img.shields.io/badge/license-Elastic--2.0-5A5E63?style=for-the-badge&labelColor=1F2124)](LICENSE)
 
-| Package | What it gives a product |
-|---------|-------------------------|
-| [`Nordstein.Core.Common`](Nordstein.Core.Common) | The everyday seams and utilities: `IClock` and `IRandom` (testable time/randomness), the keyed `IAsyncLock`, validation helpers, type conversion, secret-protection contracts (`ISecretProtector`, `ISecretHasher`, `Sha256`), Autofac registration helpers, resilient-hosting defaults (`AddResilientBackgroundServices`), text/serialization helpers |
-| [`Nordstein.Core.Domain`](Nordstein.Core.Domain) | The domain foundation: `IDomainObject`/`IDomainEntity` contracts and bases, the factory-delegate pattern, test-data generators, `IRepository`/`ITransaction`, archive (soft-delete) contracts, paging, persistence exceptions, entity events, and Autofac discovery of a product's domain assembly |
-| [`Nordstein.Core.Storage`](Nordstein.Core.Storage) | The EF Core storage foundation: `NordsteinDbContext`, generic repositories with optimistic concurrency, the ambient-transaction seam, a reference-data cache, and `StorageFoundationModule<TContext>` (per-entity discovery). **Provider-neutral** — depends on EF Core Relational only; each product brings its own provider, concrete context, and migrations |
-| [`Nordstein.Core.Licensing`](Nordstein.Core.Licensing) | The generic license engine: JWT verification, runtime activation, the resolved `LicenseSnapshot`, feature/limit queries, and the periodic server check with offline grace. The product supplies its tier/feature/limit vocabulary through `ILicenseTierPolicy` and its identity (issuer, audience, trust root) through `LicensingConfiguration` |
-| [`Nordstein.Core.AI`](Nordstein.Core.AI) | The AI foundation: LLM message/conversation types, tool specifications, prompt templates, completions and token usage, model parameters, the versionless `IAgent` and `IModelClient` contracts, the `IAgentLoop` tool-call loop, and structured model-output parsing (`IOutputFormat`, `ITextSerializer`). Provider implementations stay in the products |
-| [`Nordstein.Core.Workflows`](Nordstein.Core.Workflows) | The workflow kernel: a directed acyclic graph of typed nodes with data references between them, a validator over the product's node catalogue and JSON schemas, and a deterministic interpreter with a step journal, step budget, dry runs, and suspend and resume |
-| [`Nordstein.Core.Testing`](Nordstein.Core.Testing) | The shared test harness: `BaseTest<TModule>` with per-test, self-disposing Autofac containers, plus the MSTest + AwesomeAssertions + NSubstitute baseline every product suite builds on |
+<a href="#quick-start">Quick start</a> · <a href="#packages">Packages</a> · <a href="docs/README.md">Docs</a> · <a href="#license">License</a>
 
-Dependencies flow strictly downward — Storage → Domain → Common; Licensing → Common; Testing →
-Common — and never outward to a product. See [`docs/architecture.md`](docs/architecture.md).
+<img src="docs/assets/demo.gif" alt="Terminal: the solution builds with 0 warnings, all seven test projects pass, and the coverage gate passes at 98.4 % line and 95.0 % branch coverage" width="760">
 
-## The one rule
+</div>
 
-**Core may not reference any product. Ever.** The dependency arrow points one way: products
-depend on Core. A Core type that needs to know about a product concept belongs in that product,
-not here — and if it feels like it belongs in both, it needs a seam (an interface Core declares
-and the product implements), not a reference.
+## Quick start
 
-The rule is enforced mechanically, not by review: this solution builds and tests standalone, and
-the consuming product's CI additionally packs Core and rebuilds the whole product against the
-resulting `.nupkg` files — which catches types missing from the package surface and dependencies
-Core forgot to declare.
-
-## Building
-
-Requires the .NET 10 SDK.
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ```bash
-dotnet build Nordstein.Core.sln    # warning-free, or it fails: TreatWarningsAsErrors is on
-dotnet test  Nordstein.Core.sln    # the full suite — it is fast, so always run all of it
+git clone https://github.com/NordsteinSoftware/Nordstein.Core.git
+cd Nordstein.Core
 ```
 
-Core builds and tests without any product present — that is the property being protected. If it
-ever stops being true, the split has regressed.
+```bash
+dotnet build Nordstein.Core.sln   # warnings are errors
+dotnet test  Nordstein.Core.sln   # the full suite, about 30 seconds
+```
 
-## How products consume it
+<details>
+<summary>Use it in a product</summary>
 
-A consuming product embeds this repository — today as a git submodule (Proxytrace mounts it at
-`core/`) — and declares an item, not a reference:
+Add this repository to your product as a git submodule, for example at `core/`, and name the packages you need:
 
 ```xml
 <ItemGroup>
@@ -59,32 +42,46 @@ A consuming product embeds this repository — today as a git submodule (Proxytr
 </ItemGroup>
 ```
 
-The product's `Directory.Build.targets` expands that item into either a `ProjectReference`
-(**source mode** — the default when the submodule checkout is present, keeping a Core change a
-one-build edit) or a `PackageReference` at `$(NordsteinCoreVersion)` (**package mode**). Core
-versions independently of its consumers. Nothing is published to a feed yet;
-[`PUBLISHING.md`](PUBLISHING.md) records the feed, licence, and prefix decisions that must be
-settled before the first publish.
+Your `Directory.Build.targets` turns each item into a `ProjectReference` (source mode) or a `PackageReference` at
+`$(NordsteinCoreVersion)` (package mode). [`docs/architecture.md`](docs/architecture.md#how-consumers-reference-core)
+explains both modes.
 
-## Documentation
+</details>
 
-| | |
-|---|---|
-| [`docs/`](docs/README.md) | Per-package developer docs: architecture & DI conventions, code style, the domain and storage foundations, validation, licensing, testing |
-| [`docs/product-playbook.md`](docs/product-playbook.md) | The transferable practices for building a product on Core — docs discipline, e2e testing, user manual, i18n, CI shape, perf budgets |
-| [`CLAUDE.md`](CLAUDE.md) | The standard of care for changes to this repository, and AI-assistant guidance |
-| [`PUBLISHING.md`](PUBLISHING.md) | Packaging/versioning decisions and how this repository was extracted |
+## Packages
 
-## History
+| Package | Provides |
+|---------|----------|
+| [`Nordstein.Core.Common`](Nordstein.Core.Common) | Clock and randomness seams, async locks, validation, cryptography, credential primitives, durable file IO, text, settings, events, hosting defaults |
+| [`Nordstein.Core.Domain`](Nordstein.Core.Domain) | Entity and object contracts, factory delegates, test-data generators, repository, transaction, archive and paging contracts |
+| [`Nordstein.Core.Storage`](Nordstein.Core.Storage) | EF Core base context, generic repositories with optimistic concurrency, ambient transactions, a reference-data cache. You bring the database provider |
+| [`Nordstein.Core.Licensing`](Nordstein.Core.Licensing) | License JWT verification, runtime activation, feature and limit queries, a periodic server check with offline grace |
+| [`Nordstein.Core.AI`](Nordstein.Core.AI) | Messages, tools, prompts, completions, the agent and model-client contracts, the tool-call loop, structured output parsing |
+| [`Nordstein.Core.Workflows`](Nordstein.Core.Workflows) | A directed acyclic graph of typed nodes, a validator, a deterministic interpreter with a step journal, suspend and resume |
+| [`Nordstein.Core.Testing`](Nordstein.Core.Testing) | `BaseTest<TModule>` with one Autofac container per test, shared fakes for clock, HTTP, logging and certificates, architecture fences, perf budgets |
 
-Core was extracted from Proxytrace (the first consuming product) in tranches — Common and
-Testing first, then Domain, Storage, and Licensing. The original extraction used
-`git filter-repo` with pre-move path mappings so the code's full history came across — **not** a
-`git subtree split`, which follows paths without renames and would have collapsed the past to a
-single commit; later tranches were migrated as ordinary commits into this repository. The
-verified recipe is in [`PUBLISHING.md`](PUBLISHING.md#how-this-repository-was-extracted).
+Dependencies point one way: a product depends on Core, and Core knows no product.
+[`docs/architecture.md`](docs/architecture.md) has the layering.
+
+## Develop
+
+```bash
+dotnet build Nordstein.Core.sln
+dotnet test Nordstein.Core.sln --settings tools/coverage.runsettings \
+  --collect "XPlat Code Coverage" --results-directory artifacts/coverage
+python3 tools/coverage_gate.py --reports artifacts/coverage \
+  --floors tools/coverage-floors.json
+```
+
+CI fails a package below 90 % line or 90 % branch coverage. The rules for a change:
+[`CLAUDE.md`](CLAUDE.md) · [`docs/`](docs/README.md) · [`PUBLISHING.md`](PUBLISHING.md)
 
 ## License
 
-See [`LICENSE`](LICENSE). The terms for Core as a separately distributed library are still being
-settled before the first package publish — [`PUBLISHING.md`](PUBLISHING.md) tracks that decision.
+[Elastic License 2.0](LICENSE). Provisional: we settle the terms for Core as a separately distributed library before
+the first package publish ([`PUBLISHING.md`](PUBLISHING.md#2-the-licence)).
+
+<div align="center">
+<br>
+<sub>Built by <a href="https://nordstein.eu">Nordstein Software GmbH</a> in Absam, Austria</sub>
+</div>

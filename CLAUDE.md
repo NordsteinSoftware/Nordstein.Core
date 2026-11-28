@@ -26,16 +26,17 @@ Every change to this repository — however small — meets all of the following
 2. **High test coverage, enforced by you.** Every public type and member gets tests; every branch
    of non-trivial logic gets a test; every bug fix starts with a failing regression test
    (test-driven — write the red test first, then the fix). A change that reduces effective
-   coverage is incomplete. The whole suite runs in seconds — there is no excuse for an untested
-   path. CI fails any shipped assembly below **90 % line or 90 % branch coverage**
+   coverage is incomplete. The whole suite runs in about half a minute — there is no excuse for
+   an untested path. CI fails any shipped assembly below **90 % line or 90 % branch coverage**
    (`tools/coverage_gate.py`, floors in `tools/coverage-floors.json`). See
    [`docs/testing.md`](docs/testing.md).
 3. **Adversarial review, every time.** Before declaring any change complete, run a genuine
-   adversarial review pass — as a reviewer subagent where available, otherwise as an explicit
-   separate pass — whose stated goal is to **break the change**: hunt for race conditions, API
-   misuse a consumer could stumble into, nullability holes, cancellation tokens not honored,
-   behavioral changes to the existing public contract, and missing tests. Findings are fixed or
-   explicitly justified in writing; "looks fine" is not a review result.
+   adversarial review pass — as the `reviewer` subagent
+   ([`.claude/agents/reviewer.md`](.claude/agents/reviewer.md)) where subagents are available,
+   otherwise as an explicit separate pass — whose stated goal is to **break the change**: hunt
+   for race conditions, API misuse a consumer could stumble into, nullability holes, cancellation
+   tokens not honored, behavioral changes to the existing public contract, and missing tests.
+   Findings are fixed or explicitly justified in writing; "looks fine" is not a review result.
 4. **The public surface is a contract.** `internal` by default; make something `public` only when
    a consumer needs it, and design it as if you can never change it again — because in practice
    you can't. Any change to public API shape or behavior must be called out explicitly in the
@@ -46,8 +47,8 @@ Every change to this repository — however small — meets all of the following
    XML docs *are* the API documentation (`GenerateDocumentationFile` is on). Write them for
    someone who cannot see the implementation: contracts, thread-safety, what throws when.
 6. **Verified, not assumed.** `dotnet build Nordstein.Core.sln` and `dotnet test Nordstein.Core.sln`
-   pass before you claim done. Unlike a product repo, the suite here is small — **always run the
-   full solution**, never a scoped subset, and state that you did.
+   pass before you claim done. Unlike a product repo, the suite here is fast (about half a
+   minute) — **always run the full solution**, never a scoped subset, and state that you did.
 
 ## The One Rule
 
@@ -64,6 +65,18 @@ implements it — never a reference, never a type that "temporarily" knows a pro
 This property is enforced mechanically (Core builds and tests standalone; the consuming product's
 CI also packs Core and rebuilds against the `.nupkg`s), but the enforcement only catches
 references — **you** must catch leaked concepts.
+
+## Repository map
+
+| Path | Holds |
+|------|-------|
+| `Nordstein.Core.<Package>/` | One of the seven shipped packages: Common, Domain, Storage, Licensing, AI, Workflows, Testing. Each has its own package `README.md` and a sibling `Nordstein.Core.<Package>.Tests/` project. Layering and dependency rules: [`docs/architecture.md`](docs/architecture.md) |
+| [`docs/`](docs/README.md) | One page per area (index below) and the decision records in [`docs/adr/`](docs/adr/) |
+| [`tools/`](tools/) | The CI checks, Python standard library only: `coverage_gate.py` with its settings and floors, `docs_check.py`, and in `tools/tests/` the tests of all of it and of `.claude/hooks/` |
+| [`.claude/`](.claude/) | `agents/reviewer.md` (the adversarial reviewer), `hooks/guards.py` (the edit guard, see Hard Rules), `skills/csharp-coding` (the C# style skill) |
+| [`.github/`](.github/) | `workflows/ci.yml` (secret scan, build, tests with the coverage gate, tooling tests and docs check, workflow lint, pack), `workflows/codeql.yml`, `dependabot.yml` |
+
+This is the only `CLAUDE.md` in the repository; guidance for one area lives in its `docs/` page.
 
 ## AI Assistant Docs
 
@@ -90,6 +103,7 @@ area — do not rely on this file alone:
 | [`docs/ai.md`](docs/ai.md) | Touching `Nordstein.Core.AI` — the AI/agent foundation (messages, tools, prompts, completions, the agent/model-client contracts, the agent tool-call loop, output parsing) and its product seams |
 | [`docs/workflows.md`](docs/workflows.md) | Touching `Nordstein.Core.Workflows` — the workflow kernel: graph, node contract, data references, validator, interpreter, step journal, suspend and resume |
 | [`docs/dependencies.md`](docs/dependencies.md) | Adding a package reference or bumping one's major version, Dependabot, or a CI action — the package bar, the update cooldown, actions pinned by commit SHA |
+| [`docs/adr/`](docs/adr/) | Making or revisiting an architecture decision — one numbered record per decision: context, decision, alternatives, consequences |
 | [`docs/testing.md`](docs/testing.md) | Writing or modifying **any** test, or touching `Nordstein.Core.Testing` (the harness itself lives here) |
 | [`docs/product-playbook.md`](docs/product-playbook.md) | Advising on or building anything in a **consuming product** — e2e testing, user manual, i18n, CI, perf budgets: the practices proven in Proxytrace |
 | [`PUBLISHING.md`](PUBLISHING.md) | Touching packaging, versioning, or anything publish-related |
@@ -103,9 +117,21 @@ area — do not rely on this file alone:
   (`Validation.Success`) — the BCL defines validation success as a `null` `ValidationResult`
   behind a non-nullable signature we cannot change. It is documented in place. Do not add a
   second exemption; return `Validation.Success` instead.
+- **No unexplained suppression.** `#pragma warning disable`, `#nullable disable`,
+  `[SuppressMessage]` and `[ExcludeFromCodeCoverage]` need a `// WHY:` comment on their line or
+  directly above; fix the cause instead wherever that is possible. The edit guard
+  ([`.claude/hooks/guards.py`](.claude/hooks/guards.py)) denies an edit that adds one without it,
+  or that adds a `!`; it catches accidents, review and CI remain the backstop.
+- **Every `internal` type of a shipped package lives in an `Internal/` folder** with the matching
+  `.Internal` namespace; a concept folder's root holds only its public surface.
+  `InternalNamespaceFenceTests` fails the suite otherwise
+  ([`docs/testing.md`](docs/testing.md#cores-own-fence-internal-types-live-in-internal)).
 - **Keep the docs current.** When a change alters anything a `docs/` page (or this file, or a
   package `README.md`) describes, update the doc **in the same change** and add an index row for
-  any new page. A change is not complete until its docs match the code.
+  any new page. A change is not complete until its docs match the code. The root
+  [`README.md`](README.md) is the one-screen entry for someone new: hero, quick start, the
+  package table, develop, license, about 80 lines. Detail goes to `docs/` and is linked; a new
+  package gets its table row, and the demo GIF (`docs/assets/demo.gif`) shows real output.
 - **No product knowledge** (see The One Rule). Doc and test examples use neutral placeholder
   domains, never a real product's.
 - **Every dependency is a liability.** Core's package references become every product's
@@ -138,6 +164,19 @@ separate pass rather than skipping it.
 ```bash
 dotnet build Nordstein.Core.sln    # must be warning-free
 dotnet test  Nordstein.Core.sln    # always the full suite — it is fast
+```
+
+CI also gates on coverage, the tooling tests and the docs check; run the ones your change can
+affect before you push
+([`docs/testing.md`](docs/testing.md#the-coverage-gate-ci)):
+
+```bash
+# Coverage: every shipped assembly at or above 90 % line and 90 % branch
+dotnet test Nordstein.Core.sln --settings tools/coverage.runsettings --collect "XPlat Code Coverage" --results-directory artifacts/coverage
+python3 tools/coverage_gate.py --reports artifacts/coverage --floors tools/coverage-floors.json
+
+python3 -m unittest discover --start-directory tools/tests    # the tooling's own tests
+python3 tools/docs_check.py --root .                           # links resolve, every docs/ page is indexed
 ```
 
 Core builds and tests **standalone** — that property is the extraction guarantee and must never
