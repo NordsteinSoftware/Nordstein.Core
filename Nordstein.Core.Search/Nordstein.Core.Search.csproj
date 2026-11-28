@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>
+            Product-agnostic search contracts for Nordstein applications: a named index of text
+            entries with string facets, searched by meaning (embedding vectors) and by keyword and
+            fused by reciprocal rank, plus the schema seam that binds an index to one embedding
+            model. Contracts and value types only: a provider package such as
+            Nordstein.Core.Search.Postgres implements them.
+        </Description>
+        <PackageTags>nordstein;search;vector;hybrid;embeddings</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Nordstein.Core.Common\Nordstein.Core.Common.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Nordstein.Core.Search.Tests" />
+    </ItemGroup>
+
+</Project>
