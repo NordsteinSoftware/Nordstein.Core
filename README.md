@@ -4,7 +4,7 @@
 
 <p><b>The shared .NET foundation every Nordstein product is built on.</b><br>
 Domain · Storage · Licensing · AI · Workflows<br>
-Pre-release: all seven packages build, test and pack in CI. None is on a package feed yet.</p>
+Pre-release: all eleven packages build, test and pack in CI. None is on a package feed yet.</p>
 
 [![CI](https://img.shields.io/github/actions/workflow/status/NordsteinSoftware/Nordstein.Core/ci.yml?branch=main&label=CI&style=for-the-badge&labelColor=1F2124)](https://github.com/NordsteinSoftware/Nordstein.Core/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/NordsteinSoftware/Nordstein.Core/codeql.yml?branch=main&label=CodeQL&style=for-the-badge&labelColor=1F2124)](https://github.com/NordsteinSoftware/Nordstein.Core/actions/workflows/codeql.yml)
@@ -58,6 +58,10 @@ explains both modes.
 | [`Nordstein.Core.Licensing`](Nordstein.Core.Licensing) | License JWT verification, runtime activation, feature and limit queries, a periodic server check with offline grace |
 | [`Nordstein.Core.AI`](Nordstein.Core.AI) | Messages, tools, prompts, completions, the agent and model-client contracts, the tool-call loop, structured output parsing |
 | [`Nordstein.Core.Workflows`](Nordstein.Core.Workflows) | A directed acyclic graph of typed nodes, a validator, a deterministic interpreter with a step journal, suspend and resume |
+| [`Nordstein.Core.Search`](Nordstein.Core.Search) | The search contract: named indexes of text with facets, hybrid search by meaning and keyword, a schema bound to one embedding model |
+| [`Nordstein.Core.Search.Postgres`](Nordstein.Core.Search.Postgres) | Opt-in. The search contract on pgvector and `tsvector`, fused by reciprocal rank, as plain SQL without a driver reference |
+| [`Nordstein.Core.AI.OpenAiCompatible`](Nordstein.Core.AI.OpenAiCompatible) | Opt-in. An embedding client for the OpenAI embeddings wire format, HTTP only |
+| [`Nordstein.Core.Testing.Postgres`](Nordstein.Core.Testing.Postgres) | Opt-in. One PostgreSQL container per test process, one database per test, schema-only templates |
 | [`Nordstein.Core.Testing`](Nordstein.Core.Testing) | `BaseTest<TModule>` with one Autofac container per test, shared fakes for clock, HTTP, logging and certificates, architecture fences, perf budgets |
 
 Dependencies point one way: a product depends on Core, and Core knows no product.

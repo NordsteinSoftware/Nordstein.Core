@@ -26,7 +26,7 @@ Every change to this repository — however small — meets all of the following
 2. **High test coverage, enforced by you.** Every public type and member gets tests; every branch
    of non-trivial logic gets a test; every bug fix starts with a failing regression test
    (test-driven — write the red test first, then the fix). A change that reduces effective
-   coverage is incomplete. The whole suite runs in about half a minute — there is no excuse for
+   coverage is incomplete. The whole suite runs in under a minute — there is no excuse for
    an untested path. CI fails any shipped assembly below **90 % line or 90 % branch coverage**
    (`tools/coverage_gate.py`, floors in `tools/coverage-floors.json`). See
    [`docs/testing.md`](docs/testing.md).
@@ -47,7 +47,7 @@ Every change to this repository — however small — meets all of the following
    XML docs *are* the API documentation (`GenerateDocumentationFile` is on). Write them for
    someone who cannot see the implementation: contracts, thread-safety, what throws when.
 6. **Verified, not assumed.** `dotnet build Nordstein.Core.sln` and `dotnet test Nordstein.Core.sln`
-   pass before you claim done. Unlike a product repo, the suite here is fast (about half a
+   pass before you claim done. Unlike a product repo, the suite here is fast (under a
    minute) — **always run the full solution**, never a scoped subset, and state that you did.
 
 ## The One Rule
@@ -70,7 +70,7 @@ references — **you** must catch leaked concepts.
 
 | Path | Holds |
 |------|-------|
-| `Nordstein.Core.<Package>/` | One of the seven shipped packages: Common, Domain, Storage, Licensing, AI, Workflows, Testing. Each has its own package `README.md` and a sibling `Nordstein.Core.<Package>.Tests/` project. Layering and dependency rules: [`docs/architecture.md`](docs/architecture.md) |
+| `Nordstein.Core.<Package>/` | One of the eleven shipped packages: Common, Domain, Storage, Licensing, AI, Workflows, Search, Testing, and the opt-in provider packages Search.Postgres, AI.OpenAiCompatible and Testing.Postgres. Each has its own package `README.md` and a sibling `Nordstein.Core.<Package>.Tests/` project. Layering and dependency rules: [`docs/architecture.md`](docs/architecture.md) |
 | [`docs/`](docs/README.md) | One page per area (index below) and the decision records in [`docs/adr/`](docs/adr/) |
 | [`tools/`](tools/) | The CI checks, Python standard library only: `coverage_gate.py` with its settings and floors, `docs_check.py`, and in `tools/tests/` the tests of all of it and of `.claude/hooks/` |
 | [`.claude/`](.claude/) | `agents/reviewer.md` (the adversarial reviewer), `hooks/guards.py` (the edit guard, see Hard Rules), `skills/csharp-coding` (the C# style skill) |
@@ -101,6 +101,7 @@ area — do not rely on this file alone:
 | [`docs/validation.md`](docs/validation.md) | Touching validation helpers, or adding validation to anything |
 | [`docs/licensing.md`](docs/licensing.md) | Touching `Nordstein.Core.Licensing` — the generic license engine and its product seams |
 | [`docs/ai.md`](docs/ai.md) | Touching `Nordstein.Core.AI` — the AI/agent foundation (messages, tools, prompts, completions, the agent/model-client contracts, the agent tool-call loop, output parsing) and its product seams |
+| [`docs/search.md`](docs/search.md) | Touching `Nordstein.Core.Search` or `Nordstein.Core.Search.Postgres` — the index contract, the schema identity, the pgvector and `tsvector` statement, facets |
 | [`docs/workflows.md`](docs/workflows.md) | Touching `Nordstein.Core.Workflows` — the workflow kernel: graph, node contract, data references, validator, interpreter, step journal, suspend and resume |
 | [`docs/dependencies.md`](docs/dependencies.md) | Adding a package reference or bumping one's major version, Dependabot, or a CI action — the package bar, the update cooldown, actions pinned by commit SHA |
 | [`docs/adr/`](docs/adr/) | Making or revisiting an architecture decision — one numbered record per decision: context, decision, alternatives, consequences |
@@ -137,7 +138,10 @@ area — do not rely on this file alone:
 - **Every dependency is a liability.** Core's package references become every product's
   transitive dependencies. Adding one requires explicit justification; prefer the BCL. Provider-
   and framework-specific packages (EF providers, ASP.NET, JSON libraries beyond the BCL) stay in
-  the products. A new package reference, or a major-version bump of one, meets the package bar in
+  the products. The one exception is an **opt-in provider package**
+  (`Nordstein.Core.<Area>.<Provider>`, referenced by no other Core package, at most one provider
+  dependency, its contract in a provider-neutral package):
+  [ADR 0007](docs/adr/0007-opt-in-provider-packages-and-vector-search.md). A new package reference, or a major-version bump of one, meets the package bar in
   [`docs/dependencies.md`](docs/dependencies.md) or is not taken.
 - **Breaking changes are announced, never smuggled.** If a test had to change to keep passing,
   the behavior changed — say so and treat it as a contract change, not a test fix.

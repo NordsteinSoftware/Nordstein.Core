@@ -22,10 +22,14 @@
         <!-- Fences/InternalNamespaceFenceTests scans every production project of the solution and
              fails until a new one is referenced here. -->
         <ProjectReference Include="..\Nordstein.Core.AI\Nordstein.Core.AI.csproj" />
+        <ProjectReference Include="..\Nordstein.Core.AI.OpenAiCompatible\Nordstein.Core.AI.OpenAiCompatible.csproj" />
         <ProjectReference Include="..\Nordstein.Core.Common\Nordstein.Core.Common.csproj" />
         <ProjectReference Include="..\Nordstein.Core.Domain\Nordstein.Core.Domain.csproj" />
         <ProjectReference Include="..\Nordstein.Core.Licensing\Nordstein.Core.Licensing.csproj" />
+        <ProjectReference Include="..\Nordstein.Core.Search\Nordstein.Core.Search.csproj" />
+        <ProjectReference Include="..\Nordstein.Core.Search.Postgres\Nordstein.Core.Search.Postgres.csproj" />
         <ProjectReference Include="..\Nordstein.Core.Storage\Nordstein.Core.Storage.csproj" />
+        <ProjectReference Include="..\Nordstein.Core.Testing.Postgres\Nordstein.Core.Testing.Postgres.csproj" />
         <ProjectReference Include="..\Nordstein.Core.Workflows\Nordstein.Core.Workflows.csproj" />
     </ItemGroup>
 

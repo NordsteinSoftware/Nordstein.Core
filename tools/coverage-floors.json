@@ -3,6 +3,10 @@
     "branch": 90.0,
     "line": 90.0
   },
+  "Nordstein.Core.AI.OpenAiCompatible": {
+    "branch": 90.0,
+    "line": 90.0
+  },
   "Nordstein.Core.Common": {
     "branch": 90.0,
     "line": 90.0
@@ -15,11 +19,23 @@
     "branch": 90.0,
     "line": 90.0
   },
+  "Nordstein.Core.Search": {
+    "branch": 90.0,
+    "line": 90.0
+  },
+  "Nordstein.Core.Search.Postgres": {
+    "branch": 90.0,
+    "line": 90.0
+  },
   "Nordstein.Core.Storage": {
     "branch": 90.0,
     "line": 90.0
   },
   "Nordstein.Core.Testing": {
+    "branch": 90.0,
+    "line": 90.0
+  },
+  "Nordstein.Core.Testing.Postgres": {
     "branch": 90.0,
     "line": 90.0
   },

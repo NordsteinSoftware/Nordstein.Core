@@ -8,7 +8,13 @@ Nordstein.Core.Storage ──► Nordstein.Core.Domain ──► Nordstein.Core.
 Nordstein.Core.AI ───────► Nordstein.Core.Domain ──► Nordstein.Core.Common
 Nordstein.Core.Licensing ─────────────────────────► Nordstein.Core.Common
 Nordstein.Core.Testing ───────────────────────────► Nordstein.Core.Common
+Nordstein.Core.Search ────────────────────────────► Nordstein.Core.Common
 Nordstein.Core.Workflows (BCL + Autofac only)
+
+Opt-in provider packages (ADR 0007); no other Core package references them:
+Nordstein.Core.Search.Postgres ────► Nordstein.Core.Search, Nordstein.Core.Storage
+Nordstein.Core.AI.OpenAiCompatible ► Nordstein.Core.AI
+Nordstein.Core.Testing.Postgres ───► Nordstein.Core.Testing
 ```
 
 | Package | Role | Notable external deps |
@@ -19,6 +25,10 @@ Nordstein.Core.Workflows (BCL + Autofac only)
 | `Nordstein.Core.Licensing` | Generic license engine: JWT verification, activation, snapshot/status, server check — see [`licensing.md`](licensing.md) | System.IdentityModel.Tokens.Jwt, MS.Extensions Http |
 | `Nordstein.Core.AI` | AI foundation: messages, tools, prompts, completions, the versionless `IAgent` and `IModelClient` contracts, the `IAgentLoop` tool-call loop, structured output parsing. Provider implementations stay in the products — see [`ai.md`](ai.md) | System.Memory.Data, Autofac |
 | `Nordstein.Core.Workflows` | Workflow kernel: a DAG of typed nodes with data references, the validator and the deterministic interpreter with suspend and resume — see [`workflows.md`](workflows.md) | Autofac |
+| `Nordstein.Core.Search` | The search contract: a named index of text entries with facets, hybrid search, the schema seam that binds an index to one embedding model. Contracts and values only, no module: see [`search.md`](search.md) | none |
+| `Nordstein.Core.Search.Postgres` | **Opt-in.** The pgvector and `tsvector` implementation of the search contract, as plain SQL on the ambient transaction: see [`search.md`](search.md) | Autofac; **no driver** |
+| `Nordstein.Core.AI.OpenAiCompatible` | **Opt-in.** An `IEmbeddingClient` for the OpenAI embeddings wire format: see [`ai.md`](ai.md#the-openai-compatible-embedding-client) | Autofac; HTTP and `System.Text.Json` only |
+| `Nordstein.Core.Testing.Postgres` | **Opt-in.** One PostgreSQL container per test process, one database per test: see [`testing.md`](testing.md#the-postgresql-harness-nordsteincoretestingpostgres) | Testcontainers.PostgreSql |
 | `Nordstein.Core.Testing` | The shared test harness: `BaseTest<TModule>` + the MSTest / AwesomeAssertions / NSubstitute baseline, the shared fakes (`Time/`, `Http/`, `Logging/`, `Certificates/`), the architecture fence kit (`Fences/`) and the perf-budget harness (`Performance/`) — see [`testing.md`](testing.md) | MSTest, AwesomeAssertions, NSubstitute, Autofac |
 
 Each package has a sibling `*.Tests` project; the whole solution builds and tests standalone
@@ -50,8 +60,9 @@ Pick the same shapes for new seams; do not invent a fifth without a reason.
 
 ## Dependency Injection (Autofac)
 
-Every package ships one `Module : Autofac.Module` (`Nordstein.Core.Common.Module`,
-`Nordstein.Core.Domain.Module`, …). Conventions, proven across the consuming products:
+Every package that registers a service ships one `Module : Autofac.Module`
+(`Nordstein.Core.Common.Module`, `Nordstein.Core.Domain.Module`, …). `Nordstein.Core.Search` and
+`Nordstein.Core.Testing.Postgres` register nothing and ship none. Conventions, proven across the consuming products:
 
 - **One module per assembly**, registered by the consumer's composition root. A module registers
   its own assembly's services and (where it is a foundation) discovers types in the *consumer's*

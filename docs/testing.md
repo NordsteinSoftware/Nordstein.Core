@@ -281,6 +281,31 @@ start the real service in a throwaway container (Testcontainers):
 Default to a mock; a container test is a targeted supplement for what a mock structurally cannot
 cover, and it costs seconds, not milliseconds.
 
+### The PostgreSQL harness (`Nordstein.Core.Testing.Postgres`)
+
+An opt-in package ([ADR 0007](adr/0007-opt-in-provider-packages-and-vector-search.md)) that
+implements the opt-in exception above for PostgreSQL, condition by condition:
+
+- `PostgresServer` starts one container lazily, on its own `StartTimeout` and never on a caller's
+  token. The port binds to `127.0.0.1` and the password is random per start.
+- `CreateDatabaseAsync` creates a database named `test_<guid>` for one test; disposing the
+  returned `PostgresDatabase` drops it with `WITH (FORCE)`, also after a failed test when the
+  test holds it in an `await using`.
+- `CreateDatabaseAsync(template, …)` clones from a `PostgresTemplate`: a schema-only database
+  that is built once by a callback (typically the product's migrations) and then closed to
+  connections.
+- A start failure ends each test inconclusive, or fails it when the options' `RequireVariable`
+  is `1`. Any other spelling of that variable throws.
+- The handle exposes connection strings only, never the container. Statements on whole
+  databases run through `psql` inside the container, so the harness references no driver.
+
+A test project keeps its one server in a `static readonly` field of an internal `SharedPostgres`
+class: infrastructure, not test state. Core's own PostgreSQL tests
+(`Nordstein.Core.Search.Postgres.Tests`, `Nordstein.Core.Testing.Postgres.Tests`) run on the
+pinned `pgvector/pgvector:0.8.2-pg17` image and are required in CI through
+`NORDSTEIN_CORE_REQUIRE_DOCKER_TESTS=1`. Locally they are skipped without Docker, so a scoped
+green run without Docker is never reported as "all tests pass".
+
 ## Lessons from the products
 
 Rules a consuming product's suite learned the hard way; they hold for Core's tests too.
