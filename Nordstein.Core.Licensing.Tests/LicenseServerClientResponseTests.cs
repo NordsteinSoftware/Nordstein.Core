@@ -1,10 +1,9 @@
 using System.Net;
-using System.Text;
 using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using NSubstitute;
-using Nordstein.Core.Common.Time;
 using Nordstein.Core.Licensing.Internal;
+using Nordstein.Core.Testing.Http;
+using Nordstein.Core.Testing.Time;
 
 namespace Nordstein.Core.Licensing.Tests;
 
@@ -52,27 +51,10 @@ public sealed class LicenseServerClientResponseTests
 
     private async Task<LicenseCheckResult> CheckAsync(string body)
     {
-        var clock = Substitute.For<IClock>();
-        clock.UtcNow.Returns(Now);
-        using var handler = new FixedResponseHandler(body);
+        var clock = new ManualClock(Now);
+        using var handler = new ScriptedHttpMessageHandler().Respond(HttpStatusCode.OK, body);
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://license.example.com/") };
         var client = new LicenseServerClient(httpClient, clock, NullLogger<LicenseServerClient>.Instance);
         return await client.CheckAsync("jti-1", "1.0.0", TestContext.CancellationToken);
-    }
-
-    /// <summary>
-    /// Answers every request with 200 and a fixed JSON body.
-    /// </summary>
-    private sealed class FixedResponseHandler : HttpMessageHandler
-    {
-        private readonly string body;
-
-        public FixedResponseHandler(string body)
-        {
-            this.body = body;
-        }
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
     }
 }
