@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>
+            An embedding client for endpoints that speak the OpenAI embeddings wire format
+            (POST {base}/embeddings), as OpenAI, Scaleway, Ollama, vLLM, TEI and llama.cpp serve it.
+            HTTP and System.Text.Json only: no provider SDK. Implements
+            Nordstein.Core.AI.Embeddings.IEmbeddingClient.
+        </Description>
+        <PackageTags>nordstein;ai;embeddings;openai-compatible</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Nordstein.Core.AI.OpenAiCompatible.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Autofac" Version="9.3.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Nordstein.Core.AI\Nordstein.Core.AI.csproj" />
+        <ProjectReference Include="..\Nordstein.Core.Common\Nordstein.Core.Common.csproj" />
+    </ItemGroup>
+
+</Project>

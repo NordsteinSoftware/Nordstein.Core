@@ -64,7 +64,11 @@ jobs:
         run: dotnet build Nordstein.Core.sln --nologo --no-restore
 
       # One run of the full suite, collecting coverage of every shipped assembly (tools/coverage.runsettings).
+      # The PostgreSQL-backed tests start a container; without this flag a missing runtime would
+      # skip them and the coverage of two shipped packages would be lost silently.
       - name: Test with coverage
+        env:
+          NORDSTEIN_CORE_REQUIRE_DOCKER_TESTS: "1"
         run: >-
           dotnet test Nordstein.Core.sln --nologo --verbosity minimal --no-restore --no-build
           --settings tools/coverage.runsettings --collect "XPlat Code Coverage"

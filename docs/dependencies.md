@@ -19,7 +19,10 @@ A package in a **shipped project** (one that packs to `Nordstein.Core.*`) needs 
    libraries beyond `System.Text.Json` stay in the products (`CLAUDE.md`, Hard Rules). Core may
    reference a framework's abstractions or a standalone library of it where a seam needs it
    (`Microsoft.EntityFrameworkCore.Relational`, `Microsoft.AspNetCore.DataProtection`), judged by
-   what it pulls in, never the framework's host or a provider.
+   what it pulls in, never the framework's host or a provider. An opt-in provider package
+   (`Nordstein.Core.<Area>.<Provider>`,
+   [ADR 0007](adr/0007-opt-in-provider-packages-and-vector-search.md)) may take one provider
+   dependency; today only `Nordstein.Core.Testing.Postgres` does (`Testcontainers.PostgreSql`).
 3. **A permissive OSI-approved licence** (MIT, Apache-2.0, BSD) that lets every product ship it.
 4. **A maintainer that will be there**: Microsoft, the .NET Foundation or another major foundation,
    or a project with at least 1,000 GitHub stars and more than one active maintainer.
@@ -29,7 +32,7 @@ A package in a **shipped project** (one that packs to `Nordstein.Core.*`) needs 
 
 A package in a **test project** (`*.Tests`) never ships, so it needs 3, 4 and 5. Core's test
 stack is MSTest, AwesomeAssertions, NSubstitute and coverlet (and the EF Core in-memory provider
-for storage tests); a second library for the same job (another mocking or assertion library) is
+for storage tests, and Npgsql for the tests of the PostgreSQL packages); a second library for the same job (another mocking or assertion library) is
 not taken.
 
 ## Updates

@@ -22,7 +22,9 @@ Microsoft-owned `System.Memory.Data` for `BinaryData` content payloads).
 ## The seams — what stays product-side, and why
 
 - **Provider implementations.** `IModelClient` is a contract; the OpenAI (or any other) wrapper,
-  its SDK dependency, and its transport live in the product. Core carries no provider SDKs —
+  its SDK dependency, and its transport live in the product. The one wire client Core ships is
+  the opt-in [OpenAI-compatible embedding client](#the-openai-compatible-embedding-client), which
+  is HTTP only. Core carries no provider SDKs —
   every Core dependency becomes every product's dependency.
 - **Agent lifecycle.** `IAgent` is deliberately versionless and persistence-free. A product
   extends it with its own concerns — tenancy, version history, endpoint binding, archiving —
@@ -153,6 +155,31 @@ seam. `Nordstein.Core.AI.Serialization.ITextSerializer` is string-based and LLM-
 exists to turn model output text — including truncated or slightly malformed JSON — into typed
 values, and values into prompt-embeddable text. They are different contracts; the AI one was
 renamed at extraction precisely so the two never collide in a consumer's usings.
+
+## The OpenAI-compatible embedding client
+
+`Nordstein.Core.AI.OpenAiCompatible` is an opt-in package
+([ADR 0007](adr/0007-opt-in-provider-packages-and-vector-search.md)) with one
+`IEmbeddingClient` for endpoints that speak the OpenAI embeddings wire format:
+`POST {BaseUrl}/embeddings` with `{model, input[], encoding_format: "float"}`, plus `dimensions`
+when `SendDimension` is set. OpenAI, Scaleway, Ollama, vLLM, TEI and llama.cpp serve it.
+
+- **Obtaining a client.** The module registers the delegate
+  `OpenAiCompatibleEmbeddingClientFactory`; the host calls it once with an
+  `OpenAiCompatibleEmbeddingOptions` and registers the result as its `IEmbeddingClient`. Creating
+  a client validates the options and performs no I/O.
+- **One hop.** Requests go through the handler registered under `Module.HandlerName`: by default
+  `DirectHttpHandlerFactory.Create()`, with no proxy and no redirect. A host that needs another
+  handler registers its own under that name.
+- **The key.** `ApiKey` is sent as a bearer token, only over `https` or to a loopback host;
+  `Validate()` refuses anything else. The options' `ToString()` never prints it.
+- **Failures.** A transport failure, a time-out and an error status are
+  `InferenceUnavailableException` (retry later). `400`, `413`, `422` and a reply of the wrong
+  shape (count, index, dimension, a non-finite component, not JSON) are
+  `InferenceContractException` (the same input fails again). Messages name the endpoint without
+  user information and the status, never the key, the inputs or the reply.
+- **Time-out.** One deadline per request, body included, on the container's `TimeProvider`.
+- Inputs are sent in batches of `BatchSize`, one after the other.
 
 ## Registration
 
