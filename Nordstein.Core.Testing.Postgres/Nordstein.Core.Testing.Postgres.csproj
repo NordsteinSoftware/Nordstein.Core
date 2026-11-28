@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>
+            PostgreSQL test harness for Nordstein applications: one throwaway PostgreSQL container
+            per test process, started lazily, and one database per test, created empty or cloned
+            from a schema-only template and dropped when the test ends. Opt-in: only test projects
+            that need a real PostgreSQL reference it.
+        </Description>
+        <PackageTags>nordstein;testing;postgresql;testcontainers</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Nordstein.Core.Testing.Postgres.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The one provider dependency of this opt-in package (docs/adr/0007): it starts the
+             container. Statements on whole databases run through psql inside the container, so
+             the harness needs no database driver of its own. -->
+        <PackageReference Include="Testcontainers.PostgreSql" Version="4.16.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Nordstein.Core.Testing\Nordstein.Core.Testing.csproj" />
+    </ItemGroup>
+
+</Project>
