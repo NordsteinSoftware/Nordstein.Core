@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>
+            PostgreSQL implementation of Nordstein.Core.Search: a pgvector HNSW leg and a tsvector
+            keyword leg per index, fused by reciprocal rank in one statement, with a bound schema
+            identity that refuses a changed embedding model. Plain SQL over the ambient
+            transaction's connection: no driver or provider package is referenced.
+        </Description>
+        <PackageTags>nordstein;search;vector;postgresql;pgvector</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Nordstein.Core.Search.Postgres.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Autofac" Version="9.3.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Nordstein.Core.Search\Nordstein.Core.Search.csproj" />
+        <ProjectReference Include="..\Nordstein.Core.Storage\Nordstein.Core.Storage.csproj" />
+    </ItemGroup>
+
+</Project>

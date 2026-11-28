@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <NoWarn>$(NoWarn);MSTEST0001</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="10.1.1">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="MSTest" Version="4.5.3" />
+        <!-- The provider the package under test is written for. A test dependency only: the shipped
+             package sends plain SQL over ADO.NET and references no driver. -->
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Nordstein.Core.Search.Postgres\Nordstein.Core.Search.Postgres.csproj" />
+        <ProjectReference Include="..\Nordstein.Core.Testing\Nordstein.Core.Testing.csproj" />
+        <ProjectReference Include="..\Nordstein.Core.Testing.Postgres\Nordstein.Core.Testing.Postgres.csproj" />
+    </ItemGroup>
+
+</Project>
